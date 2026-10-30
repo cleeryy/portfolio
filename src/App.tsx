@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { sound } from './lib/sound'
 import About from './components/about/About'
 import BootGate from './components/boot/BootGate'
 import Contact from './components/contact/Contact'
@@ -25,6 +26,45 @@ export default function App() {
   // One refresh point for the whole page: webfonts land after first layout, and
   // every pinned or measured trigger has to be re-read once they do.
   useEffect(() => initMotionSystem(), [])
+
+  // Sound has to answer a copy, not just the toggle. Chrome (nav, hero) gets a
+  // relay tick on any activation, and the page ticks once as a new plate is
+  // reached — sparse by design, and every call is a no-op while sound is off.
+  useEffect(() => {
+    const NO_CUE = '.sound-toggle, [data-no-cue]'
+
+    const onClick = (event: MouseEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (target.closest(NO_CUE)) return
+      const hit = target.closest('.nav a, .nav button, .hero a, .hero button')
+      if (hit) sound.click()
+    }
+
+    let current = ''
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          const id = entry.target.id
+          if (id && id !== current) {
+            current = id
+            sound.open()
+          }
+        }
+      },
+      { rootMargin: '-40% 0px -40% 0px' },
+    )
+
+    document.addEventListener('click', onClick, true)
+    const sections = document.querySelectorAll('main > section[id]')
+    sections.forEach((node) => observer.observe(node))
+
+    return () => {
+      document.removeEventListener('click', onClick, true)
+      observer.disconnect()
+    }
+  }, [])
 
   return (
     <main id="top">

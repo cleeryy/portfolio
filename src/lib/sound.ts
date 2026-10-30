@@ -16,23 +16,23 @@
 
 const STORAGE_KEY = 'portfolio:sound'
 
-/** Master ceiling: ≈ −18.4 dBFS. All mixes below are relative to this. */
-const MASTER_LEVEL = 0.12
+/** Master ceiling: ≈ −7.5 dBFS. All mixes below are relative to this. */
+const MASTER_LEVEL = 0.42
 /** Ambient bed bus. Deliberately below the threshold of attention. */
-const AMBIENT_LEVEL = 0.13
+const AMBIENT_LEVEL = 0.18
 /** Minimum gap between hover ticks. Bursty pointer moves must not turn into a rattle. */
 const HOVER_GAP_MS = 125
 /** Section transitions can fire in quick succession on fast scrolls; keep it sparse. */
 const OPEN_GAP_MS = 320
 
 const CUE_PEAK = {
-  click: 0.55,
-  ping: 0.3,
-  hover: 0.08,
-  open: 0.3,
+  click: 0.62,
+  ping: 0.45,
+  hover: 0.20,
+  open: 0.42,
 } as const
 
-const REDUCED_CUE_SCALE = 0.58
+const REDUCED_CUE_SCALE = 0.62
 
 export type CueName = keyof typeof CUE_PEAK
 export type SoundListener = (enabled: boolean) => void
