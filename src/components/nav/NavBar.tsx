@@ -11,9 +11,11 @@ import './nav.css'
  * scrolls to. `contact` closes the page; the first four are the map itself.
  */
 const SECTIONS: { id: string; label: Bi }[] = [
+  { id: 'path', label: { en: 'Path', fr: 'Parcours' } },
+  { id: 'skills', label: { en: 'Skills', fr: 'Compétences' } },
   { id: 'territory', label: { en: 'Territory', fr: 'Territoire' } },
   { id: 'ranges', label: { en: 'Ranges', fr: 'Terrains' } },
-  { id: 'services', label: { en: 'Services', fr: 'Services' } },
+  { id: 'services', label: { en: 'Work', fr: 'Projets' } },
   { id: 'about', label: { en: 'About', fr: 'À propos' } },
   { id: 'contact', label: { en: 'Contact', fr: 'Contact' } },
 ]
@@ -44,25 +46,47 @@ export default function NavBar() {
     }
   }, [])
 
-  /* Mark the section currently crossing the middle of the viewport. Sections
-     that have not landed yet simply are not observed. */
+  /* Mark the section crossing the middle of the viewport.
+     A rect test, not an IntersectionObserver: the observer latch kept the last
+     section marked after scrolling back to the hero, where no section ever
+     re-enters the band. This reads the geometry, so it can also return null. */
   useEffect(() => {
     const targets = SECTIONS.map((section) => document.getElementById(section.id)).filter(
       (node): node is HTMLElement => node !== null,
     )
     if (targets.length === 0) return
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) setActive(entry.target.id)
+    let frame = 0
+    const apply = () => {
+      frame = 0
+      const line = window.innerHeight * 0.5
+      let id: string | null = null
+      for (const node of targets) {
+        const rect = node.getBoundingClientRect()
+        if (rect.top <= line && rect.bottom > line) {
+          id = node.id
+          break
         }
-      },
-      { rootMargin: '-45% 0px -45% 0px' },
-    )
+      }
+      if (!id) {
+        for (const node of targets) {
+          if (node.getBoundingClientRect().top <= line) id = node.id
+        }
+      }
+      setActive(id)
+    }
+    const onScroll = () => {
+      if (frame === 0) frame = requestAnimationFrame(apply)
+    }
 
-    for (const node of targets) observer.observe(node)
-    return () => observer.disconnect()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    apply()
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (frame !== 0) cancelAnimationFrame(frame)
+    }
   }, [])
 
   /* Panel behaviour: close on Escape (returning focus to the control), on a

@@ -144,8 +144,10 @@ Measure is capped at `--measure: 62ch`; the hero note at 54ch. Nothing runs past
    #contact     one line, one address, no form theatre
 ```
 
-**Section id contract** (the nav observes and scrolls to these; other lanes must use
-them): `territory`, `ranges`, `services`, `about`, `contact`. `#top` lives on `<main>`.
+**Section id contract** (the nav observes and scrolls to these): `path`, `skills`,
+`territory`, `ranges`, `services`, `about`, `contact`. `#top` lives on `<main>`.
+Page order is CV-first: where he comes from, what he can be trusted with, the network he
+runs, the terrain he practises on, the work, the person, the request.
 
 ---
 
@@ -302,5 +304,10 @@ carries the same inventory as text.
 
 Counts are re-surveyed from the config: **41 published hostnames, 30 internal**.
 
-**Known gaps.** Section order is still homelab-first; the CV chapter (`#path`) and the skills
-ledger are not built yet — they land once the operator's CV and platform handles are supplied.
+**CV chapter.** `#path` is a pinned horizontal traverse of dated steps (oldest first, the
+open year last) and `#skills` is a ledger: a sticky margin rail of seven domains, each with an
+honest qualifier (`in production` / `in a lab` / `coursework`), its instruments and one proof
+pointer. Facts come from `FACTS.md`; nothing is asserted that the audit could not source.
+
+**Known gaps.** No platform handles (THM/HTB/Root-Me/PortSwigger) are documented, so the ranges
+chapter names practice without ranks; no certifications exist and none are claimed.
