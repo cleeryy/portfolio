@@ -222,6 +222,95 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Section rig — the repeated entry device
+   Every section that is not the hero opens the same way: a short registration
+   segment drawn along its top rule, and the section reference's coordinate
+   counting up to the section's real offset on the page. Same element, same
+   length, same tempo in all four sections; the colour is `--text`, so it is ink
+   on the sheet and pale ink on the dark chapter, without a second rule.
+   --------------------------------------------------------------------------- */
+
+.rig-tick {
+  position: absolute;
+  inset-block-start: -1px;
+  /* Same left edge as every content column on the site (72rem, centred). */
+  inset-inline-start: max(var(--gutter), calc((100% - 72rem) / 2));
+  /* 76px: the same length as the chapter mark in #ranges and the hero collar's
+     mark. One registration mark, drawn four times. */
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--text);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+/* The printed reading under `#section`. Tabular by default (`.mono`), and the
+   text is written by reveal.ts, so it is empty until JS puts a number in it. */
+.rig-coord {
+  display: block;
+  margin-block-start: 0.15rem;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll scale — the sheet's edge instrument
+   A gauge, not a second navigation: no names, no percentage, no duplication of
+   the nav's active state. It lives in the right-hand page gutter and is hidden
+   where that gutter no longer exists.
+   --------------------------------------------------------------------------- */
+
+.gauge {
+  position: fixed;
+  inset-block-start: calc(var(--nav-h) + var(--s-4));
+  inset-block-end: var(--s-4);
+  inset-inline-end: 0;
+  /* Under the fixed nav, over the sheet. */
+  z-index: calc(var(--z-nav) - 5);
+  inline-size: 1.75rem;
+  pointer-events: none;
+}
+
+.gauge__track {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: 1px;
+  background-color: var(--contour);
+}
+
+/* Ticks every eighth of the sheet, protruding into the margin. */
+.gauge__track::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: 7px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--contour) 0 1px,
+    transparent 1px 12.5%
+  );
+}
+
+/* The index. Written straight from the scroll position; never tweened. */
+.gauge__mark {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 11px;
+  block-size: 2px;
+  background-color: var(--mark);
+  will-change: transform;
+}
+
+@media (max-width: 1023px) {
+  /* No margin to spare: the instrument goes with the margin it was drawn in. */
+  .gauge {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
    Grain
    --------------------------------------------------------------------------- */
 

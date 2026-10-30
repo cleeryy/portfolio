@@ -20,6 +20,10 @@
   padding-block: clamp(3.5rem, 7vw, 6rem) clamp(3rem, 6vw, 5rem);
   padding-inline: var(--gutter);
   background-color: var(--ground);
+  /* The section's top rule: where the registration tick draws in. Every section
+     after the hero carries one, so the sheet reads as ruled bands rather than a
+     single unbroken page. */
+  border-top: var(--hair) solid var(--rule);
   scroll-margin-block-start: var(--nav-h);
 }
 

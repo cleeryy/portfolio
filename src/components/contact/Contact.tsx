@@ -1,6 +1,9 @@
+import { useLayoutEffect, useRef } from 'react'
 import { useLang } from '../../lib/i18n'
+import { initSectionRig } from '../../lib/reveal'
 import { sound } from '../../lib/sound'
 import { contact, contactEmail, sourceLabel, sourceUrl } from '../../content/contact'
+import SplitText from '../ui/SplitText'
 import './contact.css'
 
 /**
@@ -41,21 +44,38 @@ function MailAddress() {
 export default function Contact() {
   const { pick } = useLang()
   const copy = pick(contact)
+  const rootRef = useRef<HTMLElement | null>(null)
+
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const rig = initSectionRig(root)
+    return () => rig.dispose()
+  }, [])
 
   return (
     <>
-      <section className="ct" id="contact" aria-labelledby="contact-title">
+      <section className="ct" id="contact" aria-labelledby="contact-title" ref={rootRef}>
+        <span className="rig-tick" data-rig-tick aria-hidden="true" />
+
         <div className="ct__inner">
           <header className="ct__head">
             <p className="ct__ref mono" aria-hidden="true">
-              #contact
+              <span>#contact</span>
+              <span className="rig-coord" data-rig-coord="" />
             </p>
 
-            <h2 className="ct__title" id="contact-title">
-              {copy.title}
-            </h2>
+            <SplitText
+              as="h2"
+              className="ct__title"
+              id="contact-title"
+              text={copy.title}
+              reveal
+            />
 
-            <p className="ct__invite">{copy.invite}</p>
+            <p className="ct__invite" data-reveal-block="">
+              {copy.invite}
+            </p>
           </header>
 
           {/* An address ledger: the key in the margin, the address on the reading

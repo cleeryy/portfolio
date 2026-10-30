@@ -24,7 +24,8 @@
 }
 
 /* The chapter break's one red mark, aligned with the content column at any
-   viewport width. */
+   viewport width. It is also the section's registration tick: reveal.ts draws it
+   along the top rule the first time the chapter is reached. */
 .rng__mark {
   position: absolute;
   inset-block-start: -1px;
@@ -32,6 +33,7 @@
   width: 76px;
   height: 2px;
   background-color: var(--mark);
+  transform-origin: left center;
 }
 
 /* ---------------------------------------------------------------------------
@@ -172,6 +174,208 @@
   font-size: var(--step--2);
   color: var(--text-quiet);
   text-align: end;
+}
+
+/* ---------------------------------------------------------------------------
+   The traverse — a horizontal register, wide screens with a mouse only
+   ---------------------------------------------------------------------------
+   `data-mode="h"` is written by Ranges.tsx under exactly the same media
+   conditions as the ScrollTrigger pin, so the layout and the pin can never
+   disagree about whether the register is horizontal.
+
+   The register becomes a transect: five panels on one continuous rule, each
+   with a vertical hairline between it and the next, travelling right to left
+   while the section holds still. Nothing here is loaded late — the strip is
+   clipped, never overflowed, so no horizontal scrollbar can appear.
+   --------------------------------------------------------------------------- */
+
+.rng[data-mode='h'] {
+  --rng-panel: clamp(20rem, 30vw, 30rem);
+
+  /* The padding and the height move to the pinned plate, so the section — the
+     thing the nav scrolls to — starts exactly where the pin starts. */
+  padding: 0;
+}
+
+/* Vertical register: the plate is not a box at all. */
+.rng__pin {
+  display: contents;
+}
+
+.rng[data-mode='h'] .rng__pin {
+  display: flex;
+  align-items: center;
+  min-height: 100svh;
+  padding-block: calc(var(--nav-h) + var(--s-4)) var(--s-6);
+  padding-inline: var(--gutter);
+}
+
+.rng[data-mode='h'] .rng__inner {
+  width: 100%;
+}
+
+/* The head stays on the viewport while the register travels: it is the chapter
+   title, and a title that scrolls away leaves the traverse unlabelled. */
+.rng[data-mode='h'] .rng__head {
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 23rem);
+  grid-template-areas: 'ref title intro';
+  align-items: start;
+}
+
+.rng[data-mode='h'] .rng__intro p {
+  max-width: 40ch;
+  font-size: var(--step-0);
+}
+
+.rng[data-mode='h'] .rng__register {
+  margin-block-start: clamp(1.75rem, 4vh, 3rem);
+}
+
+/* Column keys become the transect's legend: they no longer sit over a column,
+   so they are read as a key, not as a table header. */
+.rng[data-mode='h'] .rng__cols {
+  display: flex;
+  gap: var(--s-5);
+  padding-block-end: var(--s-2);
+}
+
+.rng[data-mode='h'] .rng__strip {
+  position: relative;
+  overflow: clip;
+  border-top: var(--hair) solid var(--rule);
+  /* The window the transect is seen through: a panel crossing the edge
+     dissolves instead of being sliced through a glyph, and the rule it sits on
+     fades with it. The 24px fade matches the panel padding, so at rest — the
+     first panel at progress 0, the last at progress 1 — no text is ever inside
+     it. */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+.rng[data-mode='h'] .rng__list {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.rng[data-mode='h'] .rng__row {
+  flex: 0 0 var(--rng-panel);
+  display: block;
+  /* Symmetrical, and wide enough that text never reaches the fade. */
+  padding: var(--s-5) var(--s-5) var(--s-4);
+}
+
+.rng[data-mode='h'] .rng__row + .rng__row {
+  border-inline-start: var(--hair) solid var(--rule);
+}
+
+/* The strip owns the rule in this mode; a per-row rule would leave gaps at every
+   panel edge. */
+.rng[data-mode='h'] .rng__rule {
+  display: none;
+}
+
+.rng[data-mode='h'] .rng__cell--practice p {
+  max-width: 34ch;
+  margin-block-start: var(--s-2);
+  font-size: var(--step-0);
+  line-height: 1.55;
+}
+
+/* The traverse's scale: one tick per row, one index riding it. The index is
+   moved by the same scrub as the strip, so the two can never disagree. */
+.rng__scale {
+  display: none;
+}
+
+.rng[data-mode='h'] .rng__scale {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  block-size: 8px;
+  margin-block-start: var(--s-3);
+}
+
+.rng[data-mode='h'] .rng__scale::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 1px;
+  background-color: var(--rule);
+}
+
+.rng__tick {
+  display: block;
+  inline-size: 1px;
+  block-size: 5px;
+  background-color: var(--text-quiet);
+}
+
+.rng__index {
+  display: none;
+}
+
+.rng[data-mode='h'] .rng__index {
+  position: absolute;
+  inset-block-start: -3px;
+  inset-inline-start: 0;
+  display: block;
+  inline-size: 11px;
+  block-size: 2px;
+  background-color: var(--mark);
+}
+
+/* The scale already rules the block, so the foot note gives up its own rule. */
+.rng[data-mode='h'] .rng__note {
+  margin-block-start: var(--s-3);
+  padding-block-start: 0;
+  border-top: 0;
+}
+
+@media (max-width: 1180px) {
+  .rng[data-mode='h'] {
+    --rng-panel: clamp(18rem, 26vw, 24rem);
+  }
+
+  .rng[data-mode='h'] .rng__head {
+    grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 19rem);
+  }
+
+  .rng[data-mode='h'] .rng__title {
+    font-size: var(--step-3);
+  }
+
+  .rng[data-mode='h'] .rng__intro p {
+    font-size: 0.9375rem;
+  }
+}
+
+@media (max-height: 800px) and (min-width: 901px) {
+  .rng[data-mode='h'] .rng__pin {
+    padding-block: calc(var(--nav-h) + var(--s-3)) var(--s-5);
+  }
+
+  .rng[data-mode='h'] .rng__register {
+    margin-block-start: var(--s-4);
+  }
+
+  .rng[data-mode='h'] .rng__row {
+    padding-block: var(--s-4) var(--s-3);
+  }
 }
 
 /* ---------------------------------------------------------------------------

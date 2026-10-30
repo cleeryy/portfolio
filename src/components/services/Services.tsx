@@ -2,12 +2,14 @@ import { useLayoutEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useLang } from '../../lib/i18n'
+import { initSectionRig, prefersReducedMotion } from '../../lib/reveal'
 import { sound } from '../../lib/sound'
 import {
   installations,
   servicesCopy,
   type InstallationKind,
 } from '../../content/services'
+import SplitText from '../ui/SplitText'
 import './services.css'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -46,10 +48,17 @@ export default function Services() {
   useLayoutEffect(() => {
     const root = rootRef.current
     if (!root) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const rig = initSectionRig(root)
 
     const ctx = gsap.context(() => {
-      gsap.utils.toArray<HTMLElement>('.svc__rule').forEach((rule, index) => {
+      if (prefersReducedMotion()) return
+
+      gsap.utils.toArray<HTMLElement>('.svc__rule', root).forEach((rule, index) => {
+        // A rule the reader has already scrolled past is left drawn: only what
+        // is still ahead of them is given an initial state.
+        if (rule.getBoundingClientRect().top <= window.innerHeight * 0.92) return
+
         gsap.set(rule, { scaleX: 0 })
         gsap.to(rule, {
           scaleX: 1,
@@ -63,22 +72,34 @@ export default function Services() {
       })
     }, root)
 
-    return () => ctx.revert()
+    return () => {
+      ctx.revert()
+      rig.dispose()
+    }
   }, [])
 
   return (
     <section className="svc" id="services" aria-labelledby="services-title" ref={rootRef}>
+      <span className="rig-tick" data-rig-tick aria-hidden="true" />
+
       <div className="svc__inner">
         <header className="svc__head">
           <p className="svc__ref mono" aria-hidden="true">
-            #services
+            <span>#services</span>
+            <span className="rig-coord" data-rig-coord="" />
           </p>
 
-          <h2 className="svc__title" id="services-title">
-            {copy.title}
-          </h2>
+          <SplitText
+            as="h2"
+            className="svc__title"
+            id="services-title"
+            text={copy.title}
+            reveal
+          />
 
-          <p className="svc__lead">{copy.lead}</p>
+          <p className="svc__lead" data-reveal-block="">
+            {copy.lead}
+          </p>
 
           <div className="svc__key">
             <p className="svc__key-label mono">{copy.keyLabel}</p>

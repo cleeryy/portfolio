@@ -274,3 +274,33 @@ already imported by `main.tsx`.
 - The favicon in `public/` is still the scaffold default; it needs a real mark.
 - Mobile deliberately reduces the plot to an underlay (26% opacity) once the type stack
   goes full width. The drawing stays legible as texture; the type is what leads.
+
+---
+
+## 9. V2 addenda (still the same sheet)
+
+**Boot.** A ground plate is ruled before the page is drawn: graticule wipes in, handle rises,
+a scale is drawn with three mono ticks. Progress comes from three real signals (bundle
+committed, `document.fonts.ready`, the hero's first WebGL frame via `data-scene="live"`), it
+never passes 0.92s, and the plate lifts on a transform wipe. Skipped entirely on return visits
+(`sessionStorage`) and under reduced motion. Handoff event: `sheet:ready` (`src/components/boot/handoff.ts`).
+
+**Motion system.** `src/lib/reveal.ts` owns the section rig: a registration tick drawn along
+the section's top rule, a mono coordinate (`data-rig-coord`) printing the section's real
+`scrollY`, and word-level heading reveals (`SplitText`, accessible name preserved). `#ranges`
+pins and traverses horizontally above 900px with a fine pointer; below that and on touch it
+stays a vertical register. `ScrollProgress` is the sheet's scale at the right gutter — a gauge,
+not navigation.
+
+**Territory is now a schema, not a plate.** Three hairline plans stack EDGE → FABRIC → SERVICES;
+one request enters from above, crosses the crimson control point, is forwarded by `caddy` and
+lands on a service. 13 stations, 15 links, every one traceable to `homelab/content/architecture`
+or the reverse-proxy config; hover prints the chain in words, tier names are buttons that frame
+one plan. Drawn with 3 draw calls (lines + points, no triangles), DOM labels (max 16), reduced
+motion renders one static frame, no WebGL falls back to the SVG plate. The DOM register below
+carries the same inventory as text.
+
+Counts are re-surveyed from the config: **41 published hostnames, 30 internal**.
+
+**Known gaps.** Section order is still homelab-first; the CV chapter (`#path`) and the skills
+ledger are not built yet — they land once the operator's CV and platform handles are supplied.

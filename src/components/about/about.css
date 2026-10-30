@@ -17,6 +17,8 @@
   padding-block: clamp(4.5rem, 9vw, 7.5rem);
   padding-inline: var(--gutter);
   background-color: var(--ground);
+  /* The band's top rule, and the line the registration tick is drawn along. */
+  border-top: var(--hair) solid var(--rule);
   scroll-margin-block-start: var(--nav-h);
 }
 

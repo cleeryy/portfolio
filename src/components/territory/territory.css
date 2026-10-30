@@ -1,14 +1,18 @@
 /* ============================================================================
-   territory.css — the survey sheet at full size
+   territory.css — the plant cut
    ----------------------------------------------------------------------------
-   A plate (drawing + legend) followed by a register. Nothing here is a card: the
-   drawing hangs from labelled rules, the register is a ledger ruled top and
-   bottom, and the only red on the section is the control point on the plate and
-   the registration square on its frame.
+   The section is a survey sheet with one plate on it. The plate is a section
+   drawing: three plans stacked, a path through them, and a register underneath
+   that carries the same stations as text.
 
-   Reading order at every width: head (claim, lead, counts) → plate → register.
-   Below 1000px the plate gives way to the register, which is the same inventory
-   drawn as a vertical section: one rail per tier, one station per spur.
+   Rules kept here, because the plate is where they are easiest to break:
+   - no card, no shadow, no radius. The plate hangs from a hairline and is ruled
+     top and bottom by the legend.
+   - one crimson mark on the drawing (the ringed control point). The plate's own
+     registration square is on the sheet's trim, not on the drawing.
+   - the canvas bleeds to the sheet's right trim; the type never does.
+   - below 900px nothing is shrunk: the plate is removed and the register, which
+     is the same inventory recomposed as a vertical section, is what remains.
    ========================================================================== */
 
 .tty {
@@ -16,6 +20,7 @@
   padding-block: calc(var(--nav-h) + clamp(2.5rem, 6vw, 5.5rem)) clamp(4rem, 8vw, 7rem);
   padding-inline: var(--gutter);
   background-color: var(--ground);
+  border-top: var(--hair) solid var(--rule);
   scroll-margin-block-start: var(--nav-h);
 }
 
@@ -122,12 +127,12 @@
   border-top: var(--hair) solid var(--ink);
 }
 
-/* A registration square on the frame: the one red mark on the sheet's edge. */
+/* A registration square on the sheet's trim: the plate's edge, not the drawing. */
 .tty__plate::after {
   content: '';
   position: absolute;
   inset-block-start: 0;
-  inset-inline-end: 0;
+  inset-inline-end: calc(-1 * var(--gutter));
   width: 7px;
   height: 7px;
   background-color: var(--mark);
@@ -137,9 +142,10 @@
 .tty__plate-head {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--s-1) var(--s-5);
-  padding-block: var(--s-2) var(--s-4);
+  gap: var(--s-2) var(--s-5);
+  padding-block: var(--s-2) 0;
 }
 
 .tty__plate-head .mono {
@@ -148,19 +154,210 @@
   color: var(--text-quiet);
 }
 
-.tty__plate-body {
-  display: block;
+/* Plate metadata on the left, the stratum index on the right: reading order
+   then controls, the way a sheet puts its title block and its layer key. */
+.tty__plate-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-5);
 }
 
-.survey {
+.tty__plate-meta span + span {
+  color: var(--ink-3);
+}
+
+/* The stratum index. Three buttons, not three links: they frame the camera. */
+.tty__tiers {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(0.9rem, 2vw, 1.75rem);
+}
+
+.tty__tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-block: 0.2rem;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  line-height: 1;
+  color: var(--text-quiet);
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.tty__tier:hover {
+  color: var(--ink);
+}
+
+.tty__tier[aria-pressed='true'] {
+  color: var(--ink);
+}
+
+/* A hollow square at rest, filled when its stratum is framed. */
+.tty__tier-mark {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border: var(--hair) solid currentColor;
+  background-color: transparent;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+
+.tty__tier[aria-pressed='true'] .tty__tier-mark {
+  background-color: currentColor;
+}
+
+/* The reading line. At rest it states the rule of the drawing; on a mark it
+   spells out the chain that is lit. One line, fixed height: no shift. */
+.tty__readout {
+  margin: 0;
+  padding-block: var(--s-3) var(--s-4);
+  min-height: calc(var(--step--2) * 1.4 + var(--s-3) + var(--s-4));
+  font-size: var(--step--2);
+  line-height: 1.4;
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-quiet);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The plotting box. It bleeds right, to the sheet's trim, so the drawing has
+   room the type is not allowed to take. */
+.tty__plate-body {
+  position: relative;
+  height: clamp(22rem, 40vw, 36rem);
+  margin-inline-end: calc(-1 * var(--gutter));
+}
+
+/* ---------------------------------------------------------------------------
+   The scene — canvas + projected labels
+   --------------------------------------------------------------------------- */
+
+.tty-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.tty-scene__stage {
+  position: absolute;
+  inset: 0;
+}
+
+.tty-scene__canvas {
   display: block;
   width: 100%;
-  height: auto;
-  /* Only the station hit areas take the pointer; the rest of the sheet is paper. */
+  height: 100%;
+  /* Vertical drags belong to the page, horizontal drags orbit the drawing. */
+  touch-action: pan-y;
+  opacity: 0;
+  transition: opacity var(--t-slow) var(--ease-out);
+}
+
+.tty__plate-body[data-mode='live'] .tty-scene__canvas {
+  opacity: 1;
+}
+
+.tty-scene__labels {
+  position: absolute;
+  inset: 0;
+  /* Written by the scene as the survey is inked; 0 until the first frame. */
+  opacity: 0;
   pointer-events: none;
 }
 
-.survey text {
+/* Labels are DOM, projected from 3D each frame: crisp, translated, selectable
+   by nothing. The leader is a hairline, the same weight as the drawing's. */
+.tty-label {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  line-height: 1.25;
+  letter-spacing: var(--tracking-mono);
+  white-space: nowrap;
+  color: var(--text-quiet);
+  transition:
+    color var(--t-fast) var(--ease-out),
+    opacity var(--t-base) var(--ease-out);
+}
+
+.tty-label::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 100%;
+  width: var(--lead, 13px);
+  height: 1px;
+  background-color: currentColor;
+  opacity: 0.6;
+}
+
+.tty-label[data-side='left']::before {
+  inset-inline-end: auto;
+  inset-inline-start: 100%;
+}
+
+.tty-label[data-active='true'] {
+  color: var(--ink);
+}
+
+/* A mark on the lit route, but not the one being read. */
+.tty-label[data-chain='true'] {
+  color: var(--ink-2);
+}
+
+.tty-label[data-dim='true'] {
+  opacity: 0.32;
+}
+
+/* The plan's own name, on its rear corner, in the margin of the drawing. */
+.tty-label--tier {
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+/* The way in and the way out are annotations, not stations. */
+.tty-label--token {
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Fallback plate
+   --------------------------------------------------------------------------- */
+
+.tty-plate__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity var(--t-base) var(--ease-out);
+}
+
+.tty__plate-body[data-mode='live'] .tty-plate__svg {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--t-base) var(--ease-out),
+    visibility 0s var(--t-base);
+}
+
+.tty__plate-fallback {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: var(--s-1);
+  margin: 0;
+  text-align: center;
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+}
+
+/* The fallback drawing's own type, kept at the plate's scale. */
+text {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: var(--tracking-mono);
@@ -182,7 +379,6 @@
 
 .survey-node__label {
   fill: var(--text-soft);
-  transition: fill var(--t-fast) var(--ease-out);
 }
 
 .survey-note {
@@ -209,12 +405,6 @@
   stroke-dasharray: 4 6;
 }
 
-/* A dash as long as the path: solid when the offset is 0, so a failed script
-   still leaves every line drawn. Only the offset is ever animated. */
-.survey [data-line] {
-  stroke-dasharray: 1;
-}
-
 .survey-glyph {
   fill: none;
   stroke: var(--ink);
@@ -227,62 +417,19 @@
   fill: var(--ground);
 }
 
-/* The legend's backup key: same dash rhythm as the path it explains. */
-.survey-glyph--dashed {
-  stroke-dasharray: 3 2.5;
-}
-
 .survey-glyph--ring {
   stroke: var(--mark);
 }
 
-.survey-node__hit {
-  fill: transparent;
-  pointer-events: all;
+/* The legend's backup key: the same dash rhythm as the path it explains. */
+.tty__legend-glyph .survey-glyph--dashed {
+  stroke-dasharray: 3 2.5;
 }
 
-.survey-tier {
-  transition: opacity var(--t-base) var(--ease-out);
-}
+/* ---------------------------------------------------------------------------
+   Legend — the keys, in DOM text so they survive a failed drawing
+   --------------------------------------------------------------------------- */
 
-/* Pointing at a station brings its tier back to full ink and takes the others
-   down, so the drawing answers "where does this one live?" without a tooltip. */
-@media (hover: hover) and (pointer: fine) {
-  .survey:has(.survey-node:hover) .survey-tier {
-    opacity: 0.3;
-  }
-
-  .survey:has(.survey-node[data-tier='edge']:hover) .survey-tier[data-tier='edge'] {
-    opacity: 1;
-  }
-
-  .survey:has(.survey-node[data-tier='fabric']:hover) .survey-tier[data-tier='fabric'] {
-    opacity: 1;
-  }
-
-  .survey:has(.survey-node[data-tier='services']:hover) .survey-tier[data-tier='services'] {
-    opacity: 1;
-  }
-
-  .survey:has(.survey-node[data-tier='identity']:hover) .survey-tier[data-tier='identity'] {
-    opacity: 1;
-  }
-
-  .survey:has(.survey-node[data-tier='signal']:hover) .survey-tier[data-tier='signal'] {
-    opacity: 1;
-  }
-
-  .survey:has(.survey-node[data-tier='delivery']:hover) .survey-tier[data-tier='delivery'] {
-    opacity: 1;
-  }
-
-  .survey-node:hover .survey-node__label {
-    fill: var(--ink);
-  }
-}
-
-/* The plate's own legend, in DOM text rather than SVG, so the keys stay legible
-   at every width and survive a failed drawing. */
 .tty__legend {
   display: flex;
   flex-wrap: wrap;
@@ -306,6 +453,18 @@
 .tty__legend-glyph {
   flex: none;
   overflow: visible;
+}
+
+/* What the strata are — and are not. The one line that keeps a section drawing
+   from being read as a rack diagram. */
+.tty__plate-note {
+  max-width: 68ch;
+  margin: 0;
+  padding-block-end: var(--s-2);
+  font-size: var(--step--2);
+  line-height: 1.5;
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-quiet);
 }
 
 /* ---------------------------------------------------------------------------
@@ -347,18 +506,14 @@
   padding-block: var(--s-5) var(--s-6);
 }
 
-/* The row's rule is a real element so it can be drawn left to right. */
+/* The row's rule is a real element so the ledger reads as ruled, not spaced. */
 .tty__group-rule {
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
   background-color: var(--rule);
-  transform-origin: left center;
 }
 
-/* Name and framing share one cell: the key is the row's designation, the line
-   under it is the reading. Kept in a wrapper so the station list can span the
-   full height of the row without pushing the framing down. */
 .tty__group-head {
   grid-area: head;
   display: grid;
@@ -419,6 +574,7 @@
 }
 
 .tty__group-note {
+  grid-area: note;
   max-width: 44ch;
   margin: 0;
   font-size: var(--step-0);
@@ -453,10 +609,10 @@
   }
 }
 
-/* The sheet is a sheet: it needs 916px of measure to keep its annotations above
-   10px. Below that it is not shrunk, it is recomposed — the register becomes a
-   vertical section with one rail per tier. */
-@media (max-width: 999px) {
+/* The drawing needs a canvas, not a phone. Below 900px it is removed entirely
+   and the register recomposes as a vertical section: one rail per tier, one
+   spur per station. Nothing is scaled down to unreadable. */
+@media (max-width: 899px) {
   .tty {
     padding-block-start: calc(var(--nav-h-compact) + clamp(2rem, 6vw, 3.5rem));
     scroll-margin-block-start: var(--nav-h-compact);
@@ -483,7 +639,9 @@
   .tty__title {
     max-width: 18ch;
   }
+}
 
+@media (max-width: 999px) {
   .tty__group {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -550,8 +708,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .survey-tier,
-  .survey-node__label {
+  .tty-label,
+  .tty__tier,
+  .tty__tier-mark,
+  .tty-scene__canvas,
+  .tty-plate__svg {
     transition: none;
   }
 }

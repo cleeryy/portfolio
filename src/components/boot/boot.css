@@ -1,0 +1,177 @@
+/* ============================================================================
+   boot.css — the plate that is ruled before the sheet is drawn
+   ----------------------------------------------------------------------------
+   Same palette as the page underneath, no shadow, no gradient, no spinner. It
+   is the sheet itself: land tint, graticule, the handle, and a survey scale
+   that fills as the real signals resolve. Then the whole plate lifts away.
+
+   z-index: it sits under the grain and the cursor (which are the sheet's
+   texture and pointer) and over the nav, so the bar is not visible while the
+   plate is still covering the page. Derived from `--z-grain` rather than a new
+   token, because this is chrome that lives between two existing layers.
+   ========================================================================== */
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-grain) - 1);
+  display: grid;
+  place-items: center;
+  background-color: var(--ground);
+  overflow: clip;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* From the first millimetre of the wipe the page answers to the pointer: the
+   plate is decoration, never a gate on interaction. */
+.boot[data-lifting='true'] {
+  pointer-events: none;
+}
+
+/* The same 24 / 120px ruled grid as the hero, and the same lower fade, so the
+   lift reads as one sheet replacing another rather than two different screens. */
+.boot__graticule {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--contour-soft) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--contour-soft) 1px, transparent 1px),
+    linear-gradient(to right, var(--contour) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--contour) 1px, transparent 1px);
+  background-size:
+    24px 24px,
+    24px 24px,
+    120px 120px,
+    120px 120px;
+  opacity: 0.6;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 96%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 96%);
+}
+
+/* ---------------------------------------------------------------------------
+   The figure: handle, scale, reading
+   --------------------------------------------------------------------------- */
+
+.boot__figure {
+  position: relative;
+  display: grid;
+  /* A fixed column, wider than the handle at every size: when Archivo lands and
+     the glyphs re-measure, no box in the plate changes size or position — only
+     the letterforms inside a box that was already there. That keeps the plate
+     at zero layout shift, measured. */
+  inline-size: min(46rem, 100%);
+  justify-items: stretch;
+  gap: clamp(1rem, 2.8vh, 2rem);
+  padding-inline: var(--gutter);
+  text-align: center;
+}
+
+/* The mask the handle rises from. `overflow-clip-margin` keeps the tail of the
+   y alive at rest without letting the displaced glyph show. */
+.boot__mask {
+  display: block;
+  inline-size: 100%;
+  overflow: clip;
+  overflow-clip-margin: 0.14em;
+  padding-block-end: 0.06em;
+  margin-block-end: -0.06em;
+  text-align: center;
+}
+
+.boot__handle {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--step-6);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-plate);
+  line-height: 0.98;
+  letter-spacing: var(--tracking-plate);
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* The scale: a 1px baseline that is drawn, a 2px ink fill that measures, and
+   ticks hanging under it. Nothing here is a percentage — the fill only ever
+   moves to where a real signal has arrived. */
+.boot__rule {
+  position: relative;
+  display: block;
+  justify-self: center;
+  inline-size: min(26rem, 68vw);
+  block-size: 2px;
+}
+
+.boot__rule::before {
+  /* The origin of the measurement, in the survey mark. One per plate. */
+  content: '';
+  position: absolute;
+  inset-block-start: -4px;
+  inset-inline-start: -1px;
+  inline-size: 3px;
+  block-size: 3px;
+  background-color: var(--mark);
+}
+
+.boot__rule-line {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  block-size: 1px;
+  background-color: var(--contour);
+  transform-origin: left center;
+}
+
+.boot__fill {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 100%;
+  block-size: 2px;
+  background-color: var(--ink);
+  transform-origin: left center;
+}
+
+.boot__tick {
+  position: absolute;
+  inset-block-start: 5px;
+  inline-size: 1px;
+  block-size: 5px;
+  background-color: var(--contour);
+  transform: translateX(-50%);
+  transition: background-color var(--t-base) var(--ease-out);
+}
+
+.boot__tick[data-on='true'] {
+  background-color: var(--ink);
+}
+
+.boot__caption {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  line-height: 1.2;
+  color: var(--text-quiet);
+}
+
+@media (max-width: 640px) {
+  .boot__figure {
+    gap: 1rem;
+  }
+
+  .boot__rule {
+    inline-size: min(20rem, 70vw);
+  }
+}
+
+/* The reduced-motion path never renders this file's plate (BootGate returns
+   null), but a preference toggled mid-boot must still not animate the tick
+   colours out of step with the rest of the page. */
+@media (prefers-reduced-motion: reduce) {
+  .boot__tick {
+    transition: none;
+  }
+}

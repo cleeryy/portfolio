@@ -16,6 +16,9 @@
   padding-block: clamp(3.5rem, 7vw, 5.5rem) clamp(2.5rem, 5vw, 4rem);
   padding-inline: var(--gutter);
   background-color: var(--ground);
+  /* The closing band's top rule, and the line the registration tick is drawn
+     along. The sheet ends ruled, the way a printed plate is trimmed. */
+  border-top: var(--hair) solid var(--rule);
   scroll-margin-block-start: var(--nav-h);
 }
 
