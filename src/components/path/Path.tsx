@@ -21,6 +21,7 @@ gsap.registerPlugin(ScrollTrigger)
  */
 const MOTION_CONDITIONS = {
   traverse: '(min-width: 901px) and (hover: hover) and (pointer: fine)',
+  phone: '(max-width: 900px)',
   reduced: '(prefers-reduced-motion: reduce)',
   /* Always true, so the callback runs on every combination and can branch. */
   any: 'all',
@@ -132,27 +133,85 @@ function buildTraverse(root: HTMLElement, pin: HTMLElement): () => void {
   }
 }
 
-/** The vertical register: one station per entry, drawn as the entry arrives. */
-function buildRegister(root: HTMLElement): void {
-  for (const entry of gsap.utils.toArray<HTMLElement>('.pth__entry', root)) {
-    if (entry.getBoundingClientRect().top <= window.innerHeight * 0.88) continue
+/**
+ * The vertical register: one station per entry, drawn as the entry arrives.
+ *
+ * On the phone it also gets the section's one authored moment: the spine is
+ * inked from the top as the register is scrolled (`scaleY` on a scrub, over the
+ * printed rule that is always there), and each year tick lights as its entry
+ * crosses 60% of the viewport. No pin, no horizontal motion — the drawing
+ * follows the reader's thumb.
+ */
+function buildRegister(root: HTMLElement, phone: boolean): void {
+  const list = root.querySelector<HTMLElement>('.pth__list')
+  const ink = phone ? root.querySelector<HTMLElement>('.pth__ink') : null
 
+  if (ink && list) {
+    gsap.fromTo(
+      ink,
+      { scaleY: 0 },
+      {
+        scaleY: 1,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: list,
+          start: 'top 78%',
+          end: 'bottom 62%',
+          scrub: 0.4,
+        },
+      },
+    )
+  }
+
+  for (const entry of gsap.utils.toArray<HTMLElement>('.pth__entry', root)) {
     const station = entry.querySelector<HTMLElement>('.pth__station')
     const cells = entry.querySelectorAll<HTMLElement>('.pth__cell')
 
-    if (station) gsap.set(station, { opacity: 0 })
+    if (entry.getBoundingClientRect().top <= window.innerHeight * 0.88) continue
+
+    // The station is the lit tick on the phone, so the entry's arrival is
+    // carried by the cells alone there; on the wide register it fades in with
+    // them as it always has.
+    if (station && !phone) gsap.set(station, { opacity: 0 })
     gsap.set(cells, { opacity: 0, y: 10 })
 
     const timeline = gsap.timeline({
       scrollTrigger: { trigger: entry, start: 'top 88%', once: true },
     })
 
-    if (station) timeline.to(station, { opacity: 1, duration: 0.4, ease: 'power2.out' })
+    if (station && !phone) timeline.to(station, { opacity: 1, duration: 0.4, ease: 'power2.out' })
     timeline.to(
       cells,
       { opacity: 1, y: 0, duration: 0.44, stagger: 0.06, ease: 'power2.out' },
       0.08,
     )
+  }
+
+  if (!phone) return
+
+  /* One trigger per entry, two directions: the tick lights as its year reaches
+     the reading line and dims again if the reader goes back above it, so the
+     register can be re-drawn as often as it is read. A station already on the
+     sheet at mount is never dimmed — the page does not hide what it has
+     printed. */
+  for (const entry of gsap.utils.toArray<HTMLElement>('.pth__entry', root)) {
+    const station = entry.querySelector<HTMLElement>('.pth__station')
+    if (!station || station.classList.contains('pth__station--now')) continue
+
+    if (entry.getBoundingClientRect().top > window.innerHeight * 0.6) {
+      gsap.set(station, { opacity: 0.4 })
+    }
+
+    ScrollTrigger.create({
+      trigger: entry,
+      start: 'top 60%',
+      onEnter: () => {
+        gsap.to(station, { opacity: 1, duration: 0.28, ease: 'power2.out', overwrite: true })
+      },
+      onLeaveBack: () => {
+        gsap.set(station, { opacity: 0.4 })
+      },
+    })
   }
 }
 
@@ -184,7 +243,8 @@ export default function Path() {
     matchMedia.add(MOTION_CONDITIONS, (context) => {
       const conditions = context.conditions
       if (!conditions || conditions.reduced) return
-      return conditions.traverse ? buildTraverse(root, pin) : buildRegister(root)
+      if (conditions.traverse) return buildTraverse(root, pin)
+      return buildRegister(root, Boolean(conditions.phone))
     })
 
     // The pin has just been created: re-read every trigger once it exists. The

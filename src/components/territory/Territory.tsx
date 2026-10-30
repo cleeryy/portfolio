@@ -6,6 +6,8 @@ import {
   EXIT_ID,
   territoryCopy,
   territoryGroups,
+  territoryGuests,
+  territoryPeers,
   territoryStations,
   territorySummary,
   type LegendKey,
@@ -34,7 +36,7 @@ type Mode = 'pending' | 'live' | 'fallback'
 
 const TIER_IDS: TierId[] = ['edge', 'fabric', 'services']
 
-const STATION_CHAIN = new Map(territoryStations.map((station) => [station.id, station.chain]))
+const STATION_BY_ID = new Map(territoryStations.map((station) => [station.id, station]))
 
 function LegendGlyph({ kind }: { kind: LegendKey }) {
   return (
@@ -46,7 +48,7 @@ function LegendGlyph({ kind }: { kind: LegendKey }) {
       aria-hidden="true"
       focusable="false"
     >
-      {kind === 'station' ? <path className="survey-glyph" d="M10 1V9M6 5H14" /> : null}
+      {kind === 'node' ? <path className="survey-glyph" d="M10 1V9M6 5H14" /> : null}
       {kind === 'service' ? (
         <rect className="survey-glyph survey-glyph--square" x="6.5" y="1.5" width="7" height="7" />
       ) : null}
@@ -54,6 +56,12 @@ function LegendGlyph({ kind }: { kind: LegendKey }) {
         <>
           <circle className="survey-glyph survey-glyph--ring" cx="10" cy="5" r="4.5" />
           <path className="survey-glyph" d="M10 2.5V7.5M7.5 5H12.5" />
+        </>
+      ) : null}
+      {kind === 'host' ? (
+        <>
+          <path className="survey-glyph survey-glyph--tie" d="M4 9H16M10 9V4" />
+          <rect className="survey-glyph survey-glyph--square" x="7.5" y="1" width="5" height="4" />
         </>
       ) : null}
       {kind === 'backup' ? <path className="survey-glyph survey-glyph--dashed" d="M1 5H19" /> : null}
@@ -100,17 +108,28 @@ export default function Territory() {
 
   /**
    * The reading line. At rest it states the rule of the drawing; on a tier it
-   * states that stratum's job; on a mark it spells the chain the drawing is
-   * lighting, in words — which is the whole point of the hover.
+   * states that stratum's job; on a mark it spells the walk the drawing is
+   * lighting — and, because every mark but two is a guest, the node it hangs
+   * from. On a node it states the trunk and how much of the sheet it carries.
    */
-  const chain = focus ? STATION_CHAIN.get(focus) : null
   const token = (id: string) =>
     id === ENTRY_ID ? copy.annotations.entry : id === EXIT_ID ? copy.annotations.exit : id
-  const readout = chain
-    ? chain.map(token).join(' → ')
-    : activeTier
-      ? pick(groups.get(activeTier)?.role ?? { en: '', fr: '' })
-      : copy.readInstruction
+
+  const station = focus ? STATION_BY_ID.get(focus) : undefined
+  const peers = station ? territoryPeers(station.id) : []
+
+  let readout = copy.readInstruction
+  if (station) {
+    if (peers.length > 0) {
+      const carried = territoryGuests(station.id).length
+      readout = `${station.id} — ${peers[0]} · ${copy.readout.trunk} · ${carried} ${copy.readout.guests}`
+    } else {
+      const walk = station.chain.map(token).join(' → ')
+      readout = station.host ? `${walk} · ${copy.readout.on} ${station.host}` : walk
+    }
+  } else if (activeTier) {
+    readout = pick(groups.get(activeTier)?.role ?? { en: '', fr: '' })
+  }
 
   return (
     <section className="tty" id="territory" aria-labelledby="territory-title" ref={rootRef}>

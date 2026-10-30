@@ -103,6 +103,21 @@
 }
 
 /* ---------------------------------------------------------------------------
+   The portrait plate — the phone's fallback drawing
+   ---------------------------------------------------------------------------
+   Above 900px this element does not exist: the wide sheet keeps the graticule
+   and the margin reference as its poster. On a phone the band would otherwise
+   be an empty letterbox when WebGL is missing, so the plate itself is drawn: a
+   measured section — one rule, a ladder of station ticks, the control ring, the
+   edge mark. It is also what the band holds for the first frame, so the live
+   survey replaces a drawing instead of a hole.
+   --------------------------------------------------------------------------- */
+
+.hero__plate {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
    Type block
    --------------------------------------------------------------------------- */
 
@@ -263,7 +278,10 @@
    Responsive
    --------------------------------------------------------------------------- */
 
-@media (max-width: 980px) {
+/* Between the wide sheet and the phone: the type is full width, so the plot can
+   no longer sit beside it. It stays the pencil layer under the sheet for this
+   narrow band only; the phone below gets its own composition. */
+@media (min-width: 901px) and (max-width: 980px) {
   .hero__body {
     max-width: 100%;
   }
@@ -272,39 +290,243 @@
     max-width: 56ch;
   }
 
-  /* The type is full width here, so the plot can no longer sit beside it. It
-     becomes the pencil layer under the sheet: present, never in the way. */
   .hero[data-scene='live'] .hero__plot {
     opacity: 0.4;
   }
 }
 
-/* On a phone the hero stacks to three paragraphs; the drawing recedes to a
-   texture so body copy keeps full contrast. The poster (graticule + margin
-   reference) carries the cartography at this size. */
-@media (max-width: 640px) {
-  .hero[data-scene='live'] .hero__plot {
-    opacity: 0.26;
-  }
-}
+/* ---------------------------------------------------------------------------
+   PORTRAIT — the phone's own composition (≤900px)
+   ---------------------------------------------------------------------------
+   A phone has no right half to put a spread in, so the site stops treating the
+   drawing as an underlay and gives it a plate of its own:
 
-@media (max-width: 760px) {
-  /* The margin reference belongs to the wide sheet only; on a phone it would sit
-     on top of the legend. */
+   ┌───────────────────────────────┐  ← nav
+   │                               │
+   │        port  path ✓           │  the band: the survey chain, inked at
+   │        pve1  ✕  pve3          │  ~58%, sized to 40% of the viewport
+   │        backup  proxy          │
+   │        meal                   │
+   ├───────────────────────────────┤  ← the neatline, and the plate reference
+   │ cleeryy                       │
+   │ I run my own network…         │  the type block: the lower half, on a
+   │ SOC or offensive security…    │  clean ground — no mark under a glyph
+   │ [Read the path] [See network] │
+   ├───────────────────────────────┤  ← the collar: legend starts at the fold
+   │ studying        ctf           │
+   └───────────────────────────────┘
+
+   The band is a real box in the grid, not an overlay, so nothing can drift
+   under the type: the two halves cannot overlap at any viewport height. Marks
+   are larger and fewer (see PORTRAIT_STATIONS), the camera is centred, and
+   the drawing's own weight comes from the shader, never from a container
+   opacity — a 26% underlay is what made this section disappear on a phone.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .hero {
+    /* The bar is 64px until the sheet moves under it, so the band has to clear
+       the *expanded* bar, not the compact one: the hero is the only section
+       that starts at scroll 0. */
+    --hero-pad: calc(var(--nav-h) + 1px + var(--s-1) + env(safe-area-inset-top, 0px));
+    --hero-plot-h: clamp(15rem, 40svh, 26rem);
+
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--hero-pad) var(--gutter)
+      max(var(--s-4), env(safe-area-inset-bottom, 0px));
+  }
+
+  /* The graticule belongs to the plate now: it is printed inside the band and
+     cleared under the type, so no hairline runs through a paragraph. */
+  .hero__graticule {
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0,
+      #000 calc(var(--hero-pad) + var(--hero-plot-h) - 1.5rem),
+      transparent calc(var(--hero-pad) + var(--hero-plot-h) + 3rem)
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 0,
+      #000 calc(var(--hero-pad) + var(--hero-plot-h) - 1.5rem),
+      transparent calc(var(--hero-pad) + var(--hero-plot-h) + 3rem)
+    );
+  }
+
+  /* The plate reference, printed in the band's bottom-right corner. It was a
+     4.2vw outline behind the handle on the wide sheet; a phone keeps it as a
+     coordinate on the neatline. */
   .hero__grid-ref {
+    inset-block-end: auto;
+    inset-block-start: calc(var(--hero-pad) + var(--hero-plot-h) - 1.45rem);
+    inset-inline-end: var(--gutter);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    color: var(--text-quiet);
+    -webkit-text-stroke: 0;
+  }
+
+  /* The band. In flow, so the type cannot be laid on top of it. The canvas is
+     the only thing allowed to receive a pointer here: the horizontal drag is
+     the scene's, the vertical gesture is the page's. */
+  .hero__plot {
+    position: relative;
+    inset: auto;
+    inline-size: min(100%, 32rem);
+    block-size: var(--hero-plot-h);
+    margin-inline: auto;
+    pointer-events: auto;
+    touch-action: pan-y;
+    /* The plate and the survey occupy the same box; the swap must not fade
+       through a half-drawn band. */
+    transition: none;
+  }
+
+  .hero[data-scene='live'] .hero__plot {
+    opacity: 1;
+  }
+
+  /* The plate: a measured section, centred on the band. */
+  .hero__plate {
+    position: absolute;
+    inset-block-start: var(--hero-pad);
+    inset-inline-start: 50%;
+    display: block;
+    inline-size: 1px;
+    block-size: var(--hero-plot-h);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .hero[data-scene='live'] .hero__plate {
     display: none;
   }
 
+  .hero__plate-rule {
+    position: absolute;
+    inset-block: 13%;
+    inset-inline-start: 0;
+    inline-size: 1px;
+    background-color: var(--contour);
+  }
+
+  .hero__plate-ticks {
+    position: absolute;
+    inset-block: 13%;
+    inset-inline: -9px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--contour) 0 1px,
+      transparent 1px 10.5%
+    );
+  }
+
+  /* A second rank: three long stations over the eight short ones. A section is
+     read by its ranks, and one rank alone is a ruler, not a survey. */
+  .hero__plate-major {
+    position: absolute;
+    inset-block: 13%;
+    inset-inline: -16px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--contour) 0 1px,
+      transparent 1px 37%
+    );
+  }
+
+  .hero__plate-ring {
+    position: absolute;
+    inset-block-start: 33%;
+    inset-inline-start: 50%;
+    inline-size: 22px;
+    block-size: 22px;
+    margin: -11px 0 0 -11px;
+    border: var(--hair-strong) solid var(--mark);
+    border-radius: 50%;
+    background-color: var(--ground);
+  }
+
+  .hero__plate-mark {
+    position: absolute;
+    inset-block-start: 12%;
+    inset-inline-start: calc(50% + 10px);
+    inline-size: 6px;
+    block-size: 6px;
+    background-color: var(--mark);
+  }
+
+  /* The type block: the lower half of the composition, on a clean ground. The
+     body's top edge is the band's neatline — one rule, and the drawing is
+     closed off rather than bleeding into a heading. */
   .hero__body {
-    padding-block: clamp(1.5rem, 5vh, 3rem);
+    align-self: start;
+    max-width: 100%;
+    padding-block: clamp(1.25rem, 3.2vh, 1.75rem) 0;
+    border-block-start: var(--hair) solid var(--contour);
+    gap: clamp(1rem, 2.4vh, 1.5rem);
+  }
+
+  /* The handle is a plate, not a large word: it takes nearly the full measure
+     at every phone width (7 glyphs at 20vw), and no longer needs the sheet's
+     168px ceiling. */
+  .hero__handle {
+    font-size: clamp(3.5rem, 20vw, 5.75rem);
+  }
+
+  .hero__note {
+    max-width: 46ch;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+
+  .hero__actions {
+    gap: var(--s-3) var(--s-5);
+  }
+
+  /* Immediate acknowledgement under a finger. The hover language of the wide
+     sheet is not available here, so the press is what answers. */
+  .hero__actions .magnet:active {
+    background-color: var(--mark-deep);
+    border-color: var(--mark-deep);
+    color: var(--ground);
+  }
+
+  .hero__actions .magnet--quiet:active {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--ink);
+    text-decoration-color: var(--mark);
+  }
+}
+
+/* A finger leaves :hover behind it. On a touch screen the plate must not stay
+   lit crimson after a tap, so the hover language is dropped where there is no
+   hover. */
+@media (hover: none) {
+  .hero__actions .magnet:hover {
+    background-color: var(--ink);
+    border-color: var(--ink);
+    color: var(--ground);
+  }
+
+  .hero__actions .magnet:hover .magnet__mark {
+    background-color: var(--mark);
+    transform: none;
+  }
+
+  .hero__actions .magnet--quiet:hover {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--ink);
+    text-decoration-color: var(--contour);
   }
 }
 
 @media (max-width: 640px) {
-  .hero {
-    padding-top: calc(var(--nav-h-compact) + 0.75rem);
-  }
-
+  /* At 390px the legend already reads as two columns of two; the scale bar is a
+     wide-sheet instrument and goes with the wide sheet. */
   .hero__collar {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--s-4);

@@ -227,8 +227,24 @@
    room the type is not allowed to take. */
 .tty__plate-body {
   position: relative;
-  height: clamp(22rem, 40vw, 36rem);
+  /* The box's proportions are the drawing's, not the viewport's: a height in vw
+     drifts away from the measure the plate actually gets (the column caps at
+     72rem while the viewport keeps growing), and the frame re-fits to a box that
+     is a different shape at every width. One ratio, everywhere. */
+  aspect-ratio: 1212 / 576;
+  min-height: 18rem;
   margin-inline-end: calc(-1 * var(--gutter));
+  /* The atmosphere's engraved contours run behind every section, and behind a
+     schematic they read as a second, unrelated drawing. There is no density
+     hook on that layer to ask for, so the plotting box carries its own very
+     slight wash of the sheet colour: one soft ellipse, no edge, no card — the
+     contours sit back where the drawing is, and stay drawn where it is not. */
+  background-image: radial-gradient(
+    ellipse 66% 82% at 50% 48%,
+    color-mix(in srgb, var(--ground) 64%, transparent) 0%,
+    color-mix(in srgb, var(--ground) 32%, transparent) 56%,
+    transparent 100%
+  );
 }
 
 /* ---------------------------------------------------------------------------
@@ -403,6 +419,11 @@ text {
 
 .survey-link--dashed {
   stroke-dasharray: 4 6;
+}
+
+/* The hosting tie: quieter than a route and, on the scene, a stub until read. */
+.survey-link--tie {
+  stroke: var(--contour);
 }
 
 .survey-glyph {

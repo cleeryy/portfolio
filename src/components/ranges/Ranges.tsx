@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useLang } from '../../lib/i18n'
@@ -18,11 +18,13 @@ const grounds = [...evidence, ...platforms]
  *
  * The traverse is a wide-screen, mouse-driven gesture only: a pin on a phone
  * fights the sheet, and a horizontal drag on a touch screen is somebody else's
- * scroll. Under 901px, or with a coarse pointer, the register stays the vertical
- * ledger it has always been.
+ * scroll. Under 901px the register is a *deck* — a native horizontal scroll
+ * with snap points, one panel per screen. Above that with a coarse pointer, or
+ * under reduced motion, it stays the vertical ledger it has always been.
  */
 const MOTION_CONDITIONS = {
   traverse: '(min-width: 901px) and (hover: hover) and (pointer: fine)',
+  deck: '(max-width: 900px)',
   reduced: '(prefers-reduced-motion: reduce)',
   /* Always true, so the callback runs on every combination and can branch. */
   any: 'all',
@@ -133,6 +135,130 @@ function buildRegister(root: HTMLElement): void {
 }
 
 /**
+ * The deck — the phone's register.
+ *
+ * Not a carousel: the strip is a real scroll container with `scroll-snap-type:
+ * x mandatory`, so the browser owns the gesture, the momentum and the settle.
+ * This function owns only what CSS cannot:
+ *
+ * - the ruler's index, written as a percentage of the deck's own width so the
+ *   measurement can never disagree with the panels;
+ * - the arrow keys, because native arrow scrolling moves 40px and a mandatory
+ *   snap then pulls it straight back to the panel it started on;
+ * - one relay tick when the deck *settles on a new panel after a person moved
+ *   it* — gated on pointer/wheel/key input, and never fired for the initial
+ *   state or for a scroll the reader did not start.
+ */
+function buildDeck(root: HTMLElement): () => void {
+  const strip = root.querySelector<HTMLElement>('.rng__strip')
+  if (!strip) return () => undefined
+
+  const panels = gsap.utils.toArray<HTMLElement>('.rng__row', strip)
+  if (panels.length < 2) return () => undefined
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const last = panels.length - 1
+
+  let frame = 0
+  let index = -1
+  let userScroll = false
+  let settle = 0
+
+  const commit = () => {
+    frame = 0
+    const width = strip.clientWidth || 1
+    const next = Math.max(0, Math.min(last, Math.round(strip.scrollLeft / width)))
+    if (next === index) return
+    index = next
+    root.style.setProperty('--rng-at', `${(next / last) * 100}%`)
+    if (userScroll) sound.click()
+  }
+
+  const scheduleCommit = () => {
+    if (frame === 0) frame = requestAnimationFrame(commit)
+    if (settle !== 0) window.clearTimeout(settle)
+    settle = window.setTimeout(() => {
+      settle = 0
+      userScroll = false
+    }, 220)
+  }
+
+  const markUser = () => {
+    userScroll = true
+    if (settle !== 0) window.clearTimeout(settle)
+    settle = window.setTimeout(() => {
+      settle = 0
+      userScroll = false
+    }, 220)
+  }
+
+  const go = (target: number) => {
+    const next = Math.max(0, Math.min(last, target))
+    strip.scrollTo({
+      left: next * strip.clientWidth,
+      behavior: reduced ? 'auto' : 'smooth',
+    })
+  }
+
+  const onKeyDown = (event: KeyboardEvent) => {
+    let next: number | null = null
+    if (event.key === 'ArrowRight') next = index + 1
+    else if (event.key === 'ArrowLeft') next = index - 1
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = last
+    if (next === null) return
+    event.preventDefault()
+    markUser()
+    go(next)
+  }
+
+  const onWheel = () => markUser()
+
+  strip.addEventListener('scroll', scheduleCommit, { passive: true })
+  strip.addEventListener('keydown', onKeyDown)
+  strip.addEventListener('pointerdown', markUser, { passive: true })
+  strip.addEventListener('wheel', onWheel, { passive: true })
+
+  // The ruler starts on the panel the deck is actually at (a reload halfway
+  // down the page keeps its place).
+  commit()
+
+  return () => {
+    strip.removeEventListener('scroll', scheduleCommit)
+    strip.removeEventListener('keydown', onKeyDown)
+    strip.removeEventListener('pointerdown', markUser)
+    strip.removeEventListener('wheel', onWheel)
+    if (frame !== 0) cancelAnimationFrame(frame)
+    if (settle !== 0) window.clearTimeout(settle)
+    root.style.removeProperty('--rng-at')
+  }
+}
+
+/**
+ * The deck's viewport, read in React only for the two attributes CSS cannot
+ * apply: the tab stop and the region's name. The layout, the scroll and the key
+ * handler all branch on the same query in the effect below.
+ */
+const DECK_QUERY = '(max-width: 900px)'
+
+let deckQuery: MediaQueryList | null = null
+
+function subscribeDeck(onChange: () => void): () => void {
+  deckQuery ??= window.matchMedia(DECK_QUERY)
+  deckQuery.addEventListener('change', onChange)
+  return () => deckQuery?.removeEventListener('change', onChange)
+}
+
+function getDeck(): boolean {
+  deckQuery ??= window.matchMedia(DECK_QUERY)
+  return deckQuery.matches
+}
+
+function useDeckLayout(): boolean {
+  return useSyncExternalStore(subscribeDeck, getDeck, () => false)
+}
+
+/**
  * The ranges — the only dark band on the site.
  *
  * A register, not cards: one rule per row, the ground on the left, what it was
@@ -148,6 +274,7 @@ function buildRegister(root: HTMLElement): void {
 export default function Ranges() {
   const { pick } = useLang()
   const copy = pick(rangesCopy)
+  const deck = useDeckLayout()
   const rootRef = useRef<HTMLElement | null>(null)
   const pinRef = useRef<HTMLDivElement | null>(null)
   const pingedRef = useRef(false)
@@ -162,7 +289,12 @@ export default function Ranges() {
 
     matchMedia.add(MOTION_CONDITIONS, (context) => {
       const conditions = context.conditions
-      if (!conditions || conditions.reduced) return
+      if (!conditions) return
+      // The deck is native scrolling and a ruler: it is not motion, so it is
+      // wired whatever the reader's motion preference is (the jump between
+      // panels is instant under reduced motion — see buildDeck).
+      if (conditions.deck) return buildDeck(root)
+      if (conditions.reduced) return
       return conditions.traverse ? buildTraverse(root, pin) : buildRegister(root)
     })
 
@@ -239,7 +371,12 @@ export default function Ranges() {
               <span>{copy.columnKeys.practice}</span>
             </div>
 
-            <div className="rng__strip">
+            <div
+              className="rng__strip"
+              role={deck ? 'group' : undefined}
+              tabIndex={deck ? 0 : undefined}
+              aria-label={deck ? copy.deckLabel : undefined}
+            >
               <ol className="rng__list" role="list">
                 {grounds.map((ground) => (
                   <li className="rng__row" key={ground.id}>

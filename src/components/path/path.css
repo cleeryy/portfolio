@@ -557,6 +557,67 @@
   }
 }
 
+/* ---------------------------------------------------------------------------
+   The spine draws itself — the phone's one authored moment (≤900px)
+   ---------------------------------------------------------------------------
+   The register has always printed its axis as one continuous hairline. Here the
+   same axis is inked a second time, in full ink, and that inked run is what the
+   scroll draws: it is scaled from the top (`scaleY`, transform-origin top) as
+   the reader moves down the list, and un-draws if they go back up. The printed
+   rule underneath is never removed, so the line is always there to be drawn on.
+
+   The stations ride above both rules: a tick is the year, and it lights when it
+   reaches the reading line (60% of the viewport, written by Path.tsx). The
+   control ring of the step in progress is exempt — it is the one crimson mark
+   in the section and it never dims.
+
+   Desktop is untouched: the traverse draws its own horizontal spine and ink,
+   and neither of these two selectors exists above 900px.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .pth__ink {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--pth-margin);
+    display: block;
+    inline-size: 1px;
+    background-color: var(--text);
+    transform-origin: top center;
+    /* Above the printed rule, below the stations. The initial state is the
+       printed one: with no script, or under reduced motion, the spine is
+       simply already inked. */
+    z-index: 1;
+  }
+
+  .pth__list::before {
+    z-index: 0;
+  }
+
+  .pth__station {
+    z-index: 2;
+  }
+
+  /* A tap has no hover to answer it here. */
+  .pth__link:active {
+    text-decoration-color: var(--mark);
+    color: var(--text);
+  }
+
+  /* Same trick as the ranges deck: the hit area grows into the margin so the
+     link is a 44px target without a pixel moving. */
+  .pth__link {
+    position: relative;
+  }
+
+  .pth__link::after {
+    content: '';
+    position: absolute;
+    inset-block: -0.7rem;
+    inset-inline: -0.3rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pth__link {
     transition: none;

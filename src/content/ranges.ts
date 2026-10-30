@@ -96,6 +96,12 @@ export type RangesCopy = {
   intro: string[]
   columnKeys: { ground: string; practice: string }
   registerNote: string
+  /**
+   * The accessible name of the phone's deck. The deck is a scrollable region,
+   * so it needs to say what it is when it takes focus; this is not a tutorial
+   * and nothing is printed on screen.
+   */
+  deckLabel: string
 }
 
 export const rangesCopy: Bi<RangesCopy> = {
@@ -107,6 +113,7 @@ export const rangesCopy: Bi<RangesCopy> = {
     ],
     columnKeys: { ground: 'ground', practice: 'practice' },
     registerNote: 'No rank, no score of mine — the record is what I publish.',
+    deckLabel: 'The training record',
   },
   fr: {
     title: 'Le terrain des autres.',
@@ -116,5 +123,6 @@ export const rangesCopy: Bi<RangesCopy> = {
     ],
     columnKeys: { ground: 'terrain', practice: 'pratique' },
     registerNote: 'Aucun classement, aucun score personnel\u00a0: ce que je publie fait foi.',
+    deckLabel: 'Le relevé d’entraînement',
   },
 }

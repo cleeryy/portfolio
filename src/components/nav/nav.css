@@ -267,6 +267,11 @@
 
   .nav__index {
     display: inline-flex;
+    /* Every control in the bar is a 44px target under a thumb. */
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding-inline: 0.4rem;
   }
 
   .nav__inner {
@@ -275,6 +280,62 @@
 
   .nav__tools {
     gap: var(--s-2);
+  }
+
+  /* The bar is the one fixed element on the page: it has to clear the notch
+     and the home indicator when the sheet is installed or read in landscape. */
+  .nav {
+    padding-block-start: env(safe-area-inset-top, 0px);
+  }
+
+  .nav__brand {
+    min-height: 44px;
+  }
+
+  .nav .nav__lang-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .nav .nav__sound {
+    min-height: 44px;
+    padding-inline: 0.4rem;
+  }
+
+  /* Immediate press feedback on the three small controls: the plate's ink
+     answers the finger, and the language mark goes crimson for as long as the
+     press is held. */
+  .nav .nav__lang-btn:active,
+  .nav .nav__sound:active,
+  .nav__index:active {
+    color: var(--ink);
+  }
+
+  .nav .nav__lang-btn:active {
+    border-bottom-color: var(--mark);
+  }
+
+  /* An index link is a full row: 47px of type and padding, and a press that
+     answers immediately, since the hover it was designed on never happens. */
+  .nav__panel-link {
+    min-height: 44px;
+    padding-block: 0.95rem;
+  }
+
+  .nav__panel-link:active {
+    color: var(--mark);
+  }
+
+  .nav__panel-link:active .nav__panel-ref {
+    color: var(--mark);
+  }
+
+  /* A short phone (or a landscape one) must not clip the index: the panel
+     scrolls inside itself once it is open. */
+  .nav[data-open='true'] .nav__panel {
+    max-height: min(30rem, calc(100dvh - var(--nav-h-compact) - 1rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 

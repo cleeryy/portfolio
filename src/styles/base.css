@@ -302,7 +302,49 @@ html.lenis body {
 }
 
 /* --------------------------------------------------------------------------
-   10. Reduced motion
+   10. Mobile chrome (≤900px)
+   --------------------------------------------------------------------------
+   Not a different design — the same sheet, read with a thumb. Three things
+   change and nothing else: an anchor lands under the fixed bar instead of
+   behind it, a tap answers without the grey flash and without the double-tap
+   wait, and the page's last row clears a home indicator.
+   ------------------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  html {
+    /* Every in-page anchor clears the compact bar, including the sections that
+       set no scroll-margin of their own. */
+    scroll-padding-block-start: calc(
+      var(--nav-h-compact) + var(--s-2) + env(safe-area-inset-top, 0px)
+    );
+  }
+
+  body {
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+
+  a,
+  button,
+  [role='button'],
+  summary,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* The press is the answer. Nothing here needs the 300ms double-tap wait. */
+  a,
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  a:active {
+    text-decoration-color: var(--mark);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   11. Reduced motion
    JS-driven animation gates itself on the same query; this block is the floor.
    It never hides content — only removes movement and smoothing.
    ------------------------------------------------------------------------ */

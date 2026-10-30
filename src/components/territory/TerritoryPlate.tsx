@@ -1,4 +1,13 @@
-import type { TerritoryCopy } from '../../content/territory'
+import {
+  ENTRY_ID,
+  EXIT_ID,
+  territoryGroups,
+  territoryLinks,
+  territoryStations,
+  type MarkKind,
+  type TerritoryCopy,
+  type TierId,
+} from '../../content/territory'
 
 /* ============================================================================
    The plate, as a drawing
@@ -8,69 +17,23 @@ import type { TerritoryCopy } from '../../content/territory'
    and it is what sits behind the canvas for the first frame, so the section is
    never an empty box.
 
-   It is the same survey the scene draws, flattened: three strata hung from
-   labelled rules, the cross-cutting concerns below. Everything here is static
-   on purpose: a fallback that animates is a second motion system to maintain,
+   It is built from the same data as the scene: the same stations, the same
+   links, the same hosting ties. A fallback that is hand-placed drifts from the
+   thing it stands in for, and a survey that drifts is wrong on purpose. Everything
+   here is static: a fallback that animates is a second motion system to maintain,
    and the register that follows carries the same inventory as text.
    ========================================================================== */
 
-type MarkKind = 'station' | 'service' | 'control'
-type LabelPlacement = 'below' | 'right' | 'aboveRight'
+/** The three plan rules. Marks hang off them; the concerns sit below. */
+const BAND: Record<TierId, number> = { edge: 108, fabric: 214, services: 320 }
 
-type StationSpec = {
-  id: string
-  x: number
-  y: number
-  kind: MarkKind
-  label: LabelPlacement
-  /** Datum the station hangs from. Omitted when the station sits on a path. */
-  from?: number
-}
+const PLAN_X = 4.5
+const LEFT = 92
+const WIDTH = 836
+const SKEW = 7
 
-const EDGE: StationSpec[] = [
-  { id: 'opnsense', x: 190, y: 112, kind: 'control', label: 'right' },
-  { id: 'wireguard', x: 360, y: 112, kind: 'station', label: 'below', from: 88 },
-  { id: 'warpgate', x: 530, y: 112, kind: 'station', label: 'below', from: 88 },
-  { id: 'adguard', x: 700, y: 112, kind: 'station', label: 'below', from: 88 },
-  { id: 'technitium', x: 870, y: 112, kind: 'station', label: 'below', from: 88 },
-]
-
-const FABRIC: StationSpec[] = [
-  { id: 'pve1', x: 300, y: 250, kind: 'station', label: 'below' },
-  { id: 'pve3', x: 560, y: 250, kind: 'station', label: 'below' },
-  { id: 'vzdump', x: 620, y: 320, kind: 'service', label: 'below' },
-  { id: 'pbs', x: 760, y: 320, kind: 'service', label: 'below' },
-]
-
-const SERVICES: StationSpec[] = [
-  { id: 'nextcloud', x: 230, y: 416, kind: 'service', label: 'below', from: 392 },
-  { id: 'immich', x: 365, y: 416, kind: 'service', label: 'below', from: 392 },
-  { id: 'jellyfin', x: 500, y: 416, kind: 'service', label: 'below', from: 392 },
-  { id: 'forgejo', x: 635, y: 416, kind: 'service', label: 'below', from: 392 },
-  { id: 'matrix', x: 770, y: 416, kind: 'service', label: 'below', from: 392 },
-  { id: 'mealboard', x: 905, y: 416, kind: 'service', label: 'below', from: 392 },
-]
-
-const IDENTITY: StationSpec[] = [
-  { id: 'authentik', x: 290, y: 530, kind: 'service', label: 'aboveRight' },
-  { id: 'infisical', x: 450, y: 530, kind: 'service', label: 'aboveRight' },
-  { id: 'wazuh', x: 610, y: 530, kind: 'service', label: 'aboveRight' },
-]
-
-const SIGNAL: StationSpec[] = [
-  { id: 'prometheus', x: 290, y: 570, kind: 'service', label: 'aboveRight' },
-  { id: 'grafana', x: 450, y: 570, kind: 'service', label: 'aboveRight' },
-  { id: 'beszel', x: 610, y: 570, kind: 'service', label: 'aboveRight' },
-  { id: 'scraparr', x: 770, y: 570, kind: 'service', label: 'aboveRight' },
-]
-
-const DELIVERY: StationSpec[] = [
-  { id: 'dokploy', x: 290, y: 610, kind: 'service', label: 'aboveRight' },
-  { id: 'caddy', x: 450, y: 610, kind: 'service', label: 'aboveRight' },
-  { id: 'github-actions', x: 610, y: 610, kind: 'service', label: 'aboveRight' },
-  { id: 'n8n', x: 770, y: 610, kind: 'service', label: 'aboveRight' },
-  { id: 'umami', x: 930, y: 610, kind: 'service', label: 'aboveRight' },
-]
+const sx = (x: number): number => LEFT + ((x + PLAN_X) / (2 * PLAN_X)) * WIDTH
+const sy = (tier: TierId, z: number): number => BAND[tier] - z * SKEW
 
 /** A cross for a place, a filled square for something served, a ring for the control point. */
 function Glyph({ kind, x, y }: { kind: MarkKind; x: number; y: number }) {
@@ -92,132 +55,145 @@ function Glyph({ kind, x, y }: { kind: MarkKind; x: number; y: number }) {
   return <path className="survey-glyph" d={`M${x - 6} ${y}H${x + 6}M${x} ${y - 6}V${y + 6}`} />
 }
 
-function Station({ tier, spec }: { tier: string; spec: StationSpec }) {
-  const { id, x, y, kind, label, from } = spec
-  const anchor = label === 'below' ? 'middle' : 'start'
-  const labelX = label === 'below' ? x : x + (label === 'right' ? 16 : 9)
-  const labelY = label === 'below' ? y + 26 : label === 'right' ? y + 4 : y - 13
-
-  return (
-    <g className="survey-node" data-tier={tier}>
-      {from !== undefined ? (
-        <path className="survey-link" d={`M${x} ${from}V${y - 7}`} />
-      ) : null}
-      <Glyph kind={kind} x={x} y={y} />
-      <text className="survey-node__label" x={labelX} y={labelY} textAnchor={anchor}>
-        {id}
-      </text>
-    </g>
-  )
-}
-
-function TierStations({ tier, specs }: { tier: string; specs: StationSpec[] }) {
-  return (
-    <>
-      {specs.map((spec) => (
-        <Station key={spec.id} tier={tier} spec={spec} />
-      ))}
-    </>
-  )
-}
-
 type Props = {
   copy: TerritoryCopy
   label: (id: string) => string
 }
 
 export default function TerritoryPlate({ copy, label }: Props) {
+  const byId = new Map(territoryStations.map((station) => [station.id, station]))
+  const at = (id: string) => {
+    const station = byId.get(id)
+    if (!station) return null
+    return { x: sx(station.x), y: sy(station.tier, station.z) }
+  }
+
+  const opnsense = at('opnsense')
+  const pbs = at('pbs')
+  const entry = opnsense ? { x: opnsense.x, y: BAND.edge - 40 } : null
+  const exit = pbs ? { x: pbs.x + 58, y: pbs.y } : null
+
+  const concerns = territoryGroups.filter((group) => group.kind === 'concern')
+  const tiers: TierId[] = ['edge', 'fabric', 'services']
+
   return (
     <svg
       className="tty-plate__svg"
-      viewBox="0 0 1040 690"
+      viewBox="0 0 1000 512"
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
       focusable="false"
     >
-      {/* The sheet: two neatline rules. Everything else hangs between them. */}
       <g>
-        <path className="survey-rule" d="M36 40H1004" />
-        <path className="survey-rule" d="M36 650H1004" />
+        <path className="survey-rule" d="M36 26H964" />
+        <path className="survey-rule" d="M36 486H964" />
       </g>
 
-      {/* EDGE — where the outside ends. The crossing comes from off-sheet. */}
-      <g className="survey-tier" data-tier="edge">
-        <text className="survey-tier__name" x="36" y="80">
-          {label('edge')}
-        </text>
-        <path className="survey-rule" d="M36 88H1004" />
-        <path className="survey-link" d="M190 14V100" />
-        <path className="survey-link" d="M190 124V200" />
-        <text className="survey-note" x="200" y="22">
-          {copy.annotations.entry}
-        </text>
-        <TierStations tier="edge" specs={EDGE} />
+      {/* The links, before anything else: the marks sit on top of their ends. */}
+      <g>
+        {territoryLinks.map((link) => {
+          const a = at(link.a) ?? (link.a === ENTRY_ID ? entry : link.a === EXIT_ID ? exit : null)
+          const b = at(link.b) ?? (link.b === ENTRY_ID ? entry : link.b === EXIT_ID ? exit : null)
+          if (!a || !b) return null
+
+          // The hosting tie: a short peg towards the node, not a line that
+          // reaches it. Ten of them would close the sheet into a comb.
+          if (link.kind === 'host') {
+            const dx = b.x - a.x
+            const dy = b.y - a.y
+            const len = Math.hypot(dx, dy) || 1
+            const reach = 17 / len
+            return (
+              <path
+                className="survey-link survey-link--tie"
+                key={`${link.a}-${link.b}`}
+                d={`M${a.x} ${a.y}L${a.x + dx * reach} ${a.y + dy * reach}`}
+              />
+            )
+          }
+
+          return (
+            <path
+              className={
+                link.kind === 'backup' ? 'survey-link survey-link--dashed' : 'survey-link'
+              }
+              key={`${link.a}-${link.b}`}
+              d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
+            />
+          )
+        })}
       </g>
 
-      {/* FABRIC — what everything sits on. */}
-      <g className="survey-tier" data-tier="fabric">
-        <text className="survey-tier__name" x="36" y="192">
-          {label('fabric')}
-        </text>
-        <path className="survey-rule" d="M36 200H1004" />
-        <path className="survey-link" d="M430 200V246" />
-        <path className="survey-link" d="M300 246H560" />
-        <path className="survey-link" d="M300 254H560" />
-        <text className="survey-note" x="414" y="238" textAnchor="end">
-          {copy.annotations.cluster}
-        </text>
-        <path className="survey-link survey-link--dashed" d="M520 254V320H1032" />
-        <text className="survey-note" x="528" y="304">
-          {copy.annotations.backup}
-        </text>
-        <text className="survey-note" x="1004" y="342" textAnchor="end">
-          {copy.annotations.exit}
-        </text>
-        <path className="survey-link" d="M430 254V392" />
-        <TierStations tier="fabric" specs={FABRIC} />
-      </g>
+      {/* The two ends of the sheet: the way in, and where the copies leave. */}
+      {entry && opnsense ? (
+        <g>
+          <path className="survey-link" d={`M${entry.x} ${entry.y - 18}V${opnsense.y - 14}`} />
+          <text className="survey-note" x={entry.x} y={entry.y - 24} textAnchor="middle">
+            {copy.annotations.entry}
+          </text>
+        </g>
+      ) : null}
+      {exit && pbs ? (
+        <g>
+          <path className="survey-link survey-link--dashed" d={`M${pbs.x + 6} ${pbs.y}H${exit.x - 8}`} />
+          <text className="survey-note" x={exit.x} y={exit.y + 4}>
+            {copy.annotations.exit}
+          </text>
+        </g>
+      ) : null}
 
-      {/* SERVICES — what gets used every day, on one bus. */}
-      <g className="survey-tier" data-tier="services">
-        <text className="survey-tier__name" x="36" y="384">
-          {label('services')}
-        </text>
-        <path className="survey-rule" d="M36 392H1004" />
-        <TierStations tier="services" specs={SERVICES} />
-      </g>
+      {tiers.map((tier) => (
+        <g className="survey-tier" data-tier={tier} key={tier}>
+          <text className="survey-tier__name" x="40" y={BAND[tier] - 20}>
+            {label(tier)}
+          </text>
+          <path className="survey-rule" d={`M${LEFT - 16} ${BAND[tier] - 24}H${LEFT + WIDTH}`} />
+        </g>
+      ))}
+
+      {territoryStations.map((station) => {
+        const p = at(station.id)
+        if (!p) return null
+        // The edge row's fan leaves each mark downwards, so its names set to the
+        // right of the mark; everything else is named below, clear of the rules.
+        const beside = station.tier === 'edge'
+        return (
+          <g className="survey-node" key={station.id}>
+            <Glyph kind={station.kind} x={p.x} y={p.y} />
+            <text
+              className="survey-node__label"
+              x={beside ? p.x + 13 : p.x}
+              y={beside ? p.y + 4 : p.y + 22}
+              textAnchor={beside ? 'start' : 'middle'}
+            >
+              {station.id}
+            </text>
+          </g>
+        )
+      })}
 
       {/* The plan closes here; what follows is true at every level of it. */}
       <g>
-        <path className="survey-rule" d="M36 480H1004" />
-        <text className="survey-note" x="1004" y="468" textAnchor="end">
+        <path className="survey-rule" d={`M36 356H964`} />
+        <text className="survey-note" x="964" y="348" textAnchor="end">
           {copy.concernsLabel}
         </text>
       </g>
 
-      <g className="survey-tier" data-tier="identity">
-        <text className="survey-tier__key" x="36" y="517">
-          {label('identity')}
-        </text>
-        <path className="survey-rule survey-rule--quiet" d="M36 530H1004" />
-        <TierStations tier="identity" specs={IDENTITY} />
-      </g>
-
-      <g className="survey-tier" data-tier="signal">
-        <text className="survey-tier__key" x="36" y="557">
-          {label('signal')}
-        </text>
-        <path className="survey-rule survey-rule--quiet" d="M36 570H1004" />
-        <TierStations tier="signal" specs={SIGNAL} />
-      </g>
-
-      <g className="survey-tier" data-tier="delivery">
-        <text className="survey-tier__key" x="36" y="597">
-          {label('delivery')}
-        </text>
-        <path className="survey-rule survey-rule--quiet" d="M36 610H1004" />
-        <TierStations tier="delivery" specs={DELIVERY} />
-      </g>
+      {concerns.map((group, index) => {
+        const y = 384 + index * 34
+        return (
+          <g className="survey-tier" data-tier={group.id} key={group.id}>
+            <text className="survey-tier__key" x="40" y={y}>
+              {label(group.id)}
+            </text>
+            <path className="survey-rule survey-rule--quiet" d={`M36 ${y + 8}H964`} />
+            <text className="survey-node__label" x="150" y={y}>
+              {group.nodes.join(' · ')}
+            </text>
+          </g>
+        )
+      })}
     </svg>
   )
 }

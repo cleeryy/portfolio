@@ -459,8 +459,186 @@
   }
 }
 
+/* ---------------------------------------------------------------------------
+   The deck — the register on a phone (≤900px)
+   ---------------------------------------------------------------------------
+   The same six rows, re-cut as the one screen-wide panel each: a native
+   horizontal scroll container with mandatory snap. Nothing is scripted — the
+   browser owns the gesture, the momentum and the settle — and the strip stays
+   full-bleed so a panel is exactly one screen wide at any width.
+
+   Anatomy:
+
+   ┌───────────────────────────────┐
+   │ ───────────────────────────── │  the chapter's rule, continuous over panels
+   │ THCon 2025                    │  panel 1 of 6, one screen wide
+   │ 12 April 2025                 │
+   │ The Toulouse Hacking …        │
+   ├───────────────────────────────┤  ▸ the deck scrolls sideways, not down
+   │ ▏ ▏ ▏ ▏ ▏ ▏                   │  the ruler: six ticks, one crimson index
+   └───────────────────────────────┘
+
+   The section around it stays the single dark band: the deck has no surface of
+   its own, no shadow, no card — only the rule and the type.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .rng__register {
+    margin-block-start: clamp(2rem, 6vw, 3rem);
+  }
+
+  /* The keys describe two columns; a panel is one column, so they go. */
+  .rng__cols {
+    display: none;
+  }
+
+  .rng__strip {
+    margin-inline: calc(var(--gutter) * -1);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    /* The browser's own edge gestures stop at the deck; the page's vertical
+       scroll still passes straight through it. */
+    overscroll-behavior-x: contain;
+    border-block-start: var(--hair) solid var(--rule);
+    scrollbar-width: none;
+  }
+
+  .rng__strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* The deck is a focusable region (see Ranges.tsx): the ring is drawn inside
+     it, because the strip runs edge to edge. */
+  .rng__strip:focus-visible {
+    outline: 2px solid var(--mark);
+    outline-offset: -2px;
+  }
+
+  .rng__list {
+    display: flex;
+    align-items: stretch;
+    /* The panels are 100% of *this* box, so the list keeps the strip's width
+       and the panels overflow it: six screens of deck, one scrollbar. (A
+       max-content list would ask each panel for its unwrapped text width.) */
+    inline-size: 100%;
+    will-change: auto;
+  }
+
+  .rng__row {
+    flex: 0 0 100%;
+    display: block;
+    scroll-snap-align: start;
+    padding: var(--s-5) var(--gutter) var(--s-5);
+  }
+
+  .rng__row + .rng__row {
+    border-inline-start: var(--hair) solid var(--rule);
+  }
+
+  /* The strip owns the rule in this mode; a per-row rule would double it. */
+  .rng__row .rng__rule {
+    display: none;
+  }
+
+  .rng__name {
+    font-size: var(--step-3);
+    max-width: 16ch;
+  }
+
+  .rng__meta {
+    font-size: var(--step--1);
+  }
+
+  .rng__cell--practice p {
+    max-width: 46ch;
+    margin-block-start: var(--s-3);
+    font-size: var(--step-0);
+  }
+
+  /* A tap has no hover to answer it, so the press is the answer. */
+  .rng__link:active {
+    text-decoration-color: var(--mark);
+    color: var(--text);
+  }
+
+  /* The name of a panel is a block-level link in a 22px line: the hit area is
+     grown into the panel's gutter without moving a single glyph, so a thumb
+     gets 44px of it. */
+  .rng__link {
+    position: relative;
+  }
+
+  .rng__link::after {
+    content: '';
+    position: absolute;
+    inset-block: -0.72rem;
+    inset-inline: -0.3rem;
+  }
+
+  /* The ruler. The same instrument as the traverse's scale, turned into the
+     deck's position readout: `--rng-at` is written by Ranges.tsx as a
+     percentage of the deck's own width, so the index cannot drift from the
+     panels it measures. */
+  .rng__scale {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    block-size: 9px;
+    /* The ruler is the deck's bottom edge, not a separate instrument: it closes
+       the panel and measures it in the same line. */
+    margin-block-start: 0;
+  }
+
+  .rng__scale::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    block-size: 1px;
+    background-color: var(--rule);
+  }
+
+  .rng__tick {
+    display: block;
+    inline-size: 1px;
+    block-size: 5px;
+    background-color: var(--text-quiet);
+  }
+
+  .rng__index {
+    position: absolute;
+    inset-block-start: -3px;
+    inset-inline-start: var(--rng-at, 0%);
+    display: block;
+    inline-size: 11px;
+    block-size: 2px;
+    background-color: var(--mark);
+    transform: translateX(-50%);
+    /* `left` on an 11px absolute child of the ruler: a paint-only change on the
+       compositor, and only when the panel changes. */
+    transition: inset-inline-start var(--t-base) var(--ease-out);
+  }
+
+  .rng__note {
+    margin-block-start: var(--s-3);
+    text-align: start;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rng__link {
+    transition: none;
+  }
+
+  /* A snap is a jump, not an animation: the panels still snap, but nothing is
+     allowed to glide into place. */
+  .rng__strip {
+    scroll-behavior: auto;
+  }
+
+  .rng__index {
     transition: none;
   }
 }

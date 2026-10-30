@@ -80,6 +80,19 @@ export default function Hero() {
       <div className="hero__sheet" aria-hidden="true">
         <div className="hero__graticule" />
         <p className="hero__grid-ref">{gridReference}</p>
+
+        {/* The portrait plate: what the phone keeps when the survey cannot
+            run — WebGL absent, or the context lost. A measured section drawn
+            in hairlines: one rule, a ladder of station ticks, the control
+            ring, the edge mark. It is also what is on the plate for the first
+            frame, before the live survey replaces it. */}
+        <div className="hero__plate" aria-hidden="true">
+          <span className="hero__plate-rule" />
+          <span className="hero__plate-ticks" />
+          <span className="hero__plate-major" />
+          <span className="hero__plate-ring" />
+          <span className="hero__plate-mark" />
+        </div>
       </div>
 
       <div className="hero__plot">

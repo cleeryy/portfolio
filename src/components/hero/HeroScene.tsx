@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { gsap } from 'gsap'
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -21,18 +22,30 @@ import './hero.css'
    stations, links, and a packet travelling between them — and react additively
    to the pointer. It is the drawing under the type, never the subject.
 
-   Everything after the first upload happens on the GPU. A frame writes five
-   uniforms and two transforms; no geometry, string or object is allocated.
+   Two compositions, one drawing programme:
+
+   - **wide** (the sheet's right half): the cluster spread around its hub, the
+     services on top of it, the ranges in the far field. The pointer leans the
+     group and the vertices repel from the cursor.
+   - **portrait** (a phone): a vertical chain instead of a spread — the edge at
+     the top, the control point in the middle, the services hanging off the
+     cluster, one station at the foot. Eight marks instead of eighteen, sized
+     up, because a 15px cross on a 390px screen is a speck. The pointer is not
+     there; a horizontal drag moves the chain instead, and the page keeps the
+     vertical gesture.
+
+   Everything after the first upload happens on the GPU. A frame writes six
+   scalars, two transforms at most, and allocates nothing. The loop is GSAP's
+   ticker, so it shares one RAF with Lenis and ScrollTrigger.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
    Survey marks. Coordinates are in a normalised [-1, 1] plot box; the camera
    fits that box to the viewport, so the same drawing works at every size.
 
-   `kind`: 0 = station cross (infrastructure), 1 = service square.
-   `tone`: 0 = ink, 1 = survey mark.
-   `order`: when the mark is drawn, 0..1, inside-out.
-   `tier`: 0/1 stay on small screens, 2 is the far field.
+   `kind`: 0 = station cross (infrastructure), 1 = service square, 2 = control
+   ring. `tone`: 0 = ink, 1 = survey mark. `order`: when the mark is drawn,
+   0..1, inside-out. `tier`: 0/1 stay on small screens, 2 is the far field.
    -------------------------------------------------------------------------- */
 
 type Station = {
@@ -75,6 +88,25 @@ const STATIONS: Station[] = [
   { id: 'range-se', x: 0.6, y: -0.5, size: 13, kind: 0, tone: 0, alpha: 0.36, order: 0.92, tier: 2 },
 ]
 
+/**
+ * The portrait chain.
+ *
+ * Read top to bottom, the way the page is read on a phone: the edge firewall
+ * first, then the cluster and its control ring, then the two hypervisors, then
+ * the two services that hang off them, then one service at the foot. Eight
+ * marks, so every one of them can be 60% larger without the band filling up.
+ */
+const PORTRAIT_STATIONS: Station[] = [
+  { id: 'edge', x: 0, y: 0.74, size: 24, kind: 0, tone: 1, alpha: 0.95, order: 0.06, tier: 0 },
+  { id: 'ring', x: 0, y: 0.34, size: 64, kind: 2, tone: 0, alpha: 0.6, order: 0.12, tier: 0 },
+  { id: 'cluster', x: 0, y: 0.34, size: 28, kind: 0, tone: 1, alpha: 1, order: 0.16, tier: 0 },
+  { id: 'pve1', x: -0.3, y: 0.04, size: 19, kind: 0, tone: 0, alpha: 0.95, order: 0.28, tier: 0 },
+  { id: 'pve3', x: 0.3, y: 0.04, size: 19, kind: 0, tone: 0, alpha: 0.95, order: 0.34, tier: 0 },
+  { id: 'pbs', x: -0.17, y: -0.34, size: 13, kind: 1, tone: 0, alpha: 0.9, order: 0.5, tier: 1 },
+  { id: 'proxy', x: 0.17, y: -0.34, size: 13, kind: 1, tone: 0, alpha: 0.9, order: 0.56, tier: 1 },
+  { id: 'meal', x: 0, y: -0.74, size: 12, kind: 1, tone: 0, alpha: 0.9, order: 0.68, tier: 1 },
+]
+
 type Link = { a: string; b: string; tone?: 0 | 1; pulse?: boolean }
 
 const LINKS: Link[] = [
@@ -98,11 +130,28 @@ const LINKS: Link[] = [
   { a: 'monitor', b: 'range-e' },
 ]
 
+/** One chain, station to station, and two services converging on the foot. */
+const PORTRAIT_LINKS: Link[] = [
+  { a: 'edge', b: 'cluster', tone: 1, pulse: true },
+  { a: 'cluster', b: 'pve1', tone: 1 },
+  { a: 'cluster', b: 'pve3', tone: 1 },
+  { a: 'pve1', b: 'pve3' },
+  { a: 'pve1', b: 'pbs' },
+  { a: 'pve3', b: 'proxy' },
+  { a: 'pbs', b: 'meal', pulse: true },
+  { a: 'proxy', b: 'meal', pulse: true },
+]
+
 /* --------------------------------------------------------------------------
    Shaders. Colours are passed as raw sRGB floats and written straight to the
    framebuffer: every material here is a custom ShaderMaterial, so three's
    colour management never enters the path and the WebGL ink matches the CSS
    ink exactly.
+
+   `uWeight` and `uGrow` are the phone's two knobs: the portrait drawing is
+   inked lighter than the wide one (it sits under the type), then gains weight
+   and size as the hero leaves the screen. On the wide sheet both stay at 1,
+   so its rendering is exactly what it has always been.
    -------------------------------------------------------------------------- */
 
 const DISPLACE = /* glsl */ `
@@ -125,6 +174,8 @@ const NODE_VERT = /* glsl */ `
   uniform float uReveal;
   uniform float uDepth;
   uniform float uDpr;
+  uniform float uWeight;
+  uniform float uGrow;
   uniform vec2 uPointer;
   uniform float uRepel;
 
@@ -139,9 +190,9 @@ const NODE_VERT = /* glsl */ `
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 0.0, 1.0);
 
     float appear = smoothstep(aOrder - 0.03, aOrder + 0.09, uReveal);
-    gl_PointSize = aSize * uDpr * (0.35 + 0.65 * appear);
+    gl_PointSize = aSize * uDpr * (0.35 + 0.65 * appear) * uGrow;
 
-    vAlpha = aAlpha * appear * (1.0 - 0.4 * uDepth);
+    vAlpha = aAlpha * appear * (1.0 - 0.4 * uDepth) * uWeight;
     vTone = aTone;
     vKind = aKind;
   }
@@ -215,13 +266,14 @@ const LINE_FRAG = /* glsl */ `
   uniform vec3 uInk;
   uniform vec3 uMark;
   uniform float uOpacity;
+  uniform float uWeight;
 
   varying float vAlpha;
   varying float vTone;
 
   void main() {
     vec3 c = mix(uInk, uMark, step(0.5, vTone));
-    gl_FragColor = vec4(c, vAlpha * uOpacity);
+    gl_FragColor = vec4(c, vAlpha * uOpacity * uWeight);
   }
 `
 
@@ -235,6 +287,7 @@ const PULSE_VERT = /* glsl */ `
   uniform float uReveal;
   uniform float uDepth;
   uniform float uDpr;
+  uniform float uGrow;
   uniform vec2 uPointer;
   uniform float uRepel;
 
@@ -250,7 +303,7 @@ const PULSE_VERT = /* glsl */ `
     float gate = smoothstep(aOrder + 0.12, aOrder + 0.3, uReveal);
     float alive = smoothstep(0.0, 0.07, t) * (1.0 - smoothstep(0.93, 1.0, t));
 
-    gl_PointSize = 8.0 * uDpr;
+    gl_PointSize = 8.0 * uDpr * uGrow;
     vAlpha = gate * alive * (1.0 - 0.2 * uDepth);
   }
 `
@@ -274,6 +327,12 @@ const PULSE_FRAG = /* glsl */ `
 const INK: [number, number, number] = [0x13 / 255, 0x1c / 255, 0x19 / 255]
 const MARK: [number, number, number] = [0xbf / 255, 0x1f / 255, 0x34 / 255]
 
+/**
+ * The phone composition. Must be the same query hero.css uses for the portrait
+ * band, or the camera and the box it is fitted to would disagree.
+ */
+const PORTRAIT_QUERY = '(max-width: 900px)'
+
 type HeroSceneProps = {
   /** Fired once a frame has actually been drawn, so the canvas can fade in. */
   onReady: () => void
@@ -283,6 +342,19 @@ type HeroSceneProps = {
 
 export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
   const hostRef = useRef<HTMLDivElement | null>(null)
+  const [portrait, setPortrait] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(PORTRAIT_QUERY).matches,
+  )
+
+  /* A phone that is turned over needs the other composition. The camera, the
+     topology and the drag all belong to one mode, so the scene is rebuilt
+     rather than patched. */
+  useEffect(() => {
+    const query = window.matchMedia(PORTRAIT_QUERY)
+    const onChange = (event: MediaQueryListEvent) => setPortrait(event.matches)
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
+  }, [])
 
   useEffect(() => {
     const host = hostRef.current
@@ -305,8 +377,13 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
       return
     }
 
+    /* DPR is capped at 1.75 on a phone and 2 on the sheet: the portrait band is
+       a third of the area of a desktop hero, so 1.75 buys the same clarity for
+       ~55% of the fragments. */
+    const dprCap = portrait ? 1.75 : 2
+
     renderer.setClearAlpha(0)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap))
 
     const canvas = renderer.domElement
     canvas.className = 'hero-scene__canvas'
@@ -321,10 +398,10 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
 
     /* ---- geometry ------------------------------------------------------- */
 
-    const compact = window.matchMedia('(max-width: 760px)').matches
-    const stations = compact ? STATIONS.filter((s) => s.tier < 2) : STATIONS
+    const stations = portrait ? PORTRAIT_STATIONS : STATIONS
+    const sourceLinks = portrait ? PORTRAIT_LINKS : LINKS
     const byId = new Map(stations.map((s) => [s.id, s]))
-    const links = LINKS.filter((l) => byId.has(l.a) && byId.has(l.b))
+    const links = sourceLinks.filter((l) => byId.has(l.a) && byId.has(l.b))
 
     const geometries: BufferGeometry[] = []
     const materials: ShaderMaterial[] = []
@@ -378,7 +455,7 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
     edgeGeometry.setAttribute('aTone', new Float32BufferAttribute(edgeTone, 1))
     geometries.push(edgeGeometry)
 
-    const pulseLinks = links.filter((l) => l.pulse).slice(0, compact ? 3 : 6)
+    const pulseLinks = links.filter((l) => l.pulse).slice(0, portrait ? 3 : 6)
     const pulsePos: number[] = []
     const pulseTo: number[] = []
     const pulsePhase: number[] = []
@@ -417,9 +494,13 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
       uDpr: { value: renderer.getPixelRatio() },
       uPointer: { value: new Vector2(9, 9) },
       uRepel: { value: fine && !reduced ? 0.055 : 0 },
+      uWeight: { value: portrait ? 0.6 : 1 },
+      uGrow: { value: 1 },
       uInk: { value: new Vector3(INK[0], INK[1], INK[2]) },
       uMark: { value: new Vector3(MARK[0], MARK[1], MARK[2]) },
-      uOpacity: { value: 0.46 },
+      // The portrait drawing is a pencil under the type, not a hairline: its
+      // links need a little more ink than the wide sheet's to survive at 1.75.
+      uOpacity: { value: portrait ? 0.7 : 0.46 },
     }
 
     const shared = {
@@ -467,12 +548,20 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
     const bias = { x: 0, y: 0, scale: 1 }
     const view = { w: 1, h: 1 }
     let heroHeight = 1
+    /* The marks are authored in CSS pixels; a taller band would make them look
+       smaller, so their base size follows the band. Wide screens keep 1. */
+    let growBase = 1
+
+    /* The band is the drawing's box; the hero is the distance the drawing has
+       to leave from. On a wide sheet the canvas is the hero, so both are the
+       same number — on a phone they are not. */
+    const heroSection = host.closest<HTMLElement>('.hero')
 
     const resize = () => {
       const w = host.clientWidth || 1
       const h = host.clientHeight || 1
       const aspect = w / h
-      const nextDpr = Math.min(window.devicePixelRatio || 1, 2)
+      const nextDpr = Math.min(window.devicePixelRatio || 1, dprCap)
 
       renderer.setPixelRatio(nextDpr)
       renderer.setSize(w, h, false)
@@ -491,17 +580,20 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
       }
       camera.updateProjectionMatrix()
 
-      // Wide screens: the plot sits to the right of the type, which occupies the
-      // left half. Narrow screens: the type is full width, so the drawing moves
-      // up behind the display face and drops to an underlay (see hero.css).
-      const roomy = aspect > 1.15 && w > 980
+      // Wide sheets: the plot sits to the right of the type, which occupies the
+      // left half. Portrait: the band is the drawing's own box, centred, so the
+      // chain gets the whole width and no bias at all.
+      const roomy = !portrait && aspect > 1.15 && w > 980
       bias.x = roomy ? 0.76 : 0
-      bias.y = roomy ? 0.12 : 0.55
-      bias.scale = roomy ? 1.15 : 1.1
+      bias.y = roomy ? 0.12 : 0
+      bias.scale = portrait ? Math.min(1.1, Math.max(1, aspect)) : roomy ? 1.15 : 1.1
 
       view.w = w
       view.h = h
-      heroHeight = h
+      heroHeight = heroSection ? heroSection.offsetHeight || h : h
+      // 340px is the band on a 390×844 phone: the reference size the marks
+      // were drawn for.
+      growBase = portrait ? Math.min(1.3, Math.max(0.92, h / 340)) : 1
     }
 
     /* ---- state ---------------------------------------------------------- */
@@ -520,24 +612,22 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
       smoothY: 0,
       pointerSeen: false,
       onScreen: true,
+      // Portrait only: a horizontal drag moves the chain, then it settles back.
+      dragStartX: 0,
+      dragStartY: 0,
+      dragTarget: 0,
+      dragX: 0,
+      dragging: false,
+      dragHorizontal: false,
     }
 
-    let raf = 0
     let running = false
     let last = 0
 
-    const paint = () => {
-      plot.position.x = bias.x + state.smoothX * 0.04
-      plot.position.y = bias.y - state.smoothY * 0.04 + state.depth * 0.16
-      plot.scale.setScalar(bias.scale * (1 + state.depth * 0.05))
-    }
-
-    const frame = (now: number) => {
-      if (!running) return
-      raf = requestAnimationFrame(frame)
-
-      const dt = last === 0 ? 1 / 60 : Math.min((now - last) / 1000, 0.05)
-      last = now
+    /* One frame: six scalars, two transforms, no allocation. */
+    const frame = (time: number) => {
+      const dt = last === 0 ? 1 / 60 : Math.min(time - last, 0.05)
+      last = time
 
       state.time = (state.time + dt) % 1000
       state.elapsed += dt
@@ -561,29 +651,53 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
         uniforms.uPointer.value.set(state.smoothX, state.smoothY)
       }
 
+      if (portrait) {
+        // The finger leaves before the chain does.
+        state.dragX += (state.dragTarget - state.dragX) * Math.min(1, dt * 9)
+        plot.position.x = bias.x + state.dragX
+        plot.position.y = bias.y + state.depth * 0.45
+        plot.scale.setScalar(bias.scale * (1 + state.depth * 0.05))
+        uniforms.uDepth.value = state.depth * 0.35
+        uniforms.uWeight.value = 0.6 + 0.5 * state.depth
+        uniforms.uGrow.value = growBase * (1 + 0.18 * state.depth)
+      } else {
+        plot.position.x = bias.x + state.smoothX * 0.04
+        plot.position.y = bias.y - state.smoothY * 0.04 + state.depth * 0.16
+        plot.scale.setScalar(bias.scale * (1 + state.depth * 0.05))
+        uniforms.uDepth.value = state.depth
+      }
+
       uniforms.uTime.value = state.time
       uniforms.uReveal.value = state.reveal
-      uniforms.uDepth.value = state.depth
 
-      paint()
       renderer.render(scene, camera)
+    }
+
+    const start = () => {
+      if (running) return
+      running = true
+      last = 0
+      gsap.ticker.add(frame)
+    }
+
+    const stop = () => {
+      if (!running) return
+      running = false
+      gsap.ticker.remove(frame)
     }
 
     const sync = () => {
       const want = state.onScreen && document.visibilityState === 'visible' && !reduced
-      if (want && !running) {
-        running = true
-        last = 0
-        raf = requestAnimationFrame(frame)
-      } else if (!want && running) {
-        running = false
-        cancelAnimationFrame(raf)
-      }
+      if (want) start()
+      else stop()
     }
 
     /* ---- listeners ------------------------------------------------------ */
 
     const onPointerMove = (event: PointerEvent) => {
+      // On a phone the finger is a drag, not a cursor: the wide sheet's lean
+      // and repel are a mouse gesture.
+      if (!fine) return
       state.clientX = event.clientX
       state.clientY = event.clientY
       state.pointerSeen = true
@@ -597,12 +711,48 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
     const onVisibility = () => sync()
 
     const onContextLost = (event: Event) => {
-      // The context is gone: stop drawing and hand the hero back to its poster.
+      // The context is gone: stop drawing and hand the hero back to its plate.
       // A half-rebuilt scene would be worse than no scene.
       event.preventDefault()
-      running = false
-      cancelAnimationFrame(raf)
+      stop()
       onUnavailable()
+    }
+
+    /* ---- the touch drag -------------------------------------------------
+       Horizontal only, and it never prevents a default: `touch-action: pan-y`
+       in hero.css tells the browser the vertical gesture is the page's, so a
+       vertical swipe scrolls normally and cancels the drag underneath it. */
+
+    const resetDrag = () => {
+      state.dragging = false
+      state.dragHorizontal = false
+      state.dragTarget = 0
+    }
+
+    const onDragDown = (event: PointerEvent) => {
+      if (!portrait || reduced || event.pointerType === 'mouse') return
+      state.dragging = true
+      state.dragHorizontal = false
+      state.dragStartX = event.clientX
+      state.dragStartY = event.clientY
+    }
+
+    const onDragMove = (event: PointerEvent) => {
+      if (!state.dragging) return
+      const dx = event.clientX - state.dragStartX
+      const dy = event.clientY - state.dragStartY
+      if (!state.dragHorizontal) {
+        // Wait for the gesture to declare itself. Under 8px it is a tap.
+        if (Math.abs(dx) < 8) return
+        if (Math.abs(dx) <= Math.abs(dy)) {
+          // It is the page's scroll, not ours.
+          resetDrag()
+          return
+        }
+        state.dragHorizontal = true
+      }
+      const reach = Math.max(1, view.w)
+      state.dragTarget = Math.max(-0.26, Math.min(0.26, (dx / reach) * 1.1))
     }
 
     const observer = new IntersectionObserver(
@@ -616,29 +766,48 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
 
     const resizeObserver = new ResizeObserver(() => resize())
 
-    window.addEventListener('pointermove', onPointerMove, { passive: true })
-    window.addEventListener('scroll', onScroll, { passive: true })
-    document.addEventListener('visibilitychange', onVisibility)
+    if (!reduced) {
+      window.addEventListener('pointermove', onPointerMove, { passive: true })
+      window.addEventListener('scroll', onScroll, { passive: true })
+      document.addEventListener('visibilitychange', onVisibility)
+      if (portrait) {
+        host.addEventListener('pointerdown', onDragDown, { passive: true })
+        window.addEventListener('pointermove', onDragMove, { passive: true })
+        window.addEventListener('pointerup', resetDrag, { passive: true })
+        window.addEventListener('pointercancel', resetDrag, { passive: true })
+      }
+    }
     canvas.addEventListener('webglcontextlost', onContextLost)
 
     resize()
     resizeObserver.observe(host)
+    // A font swap can grow the hero without touching the band.
+    if (portrait && heroSection) resizeObserver.observe(heroSection)
     onScroll()
 
     /* ---- first frame ---------------------------------------------------- */
 
     if (reduced) {
-      // Static poster state: fully drawn, no drift, no pointer reaction.
+      // Static plate: fully drawn, no drift, no pointer reaction, one frame.
       state.reveal = 1
+      state.depth = state.depthTarget
       uniforms.uReveal.value = 1
-      paint()
+      uniforms.uWeight.value = portrait ? 0.66 : 1
+      uniforms.uGrow.value = growBase
+      uniforms.uDepth.value = 0
+      plot.position.x = bias.x
+      plot.position.y = bias.y
+      plot.scale.setScalar(bias.scale)
       renderer.render(scene, camera)
       onReady()
     } else {
       // One frame before announcing readiness: the canvas is only faded in once
-      // there is something in it, so the fallback sheet is never replaced by an
-      // empty rectangle.
-      paint()
+      // there is something in it, so the plate is never replaced by an empty
+      // rectangle.
+      uniforms.uReveal.value = 0
+      plot.position.x = bias.x
+      plot.position.y = bias.y
+      plot.scale.setScalar(bias.scale)
       renderer.render(scene, camera)
       onReady()
       sync()
@@ -647,8 +816,7 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
     /* ---- teardown ------------------------------------------------------- */
 
     return () => {
-      running = false
-      cancelAnimationFrame(raf)
+      stop()
 
       observer.disconnect()
       resizeObserver.disconnect()
@@ -656,6 +824,10 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('scroll', onScroll)
       document.removeEventListener('visibilitychange', onVisibility)
+      host.removeEventListener('pointerdown', onDragDown)
+      window.removeEventListener('pointermove', onDragMove)
+      window.removeEventListener('pointerup', resetDrag)
+      window.removeEventListener('pointercancel', resetDrag)
       canvas.removeEventListener('webglcontextlost', onContextLost)
 
       scene.clear()
@@ -666,7 +838,7 @@ export default function HeroScene({ onReady, onUnavailable }: HeroSceneProps) {
 
       if (canvas.parentNode === host) host.removeChild(canvas)
     }
-  }, [onReady, onUnavailable])
+  }, [onReady, onUnavailable, portrait])
 
   return <div className="hero-scene" ref={hostRef} aria-hidden="true" />
 }

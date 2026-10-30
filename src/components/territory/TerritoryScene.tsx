@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -18,8 +18,10 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
   ENTRY_ID,
   EXIT_ID,
+  territoryLinks,
   territoryStations,
-  territoryTrunkLinks,
+  territoryTrace,
+  type LinkKind,
   type TierId,
 } from '../../content/territory'
 
@@ -29,14 +31,20 @@ gsap.registerPlugin(ScrollTrigger)
    The schema: three plans, one path
    ----------------------------------------------------------------------------
    What the drawing has to make legible in one look is not the hardware — it is
-   the order a request goes through it, and the fact that every service is a
-   guest of one of two machines. So the plate is a section, not a floor plan:
+   the order a request goes through it, and the fact that every mark except the
+   two nodes is a guest of one of those nodes. So the plate is a section, not a
+   floor plan:
 
    - three hairline plans, stacked. EDGE on top, FABRIC in the middle, SERVICES
      at the bottom. Same footprint: one site, three levels.
    - traffic enters from above the edge plane, is forwarded across it, crosses
      the fabric and lands on the service that answers.
-   - pointing at a mark lights only that mark's chain and drops everything else
+   - a guest is tied to its node by a short, quiet peg. At rest it is a stub, so
+     ten guests do not read as a comb; when a mark is traced the pegs of that
+     walk grow to the node and the argument becomes a line you can follow —
+     which is the whole point, since the firewall and the proxy hang from the
+     same chassis they front.
+   - pointing at a mark lights only that mark's walk and drops everything else
      to a ruling. At rest, the drawing is still.
 
    Engineering discipline is the hero's, deliberately: one renderer, one ticker
@@ -55,6 +63,10 @@ const TIER_Y: Record<TierId, number> = { edge: 1.28, fabric: 0, services: -1.28 
 const PLANE_X = 4.5
 const PLANE_Z = 1.32
 
+/** The two annotations that sit off the plans: above the edge, off the right. */
+const ENTRY_GAP = 0.74
+const EXIT_GAP = 1.3
+
 /** Base camera. Orbit is clamped around these, never free. */
 const BASE_AZ = 0.28
 const BASE_EL = 0.38
@@ -64,6 +76,43 @@ const OVERVIEW_LOOK = 0.34
 const AZ_LIMIT = 0.384 /* ±22° */
 const EL_LIMIT = 0.244 /* ±14° */
 const TIER_EL = 0.7
+
+/** Field of view, and the half-angle it implies: the frame maths needs both. */
+const CAM_FOV = 26
+const TAN_HALF_FOV = Math.tan((CAM_FOV * Math.PI) / 360)
+
+/**
+ * The frame. A drawing that stops short of the measure reads as pushed into a
+ * corner, one that touches it reads as a mistake — so the marks are held inside
+ * 8% of the panel edge at every point of the turn, and the planes never leave
+ * it at all. The fit is taken on the union of the sweep, not at rest, because
+ * the near corner of the plan swings out as the stack turns.
+ */
+const MARK_FILL_X = 0.84 /* 8% and 92% */
+const MARK_FILL_Y = 0.88
+const CORNER_FILL_X = 0.95
+const CORNER_FILL_Y = 0.95
+/** A tier framed close: the plan fills the width, the caption has room. */
+const TIER_FILL_X = 0.9
+const TIER_FILL_Y = 0.62
+/** Positions of the turn the frame is fitted on. Five is already generous. */
+const TURN_STEPS = 5
+
+/**
+ * The turn. The whole stack is rotated on Y by the section's own progress, so
+ * the drawing reads as an object rather than a printed cut: it arrives at one
+ * angle and leaves at the other, passing through the base view in the middle.
+ * 10° end to end — a drift you notice only if you look for it. Wider than this
+ * and the fit has to back off to keep the swinging corner inside the panel,
+ * which shrinks the drawing to pay for a gesture nobody asked for.
+ */
+const TURN_SWEEP = 0.17
+const TURN_START = -TURN_SWEEP / 2
+/** Radians per second of the turn chasing its target. Never mechanically latched. */
+const TURN_EASE = 3.2
+
+/** How strongly a tie inks at rest, against a route link. */
+const TIE_TONE = 0.55
 
 /* Raw sRGB, matching --ink, --contour and --mark. Every material is a custom
    ShaderMaterial writing straight to the framebuffer, so three's colour
@@ -94,7 +143,7 @@ const PLANE_FRAG = /* glsl */ `
   uniform vec3 uContour;
   uniform float uReveal;
   uniform float uTierFocus;
-  uniform float uFocus;
+  uniform float uTrace;
 
   varying float vTier;
   varying float vRule;
@@ -104,7 +153,7 @@ const PLANE_FRAG = /* glsl */ `
     // the reader keeps the context of what is above and below.
     float tier = (uTierFocus < -0.5 || abs(vTier - uTierFocus) < 0.5) ? 1.0 : 0.42;
     float appear = smoothstep(0.0, 0.14, uReveal);
-    float a = 0.5 * vRule * tier * appear * (1.0 - 0.35 * uFocus);
+    float a = 0.5 * vRule * tier * appear * (1.0 - 0.35 * uTrace);
 
     gl_FragColor = vec4(uContour, a);
   }
@@ -116,9 +165,11 @@ const EDGE_VERT = /* glsl */ `
   attribute float aDash;
   attribute float aDist;
   attribute float aFocus;
+  attribute float aTone;
+  attribute float aTie;
 
   uniform float uReveal;
-  uniform float uFocus;
+  uniform float uTrace;
 
   varying float vAlpha;
   varying float vDash;
@@ -128,13 +179,31 @@ const EDGE_VERT = /* glsl */ `
     // Both vertices of a link start at its source; the head walks towards the
     // target as the survey is inked. That is the pen drawing the edge.
     float t = clamp((uReveal - aOrder) / 0.26, 0.0, 1.0);
-    vec3 p = mix(position, aTo, t);
+
+    // A host tie rests as a short tick lying on its own plan, pointing at the
+    // node it hangs from — never a line to it, because ten of those close the
+    // sheet into a comb and a tick that ran towards the proxy would be lost in
+    // the fan of routes. When the mark is traced the tick lifts and reaches the
+    // node, which is the one relation the drawing cannot state as traffic.
+    // 0.46 drawing units: long enough to read as a mark, short enough not to
+    // reach. Routes reach from the first frame, so the tick never applies.
+    float lit = aFocus * uTrace;
+    vec3 across = vec3(aTo.x - position.x, 0.0, aTo.z - position.z);
+    float span = max(length(across), 0.0001);
+    vec3 peg = position + (across / span) * min(0.46, span);
+    // A route reaches its target from the first frame; a tie only grows to the
+    // node it hangs from once the mark is traced.
+    vec3 end = aTie > 0.5 ? mix(peg, aTo, lit) : aTo;
+    vec3 p = mix(position, end, t);
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 
-    vAlpha = smoothstep(0.0, 0.02, t) * mix(1.0, aFocus, uFocus);
+    vAlpha =
+      smoothstep(0.0, 0.02, t) *
+      mix(1.0, aFocus, uTrace) *
+      mix(aTone, 1.0, lit);
     vDash = aDash;
-    vDist = aDist * t;
+    vDist = aDist * mix(0.34, 1.0, lit) * t;
   }
 `
 
@@ -166,7 +235,7 @@ const NODE_VERT = /* glsl */ `
 
   uniform float uReveal;
   uniform float uDpr;
-  uniform float uFocus;
+  uniform float uTrace;
 
   varying float vKind;
   varying float vAlpha;
@@ -177,7 +246,7 @@ const NODE_VERT = /* glsl */ `
     float appear = smoothstep(aOrder - 0.06, aOrder + 0.14, uReveal);
     gl_PointSize = aSize * uDpr * (0.55 + 0.45 * appear);
 
-    vAlpha = appear * mix(1.0, aFocus, uFocus);
+    vAlpha = appear * mix(1.0, aFocus, uTrace);
     vKind = aKind;
   }
 `
@@ -227,7 +296,7 @@ const NODE_FRAG = /* glsl */ `
 
 type Vec = { x: number; y: number; z: number }
 
-type Edge = { a: string; b: string; dash: boolean; order: number; dist: number }
+type Edge = { a: string; b: string; kind: LinkKind; tie: boolean; order: number; dist: number }
 
 type LabelSpec = {
   /** Station id, token id, or `tier:<id>` for a plan caption. */
@@ -254,10 +323,6 @@ type LabelBox = {
   lead: number
   visible: boolean
   painted: boolean
-}
-
-function edgeKey(a: string, b: string): string {
-  return a < b ? `${a}|${b}` : `${b}|${a}`
 }
 
 export type TerritorySceneHandle = {
@@ -292,10 +357,11 @@ export default function TerritoryScene({
   const hostRef = useRef<HTMLDivElement | null>(null)
   const labelHostRef = useRef<HTMLDivElement | null>(null)
 
-  // The labels follow the same chain the drawing lights: the mark that was
-  // pointed at is ink, everything it passes through is secondary ink, and the
-  // rest of the sheet drops to a ruling.
-  const chain = focus ? (territoryStations.find((station) => station.id === focus)?.chain ?? null) : null
+  // The labels follow the same trace the drawing lights: the mark that was
+  // pointed at is ink, everything that answers with it is secondary ink, and the
+  // rest of the sheet drops to a ruling. Same function, so the words, the marks
+  // and the pegs can never disagree.
+  const traced = useMemo(() => (focus ? new Set(territoryTrace(focus)) : null), [focus])
 
   // Callbacks are read through a ref so a parent render never rebuilds the
   // scene: a hover must not dispose a renderer, and a language switch must not
@@ -340,7 +406,7 @@ export default function TerritoryScene({
     const stack = new Group()
     scene.add(stack)
 
-    const camera = new PerspectiveCamera(26, 1, 0.5, 140)
+    const camera = new PerspectiveCamera(CAM_FOV, 1, 0.5, 140)
 
     /* ---- points --------------------------------------------------------- */
 
@@ -353,31 +419,24 @@ export default function TerritoryScene({
     const pbs = points.get('pbs')
     if (!opnsense || !pbs) return
 
-    points.set(ENTRY_ID, { x: opnsense.x, y: TIER_Y.edge + 0.72, z: opnsense.z })
-    points.set(EXIT_ID, { x: pbs.x + 1.45, y: TIER_Y.fabric, z: pbs.z })
+    const entryY = TIER_Y.edge + ENTRY_GAP
+    const exitX = pbs.x + EXIT_GAP
+    points.set(ENTRY_ID, { x: opnsense.x, y: entryY, z: opnsense.z })
+    points.set(EXIT_ID, { x: exitX, y: TIER_Y.fabric, z: pbs.z })
 
     /* ---- links ---------------------------------------------------------- */
 
-    const edges: Edge[] = []
-    const seen = new Set<string>()
-
-    for (const station of territoryStations) {
-      for (let i = 0; i < station.chain.length - 1; i++) {
-        const a = station.chain[i]
-        const b = station.chain[i + 1]
-        const key = edgeKey(a, b)
-        if (seen.has(key)) continue
-        seen.add(key)
-        edges.push({ a, b, dash: a === 'pbs' || b === 'pbs', order: 0, dist: 0 })
-      }
-    }
-
-    for (const link of territoryTrunkLinks) {
-      const key = edgeKey(link.a, link.b)
-      if (seen.has(key)) continue
-      seen.add(key)
-      edges.push({ a: link.a, b: link.b, dash: false, order: 0, dist: 0 })
-    }
+    // Every link comes from the content module, already derived: route links
+    // walked by a chain, ties from `host`, the vmbr1 span. Nothing is invented
+    // here, so the drawing and the register cannot disagree.
+    const edges: Edge[] = territoryLinks.map((link) => ({
+      a: link.a,
+      b: link.b,
+      kind: link.kind,
+      tie: link.tie === true,
+      order: 0,
+      dist: 0,
+    }))
 
     // Inked from the top of the sheet down. Deterministic, so the drawing always
     // arrives in the same order.
@@ -436,17 +495,25 @@ export default function TerritoryScene({
     const linkDash: number[] = []
     const linkDist: number[] = []
     const linkFocus: number[] = []
+    const linkTie: number[] = []
+    const linkTone: number[] = []
 
     for (const edge of edges) {
       const a = points.get(edge.a)
       const b = points.get(edge.b)
       if (!a || !b) continue
+      const tie = edge.tie
+      const dash = edge.kind === 'backup' ? 1 : 0
+      const tone = tie ? TIE_TONE : 1
+
       linkPos.push(a.x, a.y, a.z, a.x, a.y, a.z)
       linkTo.push(a.x, a.y, a.z, b.x, b.y, b.z)
       linkOrder.push(edge.order, edge.order)
-      linkDash.push(edge.dash ? 1 : 0, edge.dash ? 1 : 0)
+      linkDash.push(dash, dash)
       linkDist.push(0, edge.dist)
       linkFocus.push(1, 1)
+      linkTie.push(tie ? 1 : 0, tie ? 1 : 0)
+      linkTone.push(tone, tone)
     }
 
     const linkGeometry = new BufferGeometry()
@@ -455,6 +522,8 @@ export default function TerritoryScene({
     linkGeometry.setAttribute('aOrder', new Float32BufferAttribute(linkOrder, 1))
     linkGeometry.setAttribute('aDash', new Float32BufferAttribute(linkDash, 1))
     linkGeometry.setAttribute('aDist', new Float32BufferAttribute(linkDist, 1))
+    linkGeometry.setAttribute('aTie', new Float32BufferAttribute(linkTie, 1))
+    linkGeometry.setAttribute('aTone', new Float32BufferAttribute(linkTone, 1))
     linkGeometry.setAttribute(
       'aFocus',
       new Float32BufferAttribute(linkFocus, 1).setUsage(DynamicDrawUsage),
@@ -468,7 +537,7 @@ export default function TerritoryScene({
     const nodeKind: number[] = []
     const nodeFocus: number[] = []
 
-    const NODE_SIZE = { station: 14, service: 10, control: 38 }
+    const NODE_SIZE = { node: 14, service: 10, control: 38 }
     const TIER_ORDER = { edge: 0.3, fabric: 0.52, services: 0.7 }
 
     for (const station of territoryStations) {
@@ -495,7 +564,7 @@ export default function TerritoryScene({
 
     const uniforms = {
       uReveal: { value: reduced ? 1 : 0 },
-      uFocus: { value: 0 },
+      uTrace: { value: 0 },
       uTierFocus: { value: -1 },
       uDpr: { value: renderer.getPixelRatio() },
       uInk: { value: new Vector3(INK[0], INK[1], INK[2]) },
@@ -545,7 +614,11 @@ export default function TerritoryScene({
         z: p.z,
         side: 'right',
         offset: station.kind === 'control' ? 22 : 13,
-        dy: 0,
+        // Two marks have a line leaving them to the right at their own height —
+        // pve1 sends the trunk and the backup bus, pbs sends the bus off the
+        // sheet — and a word on a line is a word read twice. Their names are set
+        // above the mark; everything else sits level with its own.
+        dy: station.id === 'pbs' || station.id === 'pve1' ? -15 : 0,
       })
     }
 
@@ -553,7 +626,7 @@ export default function TerritoryScene({
       id: ENTRY_ID,
       kind: 'token',
       x: opnsense.x,
-      y: TIER_Y.edge + 0.72,
+      y: entryY,
       z: opnsense.z,
       side: 'right',
       offset: 12,
@@ -562,10 +635,10 @@ export default function TerritoryScene({
     specs.push({
       id: EXIT_ID,
       kind: 'token',
-      x: pbs.x + 1.45,
+      x: exitX,
       y: TIER_Y.fabric,
       z: pbs.z,
-      side: 'left',
+      side: 'right',
       offset: 12,
       dy: 0,
     })
@@ -613,55 +686,112 @@ export default function TerritoryScene({
 
     /* ---- camera ---------------------------------------------------------- */
 
-    const cam = { az: BASE_AZ, el: BASE_EL, dist: 22, lookY: OVERVIEW_LOOK }
-    const goal = { az: BASE_AZ, el: BASE_EL, dist: 22, lookY: OVERVIEW_LOOK }
+    const cam = { az: BASE_AZ, el: BASE_EL, dist: 22, lookY: OVERVIEW_LOOK, lookX: 0 }
+    const goal = { az: BASE_AZ, el: BASE_EL, dist: 22, lookY: OVERVIEW_LOOK, lookX: 0 }
     const lookTarget = new Vector3()
     let elBase = BASE_EL
     let framed: TierId | null = null
     let homeDist = 22
+    /** The overview aim, solved on resize: the drawing's own centre, not the box's. */
+    let homeLook = OVERVIEW_LOOK
+    let homeLookX = 0
     const tierDist: Record<TierId, number> = { edge: 22, fabric: 22, services: 22 }
 
-    const placeCamera = (dist: number, az: number, el: number, lookY: number) => {
+    /**
+     * The camera, with an aim that can be moved off the stack's origin on both
+     * axes. The origin is a construction point, not a composition: the drawing
+     * is asymmetric in x (the sheet leaves by the right) and in y (the near
+     * corner of the bottom plan is magnified by the perspective), so the frame
+     * is centred by measurement, not by assumption.
+     */
+    const placeCamera = (
+      dist: number,
+      az: number,
+      el: number,
+      lookY: number,
+      lookX: number,
+    ) => {
       const cos = Math.cos(el)
+      const rightX = Math.cos(az)
+      const rightZ = -Math.sin(az)
       camera.position.set(
-        dist * cos * Math.sin(az),
+        dist * cos * Math.sin(az) + lookX * rightX,
         lookY + dist * Math.sin(el),
-        dist * cos * Math.cos(az),
+        dist * cos * Math.cos(az) + lookX * rightZ,
       )
-      lookTarget.set(0, lookY, 0)
+      lookTarget.set(lookX * rightX, lookY, lookX * rightZ)
       camera.lookAt(lookTarget)
       camera.updateMatrixWorld()
     }
 
-    const fitPoints = new Float32Array(30)
+    const fitPoints = new Float32Array(84)
     const corner = (i: number, x: number, y: number, z: number) => {
       fitPoints[i * 3] = x
       fitPoints[i * 3 + 1] = y
       fitPoints[i * 3 + 2] = z
     }
 
+    /** Projected bounds of a slice of that buffer, over the whole turn. */
+    const extent = { minX: 0, maxX: 0, minY: 0, maxY: 0 }
+
     /**
-     * Fit a set of points to the frame by projecting them, five passes. A
-     * bounding sphere would be simpler and wrong: the stack is nine units wide
-     * and four deep, and a sphere around it pushes the drawing into a third of
-     * the canvas. Five passes because the projection is not linear in distance.
+     * Project a range of points at one camera, at five positions of the turn,
+     * and keep the union's bounds. The stack's own matrix is applied because the
+     * drawing turns: a frame fitted at rest would clip the corner that swings
+     * towards the camera at the ends of the sweep.
      */
-    const fit = (count: number, az: number, el: number, lookY: number, fillX: number, fillY: number) => {
-      let dist = cam.dist
-      for (let pass = 0; pass < 5; pass++) {
-        placeCamera(dist, az, el, lookY)
-        let mx = 0
-        let my = 0
-        for (let i = 0; i < count; i++) {
-          scratch.set(fitPoints[i * 3], fitPoints[i * 3 + 1], fitPoints[i * 3 + 2]).project(camera)
-          const ax = Math.abs(scratch.x)
-          const ay = Math.abs(scratch.y)
-          if (ax > mx) mx = ax
-          if (ay > my) my = ay
+    const measureExtent = (
+      dist: number,
+      el: number,
+      lookY: number,
+      lookX: number,
+      from: number,
+      to: number,
+    ) => {
+      extent.minX = Infinity
+      extent.maxX = -Infinity
+      extent.minY = Infinity
+      extent.maxY = -Infinity
+      for (let step = 0; step < TURN_STEPS; step++) {
+        stack.rotation.y = TURN_START + (step / (TURN_STEPS - 1)) * TURN_SWEEP
+        stack.scale.y = 1
+        stack.updateMatrixWorld(true)
+        placeCamera(dist, BASE_AZ, el, lookY, lookX)
+        for (let i = from; i < to; i++) {
+          scratch
+            .set(fitPoints[i * 3], fitPoints[i * 3 + 1], fitPoints[i * 3 + 2])
+            .applyMatrix4(stack.matrixWorld)
+            .project(camera)
+          if (scratch.x < extent.minX) extent.minX = scratch.x
+          if (scratch.x > extent.maxX) extent.maxX = scratch.x
+          if (scratch.y < extent.minY) extent.minY = scratch.y
+          if (scratch.y > extent.maxY) extent.maxY = scratch.y
         }
-        dist *= Math.max(mx / fillX, my / fillY, 0.25)
       }
-      return dist
+    }
+
+    /**
+     * How far the camera has to back off for a range to sit inside its margins.
+     * The projection is not linear in distance, so this is the multiplier for
+     * one pass of a fixed-point loop, not a formula.
+     */
+    const overflow = (
+      dist: number,
+      el: number,
+      lookY: number,
+      lookX: number,
+      from: number,
+      to: number,
+      fillX: number,
+      fillY: number,
+    ) => {
+      measureExtent(dist, el, lookY, lookX, from, to)
+      return Math.max(
+        Math.abs(extent.minX) / fillX,
+        Math.abs(extent.maxX) / fillX,
+        Math.abs(extent.minY) / fillY,
+        Math.abs(extent.maxY) / fillY,
+      )
     }
 
     /* ---- state ----------------------------------------------------------- */
@@ -671,8 +801,14 @@ export default function TerritoryScene({
       elapsed: 0,
       sep: 1,
       scroll: 1,
+      /** Scroll progress through the whole section, 0..1: what the turn follows. */
+      turn: 0.5,
+      /** Eased turn, so a wheel tick never latches the drawing at an angle. */
+      spin: 0.5,
       first: true,
       focus: null as string | null,
+      /** Eased 0..1 of how much of the sheet is traced. */
+      trace: 0,
       ink: -1,
       clientX: 0,
       clientY: 0,
@@ -695,32 +831,33 @@ export default function TerritoryScene({
     const nodeIndex = new Map<string, number>()
     territoryStations.forEach((station, index) => nodeIndex.set(station.id, index))
 
-    const linkIndex = new Map<string, number>()
-    edges.forEach((edge, index) => linkIndex.set(edgeKey(edge.a, edge.b), index))
-
     const focusAttr = linkGeometry.getAttribute('aFocus') as BufferAttribute
     const nodeFocusAttr = nodeGeometry.getAttribute('aFocus') as BufferAttribute
     const focusArray = focusAttr.array as Float32Array
     const nodeFocusArray = nodeFocusAttr.array as Float32Array
 
+    /**
+     * Lighting is a graph rule, not a second drawing: a mark on the trace is
+     * ink, a link is lit when both of its ends are ink. That is why a guest's
+     * tie to its node lights whenever the guest does, and why the backup branch
+     * only appears when the backup target is the thing being read.
+     */
     const applyFocus = (id: string | null) => {
-      const own = id ? nodeIndex.get(id) : undefined
-      const chain = own === undefined ? undefined : territoryStations[own].chain
-
       focusArray.fill(id ? 0.1 : 1)
       nodeFocusArray.fill(id ? 0.1 : 1)
-      uniforms.uFocus.value = id ? 1 : 0
 
-      if (chain) {
-        for (const step of chain) {
+      if (id) {
+        const lit = new Set(territoryTrace(id))
+
+        for (const step of lit) {
           const index = nodeIndex.get(step)
           if (index !== undefined) nodeFocusArray[index] = 1
         }
-        for (let i = 0; i < chain.length - 1; i++) {
-          const index = linkIndex.get(edgeKey(chain[i], chain[i + 1]))
-          if (index === undefined) continue
-          focusArray[index * 2] = 1
-          focusArray[index * 2 + 1] = 1
+
+        for (let i = 0; i < edges.length; i++) {
+          if (!lit.has(edges[i].a) || !lit.has(edges[i].b)) continue
+          focusArray[i * 2] = 1
+          focusArray[i * 2 + 1] = 1
         }
       }
 
@@ -744,7 +881,10 @@ export default function TerritoryScene({
       tierAnchor[0] = 0
       tierAnchor[1] = 0
       for (let i = 0; i < 8; i += 2) {
-        scratch.set(PLANE_CORNERS[i], TIER_Y[tier] * state.sep, PLANE_CORNERS[i + 1]).project(camera)
+        scratch
+          .set(PLANE_CORNERS[i], TIER_Y[tier], PLANE_CORNERS[i + 1])
+          .applyMatrix4(stack.matrixWorld)
+          .project(camera)
         const sx = (scratch.x * 0.5 + 0.5) * view.w
         if (sx < bestX) {
           bestX = sx
@@ -766,7 +906,9 @@ export default function TerritoryScene({
           box.visible = tierAnchor[2] > -1 && tierAnchor[2] < 1
           continue
         }
-        scratch.set(spec.x, spec.y * state.sep, spec.z).project(camera)
+        // The stack turns and separates; a label anchored in stack space has to
+        // travel with it or it slides off its own mark.
+        scratch.set(spec.x, spec.y, spec.z).applyMatrix4(stack.matrixWorld).project(camera)
         box.sx = (scratch.x * 0.5 + 0.5) * view.w
         box.sy = (-scratch.y * 0.5 + 0.5) * view.h
         box.visible = scratch.z > -1 && scratch.z < 1
@@ -941,8 +1083,27 @@ export default function TerritoryScene({
       state.sep = state.first
         ? targetSep
         : state.sep + (targetSep - state.sep) * (reduced ? 1 : Math.min(1, dt * 4))
-      state.first = false
+
+      // The turn: the section's own progress drives it, then the drawing eases
+      // after it, so a fast wheel is followed by the object rather than the
+      // object snapping under the cursor. It is applied to the stack, not the
+      // camera, so the drag's ±22° still adds to it instead of canceling it.
+      state.spin = state.first
+        ? state.turn
+        : state.spin + (state.turn - state.spin) * (reduced ? 1 : Math.min(1, dt * TURN_EASE))
+      stack.rotation.y = TURN_START + state.spin * TURN_SWEEP
       stack.scale.y = state.sep
+      stack.updateMatrixWorld(true)
+      state.first = false
+
+      // The trace: one eased scalar decides how much of the sheet is lit and
+      // how far the ties of the traced walk reach. Uniform only — no buffer
+      // upload per frame, and it settles.
+      const traceTarget = state.focus ? 1 : 0
+      state.trace = reduced
+        ? traceTarget
+        : state.trace + (traceTarget - state.trace) * Math.min(1, dt * 12)
+      uniforms.uTrace.value = state.trace
 
       if (!reduced) {
         state.elapsed += dt
@@ -954,10 +1115,11 @@ export default function TerritoryScene({
       cam.el += (goal.el - cam.el) * k
       cam.dist += (goal.dist - cam.dist) * k
       cam.lookY += (goal.lookY - cam.lookY) * k
+      cam.lookX += (goal.lookX - cam.lookX) * k
 
       const drift = reduced ? 0 : Math.sin(state.elapsed * 0.16) * 0.012
       const lift = reduced ? 0 : (state.scroll - 1) * 0.09
-      placeCamera(cam.dist, cam.az + drift, Math.max(0.06, cam.el + lift), cam.lookY)
+      placeCamera(cam.dist, cam.az + drift, Math.max(0.06, cam.el + lift), cam.lookY, cam.lookX)
 
       project()
 
@@ -1004,31 +1166,70 @@ export default function TerritoryScene({
       view.w = w
       view.h = h
 
+      // The frame's points, in stack space. The twelve plane corners first, so
+      // the sheet's own edge can be fitted separately from the marks; then the
+      // marks — the stations and the two annotations. They are what the eye
+      // measures, and they are what must land inside the 8% margin.
       let i = 0
-      for (const y of [-TIER_Y.edge, TIER_Y.edge]) {
+      for (const tier of TIERS) {
         for (const x of [-PLANE_X, PLANE_X]) {
-          for (const z of [-PLANE_Z, PLANE_Z]) corner(i++, x, y, z)
+          for (const z of [-PLANE_Z, PLANE_Z]) corner(i++, x, TIER_Y[tier], z)
         }
       }
-      // The two annotations live outside the planes and must stay on the sheet.
-      corner(i++, opnsense.x, TIER_Y.edge + 0.72, opnsense.z)
-      corner(i++, pbs.x + 1.45, TIER_Y.fabric, pbs.z)
-      homeDist = fit(i, BASE_AZ, BASE_EL, OVERVIEW_LOOK, 0.86, 0.84)
+      const cornerCount = i
+      for (const station of territoryStations) {
+        corner(i++, station.x, TIER_Y[station.tier], station.z)
+      }
+      corner(i++, opnsense.x, entryY, opnsense.z)
+      corner(i++, exitX, TIER_Y.fabric, pbs.z)
+      const pointCount = i
+
+      // Distance and aim are solved together: back off until the marks sit
+      // inside their margin and the planes inside theirs, then move the aim
+      // until the whole drawing — planes and marks — is centred. Centring the
+      // marks alone is what left the sheet hanging: the near corner of a plan
+      // is magnified by the perspective and reaches far below the last mark, so
+      // the space under the drawing was being paid for at the top.
+      let dist = cam.dist
+      let lookY = OVERVIEW_LOOK
+      let lookX = 0
+      for (let pass = 0; pass < 6; pass++) {
+        const k = Math.max(
+          overflow(dist, BASE_EL, lookY, lookX, 0, cornerCount, CORNER_FILL_X, CORNER_FILL_Y),
+          overflow(dist, BASE_EL, lookY, lookX, cornerCount, pointCount, MARK_FILL_X, MARK_FILL_Y),
+        )
+        dist *= Math.max(k, 0.2)
+        measureExtent(dist, BASE_EL, lookY, lookX, 0, pointCount)
+        // Aim lower and the drawing rises; aim right and it slides left. Both
+        // are applied to the camera and its target together, so the projection
+        // is only translated.
+        lookY += (((extent.minY + extent.maxY) / 2) * dist * TAN_HALF_FOV) / Math.cos(BASE_EL)
+        lookX += ((extent.maxX + extent.minX) / 2) * dist * TAN_HALF_FOV * camera.aspect
+      }
+      homeDist = dist
+      homeLook = lookY
+      homeLookX = lookX
 
       for (const tier of TIERS) {
-        let c = 0
-        for (const x of [-PLANE_X, PLANE_X]) {
-          for (const z of [-PLANE_Z, PLANE_Z]) corner(c++, x, TIER_Y[tier], z)
+        const from = TIERS.indexOf(tier) * 4
+        let d = cam.dist
+        for (let pass = 0; pass < 4; pass++) {
+          d *= Math.max(
+            overflow(d, TIER_EL, TIER_Y[tier], 0, from, from + 4, TIER_FILL_X, TIER_FILL_Y),
+            0.2,
+          )
         }
-        tierDist[tier] = fit(4, BASE_AZ, TIER_EL, TIER_Y[tier], 0.9, 0.6)
+        tierDist[tier] = d
       }
 
       goal.dist = framed ? tierDist[framed] : homeDist
-      if (framed) goal.lookY = TIER_Y[framed] * state.sep
+      goal.lookY = framed ? TIER_Y[framed] * state.sep : homeLook
+      goal.lookX = framed ? 0 : homeLookX
 
       if (state.first) {
         cam.dist = goal.dist
         cam.lookY = goal.lookY
+        cam.lookX = goal.lookX
       }
 
       measure()
@@ -1045,11 +1246,13 @@ export default function TerritoryScene({
         goal.el = TIER_EL
         elBase = TIER_EL
         goal.lookY = TIER_Y[tier] * state.sep
+        goal.lookX = 0
         goal.dist = tierDist[tier]
       } else {
         goal.el = BASE_EL
         elBase = BASE_EL
-        goal.lookY = OVERVIEW_LOOK
+        goal.lookY = homeLook
+        goal.lookX = homeLookX
         goal.dist = homeDist
       }
 
@@ -1177,6 +1380,25 @@ export default function TerritoryScene({
 
     if (scrollTrigger) state.scroll = scrollTrigger.progress
 
+    // The turn runs over the passage the reader actually watches — the plate's
+    // centre crossing the middle of the viewport — and not over its full
+    // transit. A 576px plate in a 900px viewport is only wholly on screen for
+    // 324px of scroll; tied to the whole transit, the sweep would spend most of
+    // its travel off screen and arrive as a surprise. This range is the plate's
+    // own reading window, so the drift is spread across it.
+    const turnTrigger = reduced
+      ? null
+      : ScrollTrigger.create({
+          trigger: host,
+          start: 'center 72%',
+          end: 'center 28%',
+          onUpdate: (self) => {
+            state.turn = self.progress
+          },
+        })
+
+    if (turnTrigger) state.turn = turnTrigger.progress
+
     canvas.addEventListener('pointermove', onPointerMove, { passive: true })
     canvas.addEventListener('pointerdown', onPointerDown)
     canvas.addEventListener('pointerup', endDrag)
@@ -1231,6 +1453,7 @@ export default function TerritoryScene({
       resizeObserver.disconnect()
       textObserver.disconnect()
       scrollTrigger?.kill()
+      turnTrigger?.kill()
 
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerdown', onPointerDown)
@@ -1272,8 +1495,8 @@ export default function TerritoryScene({
             data-label-id={station.id}
             data-kind={station.kind}
             data-active={focus === station.id ? 'true' : undefined}
-            data-chain={chain && station.id !== focus && chain.includes(station.id) ? 'true' : undefined}
-            data-dim={focus !== null && !chain?.includes(station.id) ? 'true' : undefined}
+            data-chain={traced && station.id !== focus && traced.has(station.id) ? 'true' : undefined}
+            data-dim={focus !== null && !traced?.has(station.id) ? 'true' : undefined}
           >
             {station.id}
           </span>
@@ -1283,8 +1506,8 @@ export default function TerritoryScene({
           className="tty-label tty-label--token"
           data-label-id={ENTRY_ID}
           data-kind="token"
-          data-chain={chain && chain.includes(ENTRY_ID) ? 'true' : undefined}
-          data-dim={focus !== null && !chain?.includes(ENTRY_ID) ? 'true' : undefined}
+          data-chain={traced?.has(ENTRY_ID) ? 'true' : undefined}
+          data-dim={focus !== null && !traced?.has(ENTRY_ID) ? 'true' : undefined}
         >
           {entryLabel}
         </span>
@@ -1292,8 +1515,8 @@ export default function TerritoryScene({
           className="tty-label tty-label--token"
           data-label-id={EXIT_ID}
           data-kind="token"
-          data-chain={chain && chain.includes(EXIT_ID) ? 'true' : undefined}
-          data-dim={focus !== null && !chain?.includes(EXIT_ID) ? 'true' : undefined}
+          data-chain={traced?.has(EXIT_ID) ? 'true' : undefined}
+          data-dim={focus !== null && !traced?.has(EXIT_ID) ? 'true' : undefined}
         >
           {exitLabel}
         </span>

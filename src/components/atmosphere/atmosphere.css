@@ -1,0 +1,140 @@
+/* ============================================================================
+   atmosphere.css — the sheet, and the plate change
+   ----------------------------------------------------------------------------
+   Two fixed layers, both chrome, neither in flow:
+
+   `.atm`   the ground itself. Behind every section, inert to the pointer, and
+            the reason the page reads as paper rather than as a colour swatch.
+   `.veil`  the sweep that marks a section boundary. Above the content, below
+            the nav, `pointer-events: none`, and on screen for well under a
+            second at a time.
+
+   The layer stack is declared here, not in tokens.css: the design tokens are
+   surfaces and inks, and this file owns the two planes the sheet adds.
+   ========================================================================== */
+
+:root {
+  /* Behind all content. The sheets/blocks of the page paint above it because
+     they are positioned and come later in the tree. */
+  --z-atm: 0;
+  /* Above the content, under the nav (60) and the scroll gauge (55). */
+  --z-veil: 40;
+}
+
+/* ---------------------------------------------------------------------------
+   1. The atmosphere
+   ------------------------------------------------------------------------- */
+
+.atm {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-atm);
+  pointer-events: none;
+}
+
+.atm__canvas {
+  inline-size: 100%;
+  block-size: 100%;
+  /* The first frame is drawn before the canvas is faded in, so the sheet is
+     never an empty rectangle — and with no WebGL there is no canvas at all,
+     only the CSS ground. */
+  opacity: 0;
+  transition: opacity 900ms var(--ease-out);
+}
+
+.atm__canvas[data-live='true'] {
+  opacity: 1;
+}
+
+/* The sheet is one surface.
+   Every section was inked with the same `--ground` as the page itself, which is
+   exactly the colour the atmosphere now paints. Left in place, each fill would
+   simply paint the layer out. So the fill is lifted from the sections and the
+   footer — and only that property: their rules, graticules, fills and figures
+   are untouched. The dark chapter is opaque by design and keeps its ink. */
+main > section:not(.on-deep),
+main > footer {
+  background-color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   2. The plate change
+   ------------------------------------------------------------------------- */
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-veil);
+  pointer-events: none;
+  overflow: hidden;
+  /* Cheap isolation: the band is 170vh tall and must not add scroll extent or
+     invalidate anything outside this box. */
+  contain: layout paint;
+  /* The veil exists for 620ms at a time and is never composited outside one.
+     Belt and braces: the band is also parked off-screen by the tween, but a
+     lost transform must never leave an ink plate on a readable page. */
+  opacity: 0;
+  visibility: hidden;
+}
+
+.veil[data-running='true'] {
+  opacity: 1;
+  visibility: visible;
+}
+
+.veil__band {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  block-size: 140vh;
+  background-color: var(--ink);
+  /* The printed density. The dots below carry the rest of the tone. */
+  opacity: 0.38;
+  /* The band's shape: a 28% plateau with long feathered edges, so the sweep
+     has no hard edge to catch on type — and so it reads as a band crossing the
+     sheet rather than as a filter laid over it. */
+  --veil-fade: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 36%,
+    #000 64%,
+    transparent 100%
+  );
+  -webkit-mask-image: var(--veil-fade);
+  mask-image: var(--veil-fade);
+}
+
+/* The screen. `--veil-mask` is the same 8 × 8 Bayer tile the shader runs,
+   generated once at init; the gradient supplies the band. Where the two are
+   composited the ink becomes dots, which is the point: the veil is printed,
+   not faded. */
+@supports (mask-composite: intersect) {
+  .veil__band {
+    -webkit-mask-image: var(--veil-mask, none), var(--veil-fade);
+    mask-image: var(--veil-mask, none), var(--veil-fade);
+    -webkit-mask-size: var(--veil-tile, 24px) var(--veil-tile, 24px), 100% 100%;
+    mask-size: var(--veil-tile, 24px) var(--veil-tile, 24px), 100% 100%;
+    -webkit-mask-repeat: repeat, no-repeat;
+    mask-repeat: repeat, no-repeat;
+    mask-composite: intersect;
+  }
+}
+
+.veil[data-running='true'] .veil__band {
+  will-change: transform;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Reduced motion
+   ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .atm__canvas {
+    transition: none;
+  }
+
+  /* Not a faster sweep: no sweep. */
+  .veil {
+    display: none;
+  }
+}

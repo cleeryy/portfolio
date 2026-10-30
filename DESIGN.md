@@ -274,8 +274,10 @@ already imported by `main.tsx`.
 
 - `CONTACT_EMAIL` must be supplied by the owner before the contact section is written.
 - The favicon in `public/` is still the scaffold default; it needs a real mark.
-- Mobile deliberately reduces the plot to an underlay (26% opacity) once the type stack
-  goes full width. The drawing stays legible as texture; the type is what leads.
+- **Mobile is composed, not degraded.** Below 900px the hero plot is rebuilt for a portrait
+band (8 stations, larger marks, brighter ink, horizontal touch drag, `touch-action: pan-y`),
+`#ranges` becomes a native scroll-snap deck with a progress ruler, and `#path` grows an inked
+spine that draws with scroll. Tap targets are ≥44px, `100dvh` and safe-area insets are honoured.
 
 ---
 
@@ -296,11 +298,21 @@ not navigation.
 
 **Territory is now a schema, not a plate.** Three hairline plans stack EDGE → FABRIC → SERVICES;
 one request enters from above, crosses the crimson control point, is forwarded by `caddy` and
-lands on a service. 13 stations, 15 links, every one traceable to `homelab/content/architecture`
-or the reverse-proxy config; hover prints the chain in words, tier names are buttons that frame
-one plan. Drawn with 3 draw calls (lines + points, no triangles), DOM labels (max 16), reduced
-motion renders one static frame, no WebGL falls back to the SVG plate. The DOM register below
-carries the same inventory as text.
+lands on a service. 12 stations and 22 links, every one traceable to `homelab/content/architecture`
+or the reverse-proxy config. The model is the placement table's, not a tidy diagram: `pve1` (infra,
+2× E5-2450v2, 64 GB) and `pve3` (compute, 2× Silver 4208, ~172 GB) are the only two nodes, and
+**every other mark is a guest** — `opnsense` included, which is why the firewall, `caddy`,
+`warpgate` and `authentik` all hang off `pve3` on a quiet tie. `wireguard` is not a mark: it is
+`wg0`, udp/51920, on the firewall. `pbs` is LXC 578 on `pve3` and the target of both nodes, on the
+dashed branch that leaves the sheet. Strata are roles; the tie is the chassis. Hover prints the
+walk in words *and* the node the mark hangs from (`… → nextcloud · on pve1`); hovering a node
+prints the `vmbr1` trunk and how much of the sheet it carries, and lights every guest at once —
+which is the whole argument of the section. Tier names are buttons that frame one plan. The stack
+turns on Y with the section's own progress (two ScrollTriggers: entry for the separation, the whole
+pass for the turn), eased, composed with the ±22°/±14° drag rather than fighting it. Drawn with
+3 draw calls (lines + points, no triangles), DOM labels, reduced motion renders one static frame
+with no turn, no WebGL falls back to the SVG plate — itself built from the same data, so it cannot
+drift. The DOM register below carries the same inventory as text.
 
 Counts are re-surveyed from the config and stated as *routes*: **39 published, 28 internal** (one file = one route).
 

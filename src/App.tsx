@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { sound } from './lib/sound'
 import About from './components/about/About'
+import Atmosphere from './components/atmosphere/Atmosphere'
 import BootGate from './components/boot/BootGate'
 import Contact from './components/contact/Contact'
 import Hero from './components/hero/Hero'
@@ -72,6 +73,9 @@ export default function App() {
 
   return (
     <main id="top">
+      {/* The sheet itself, and the plate change. Both fixed, both behind the
+          reading: mounted first so the canvas is painted under every section. */}
+      <Atmosphere />
       <BootGate />
       <NavBar />
       <Hero />
