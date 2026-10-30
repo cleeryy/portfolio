@@ -66,17 +66,6 @@ export const pathEntries: PathEntry[] = [
     link: { href: BLOG, display: 'blog.cleeryy.cloud' },
   },
   {
-    id: 'delegue',
-    period: '2025.12',
-    datetime: '2025-12',
-    title: { en: 'Class representative', fr: 'Délégué de classe' },
-    organisation: { en: 'ESGI Toulouse', fr: 'ESGI Toulouse' },
-    what: {
-      en: 'Represented the class at the pedagogical committees of December 2025 and July 2026.',
-      fr: 'Représentation de classe aux comités pédagogiques de décembre 2025 et de juillet 2026.',
-    },
-  },
-  {
     id: 'parallel',
     period: '2026.05',
     datetime: '2026-05',
@@ -147,7 +136,7 @@ export const pathCopy: Bi<PathCopy> = {
   en: {
     title: 'The path, surveyed.',
     intro:
-      'Seven entries, oldest first, each one dated: a competition played remotely on servers that are not mine, seven write-ups in three days, a term as class representative, three afternoons a week beside the degree, a lab rebuilt, a blog put back on a pipeline.',
+      'Six entries, oldest first, each one dated: a competition played remotely on servers that are not mine, seven write-ups in three days, three afternoons a week beside the degree, a lab rebuilt, a blog put back on a pipeline.',
     ask: 'I am looking for a work-study contract in cybersecurity — SOC or offensive security — in Toulouse, for 2026–2027.',
     note: 'Oldest first, the open year last. Every step is dated; the links go to the work itself.',
     nowLabel: 'in progress',
@@ -155,7 +144,7 @@ export const pathCopy: Bi<PathCopy> = {
   fr: {
     title: 'Le parcours, relevé.',
     intro:
-      'Sept étapes, de la plus ancienne à la plus récente, toutes datées\u00a0: une compétition jouée à distance sur des serveurs qui ne sont pas les miens, sept writeups en trois jours, un mandat de délégué, trois après-midis par semaine en marge du cursus, un labo reconstruit, un blog repassé en pipeline.',
+      'Six étapes, de la plus ancienne à la plus récente, toutes datées\u00a0: une compétition jouée à distance sur des serveurs qui ne sont pas les miens, sept writeups en trois jours, trois après-midis par semaine en marge du cursus, un labo reconstruit, un blog repassé en pipeline.',
     ask: 'Je cherche une alternance en cybersécurité — SOC ou sécurité offensive — à Toulouse, pour 2026–2027.',
     note: 'De la plus ancienne à la plus récente, l’étape en cours ferme la ligne. Chaque étape est datée\u00a0; les liens mènent au travail lui-même.',
     nowLabel: 'en cours',

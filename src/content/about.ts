@@ -40,9 +40,9 @@ export const about: Bi<AboutCopy> = {
   en: {
     title: 'I would rather read a system than trust it.',
     paragraphs: [
-      'I am in my third year at ESGI Toulouse: Bachelor 3, programme “SRC”, 2026–2027. I am also the class delegate — three pedagogical committees on the calendar, and the obligation to turn up with other people’s questions.',
-      'Three afternoons a week, in parallel with the degree, I work with an IT company in Toulouse. Same city, same weeks, since May 2026: two calendars to hold, and no illusion that production waits for a term to end.',
-      'Most evenings go to the lab, to writeups, or to a tool I was missing. No certification yet: what I have is a network I run end to end and writeups anyone can read. What I want next is an alternance in a SOC or on an offensive team, in Toulouse, for 2026–2027.',
+      'I am in my third year at ESGI Toulouse: Bachelor 3, programme “SRC”, 2026–2027.',
+      'Three afternoons a week, alongside the degree, I work with an IT company in Toulouse — since May 2026.',
+      'The rest of my time goes to the lab, to writeups, or to a tool I was missing. No certification yet: what I have is a network I run end to end and writeups anyone can read. What I want next is an alternance in a SOC or on an offensive team, in Toulouse, for 2026–2027.',
     ],
     annotations: [
       { key: 'based', value: 'Toulouse, FR' },
@@ -53,9 +53,9 @@ export const about: Bi<AboutCopy> = {
   fr: {
     title: 'Je préfère lire un système plutôt que lui faire confiance.',
     paragraphs: [
-      'Je suis en troisième année à l’ESGI Toulouse\u00a0: Bachelor 3, programme «\u00a0SRC\u00a0», 2026–2027. J’y suis aussi délégué de classe — trois comités pédagogiques au calendrier, et l’obligation de venir avec les questions des autres.',
-      'Trois après-midis par semaine, en parallèle du cursus, je travaille avec une entreprise informatique de Toulouse. Même ville, mêmes semaines, depuis mai 2026\u00a0: deux calendriers à tenir, et aucune illusion que la production attende la fin d’un trimestre.',
-      'Le soir, c’est le labo, les writeups, ou l’outil qui me manquait. Aucune certification à ce jour\u00a0: ce que j’ai, c’est un réseau que j’exploite de bout en bout et des writeups que n’importe qui peut lire. Ce que je cherche maintenant, c’est une alternance en SOC ou en sécurité offensive, à Toulouse, pour 2026–2027.',
+      'Je suis en troisième année à l’ESGI Toulouse\u00a0: Bachelor 3, programme «\u00a0SRC\u00a0», 2026–2027.',
+      'Trois après-midis par semaine, en marge du cursus, je travaille avec une entreprise informatique de Toulouse — depuis mai 2026.',
+      'Le reste du temps va au labo, aux writeups, ou à l’outil qui me manquait. Aucune certification à ce jour\u00a0: ce que j’ai, c’est un réseau que j’exploite de bout en bout et des writeups que n’importe qui peut lire. Ce que je cherche maintenant, c’est une alternance en SOC ou en sécurité offensive, à Toulouse, pour 2026–2027.',
     ],
     annotations: [
       { key: 'basé', value: 'Toulouse, FR' },
