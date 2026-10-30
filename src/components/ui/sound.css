@@ -1,0 +1,160 @@
+/* ---------------------------------------------------------------------------
+   SoundToggle — a small instrument plate, not a widget.
+   Fully self-contained: `currentColor` only, so it inherits the nav's ink and
+   works on the cream plotting table as well as the dark dossier. No tokens,
+   no icon font, no layout shift between states.
+   --------------------------------------------------------------------------- */
+
+.sound-toggle {
+  box-sizing: border-box;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.055em;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+/* The hairline box is a resting state, not chrome: it stays invisible until the
+   control is touched, so the nav keeps a single quiet baseline. */
+
+.sound-toggle__label {
+  opacity: 0.78;
+  transition: opacity 160ms ease;
+}
+
+.sound-toggle__meter {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  width: 11px;
+  height: 12px;
+}
+
+.sound-toggle__bar {
+  display: block;
+  width: 2px;
+  border-radius: 0.5px;
+  background-color: currentColor;
+  transform: scaleY(0.34);
+  transform-origin: center;
+  opacity: 0.3;
+  transition:
+    opacity 240ms ease,
+    transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.sound-toggle__bar:nth-child(1) {
+  height: 6px;
+}
+.sound-toggle__bar:nth-child(2) {
+  height: 11px;
+}
+.sound-toggle__bar:nth-child(3) {
+  height: 8px;
+}
+
+/* --- on ------------------------------------------------------------------ */
+
+.sound-toggle[aria-pressed='true'] .sound-toggle__bar {
+  opacity: 1;
+  animation: sound-toggle-meter 4.2s steps(9, end) infinite;
+}
+
+.sound-toggle[aria-pressed='true'] .sound-toggle__bar:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.sound-toggle[aria-pressed='true'] .sound-toggle__bar:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+/* A slow sweep across three bars — an instrument idling, not a VU bouncing. */
+@keyframes sound-toggle-meter {
+  0%,
+  100% {
+    transform: scaleY(0.34);
+    opacity: 0.45;
+  }
+  18% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  42% {
+    transform: scaleY(0.62);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scaleY(0.88);
+    opacity: 0.95;
+  }
+}
+
+/* --- interaction --------------------------------------------------------- */
+
+@media (hover: hover) {
+  .sound-toggle:hover {
+    border-color: color-mix(in srgb, currentColor 22%, transparent);
+    background-color: color-mix(in srgb, currentColor 6%, transparent);
+  }
+
+  .sound-toggle:hover .sound-toggle__label {
+    opacity: 1;
+  }
+}
+
+.sound-toggle:active {
+  background-color: color-mix(in srgb, currentColor 11%, transparent);
+  transform: translateY(0.5px);
+}
+
+.sound-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.sound-toggle:focus-visible .sound-toggle__label {
+  opacity: 1;
+}
+
+/* --- reduced motion ------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .sound-toggle,
+  .sound-toggle__bar,
+  .sound-toggle__label {
+    transition: none;
+  }
+
+  .sound-toggle[aria-pressed='true'] .sound-toggle__bar {
+    animation: none;
+    transform: none;
+    opacity: 0.9;
+  }
+
+  .sound-toggle:active {
+    transform: none;
+  }
+}

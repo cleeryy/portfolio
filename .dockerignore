@@ -1,0 +1,27 @@
+# Build context should stay tiny: only sources needed by `pnpm build`.
+node_modules
+**/node_modules
+
+dist
+dist-ssr
+
+.git
+.gitignore
+.github
+
+*.md
+**/*.md
+
+.env
+.env.*
+**/.env
+**/.env.*
+
+coverage
+logs
+*.log
+
+.vscode
+.idea
+.DS_Store
+*.local

@@ -1,0 +1,27 @@
+# Dokploy / docker compose service definition for the static portfolio.
+#
+# Dokploy builds this compose stack and owns the routing (Traefik/Swarm
+# labels are injected at deploy time) — do NOT hardcode proxy labels here.
+# Container listens on 8080 (nginx-unprivileged), published on host 3005.
+
+services:
+  portfolio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: portfolio:latest
+    restart: unless-stopped
+    ports:
+      - "7747:8080"
+    environment:
+      TZ: Europe/Paris
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    # Dokploy manages routing itself. Declare nothing here.
+    # labels:
+    #   traefik.enable: "true"
+    #   traefik.http.services.portfolio.loadbalancer.server.port: "8080"
