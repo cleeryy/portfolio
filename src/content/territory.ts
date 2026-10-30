@@ -88,8 +88,8 @@ export const territoryTrunkLinks: { a: string; b: string }[] = [{ a: 'pve1', b: 
  * appear anywhere in this file.
  */
 export const territorySummary = {
-  exposedPublicHosts: 41,
-  internalHosts: 30,
+  exposedPublicHosts: 39,
+  internalHosts: 28,
   source: {
     en: 'counted from the reverse-proxy config, 30 October 2026',
     fr: 'comptés dans la configuration du reverse proxy, 30 octobre 2026',
@@ -215,7 +215,7 @@ export const territoryCopy: Bi<TerritoryCopy> = {
     lead: 'One room, two Proxmox nodes, one edge. The plate below keeps the order I actually work in: what lets traffic in, what everything runs on, and what gets used every day. Nothing on it is aspirational — if a name is drawn, it answers.',
     plateLabel: 'territory survey',
     plateScale: 'not to scale',
-    countLabels: { published: 'published hostnames', internal: 'internal hostnames' },
+    countLabels: { published: 'published routes', internal: 'internal routes' },
     registerLabel: 'register',
     registerNote: 'every station the lab runs — the drawing is the path, this is the inventory',
     legendLabel: 'Legend',
@@ -240,7 +240,7 @@ export const territoryCopy: Bi<TerritoryCopy> = {
     lead: 'Une pièce, deux nœuds Proxmox, une seule bordure. La planche ci-dessous garde l’ordre dans lequel je travaille vraiment\u00a0: ce qui laisse entrer le trafic, ce sur quoi tout repose, et ce qui sert tous les jours. Rien n’y est prospectif — si un nom est dessiné, il répond.',
     plateLabel: 'planche du territoire',
     plateScale: 'sans échelle',
-    countLabels: { published: 'hôtes publiés', internal: 'hôtes internes' },
+    countLabels: { published: 'routes publiées', internal: 'routes internes' },
     registerLabel: 'registre',
     registerNote: 'chaque station du labo — le dessin est le chemin, ceci est l’inventaire',
     legendLabel: 'Légende',

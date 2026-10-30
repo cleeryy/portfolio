@@ -19,10 +19,9 @@ import './about.css'
  * reached. No staggered words in the prose — a sentence read for what it says,
  * not for how it arrives.
  *
- * The career ledger is wired but empty: `timeline` is `[]`, so this component
- * renders no list at all — no placeholder, no "coming soon", no empty rule. When
- * the array is filled the rows appear below the prose with styles that already
- * exist, so it is a content edit rather than a redesign.
+ * The career ledger is wired but empty: `timeline` is `[]` and stays empty,
+ * because the dated register now lives in `#path`. This component therefore
+ * renders no list at all — no placeholder, no "coming soon", no empty rule.
  */
 export default function About() {
   const { pick } = useLang()

@@ -6,10 +6,12 @@ import type { Bi } from '../lib/i18n'
  * The module is `Bi<HeroCopy>`: the language split happens once, at the top, and
  * each branch holds plain strings.
  *
- * Copy rule for this file: nothing is invented. No metrics, no dates, no
- * employers. The cluster names and the edge stack are the operator's own; the
- * rest is deliberately qualitative. A number that cannot be verified does not
- * appear.
+ * Copy rule for this file: the claim does two things in one breath — what he has
+ * built, and the contract he is asking for. The note names the two roles, the
+ * city and the two years, then points at the two halves of the page that can be
+ * checked. The four collar readings are the CV's headline facts, each traceable
+ * to FACTS.md (§3 for the degree, §6 for the competition, §7 for the cluster and
+ * the published routes). No score, no rank, no date the owner has not stated.
  */
 
 export type HeroReadout = {
@@ -20,7 +22,7 @@ export type HeroReadout = {
 }
 
 export type HeroCopy = {
-  /** One line, the whole position. Sets the register for the page. */
+  /** One line, the whole position: proof, then the request. */
   claim: string
   /** Two sentences of context. Never repeats the claim. */
   note: string
@@ -44,29 +46,29 @@ export const gridReference = '10.1.20.x'
 
 export const hero: Bi<HeroCopy> = {
   en: {
-    claim: "I run my own network end to end, and train on everyone else's.",
-    note: 'Hypervisor, edge firewall, tunnel, reverse proxy, backups. The plot behind this text is the one I actually operate — the ranges are where I practise on networks that are not mine.',
-    primaryCta: 'Open the map',
-    secondaryCta: 'The operator',
-    scaleNote: 'one room, no rented cloud',
+    claim: "I run my own network end to end. I'm looking for an alternance in cybersecurity.",
+    note: "SOC or offensive security, Toulouse, 2026–2027. The plot behind this text is the network I actually operate; the dark chapter below is the training record I can show.",
+    primaryCta: 'Read the path',
+    secondaryCta: 'See the network',
+    scaleNote: 'surveyed from Toulouse',
     readouts: [
-      { key: 'site', label: 'site', value: 'home lab, FR' },
-      { key: 'cluster', label: 'cluster', value: 'pve1 + pve3' },
-      { key: 'edge', label: 'edge', value: 'OPNsense + WireGuard' },
-      { key: 'backup', label: 'backup', value: 'PBS + offsite' },
+      { key: 'study', label: 'studying', value: 'ESGI B3, SRC' },
+      { key: 'ctf', label: 'ctf', value: 'THCon 2025' },
+      { key: 'cluster', label: 'cluster', value: '52 guests' },
+      { key: 'routes', label: 'reverse proxy', value: '39 public routes' },
     ],
   },
   fr: {
-    claim: "J'exploite mon réseau de bout en bout, et je m'entraîne sur celui des autres.",
-    note: "Hyperviseur, pare-feu périmétrique, tunnel, reverse proxy, sauvegardes. La carte derrière ce texte est celle que j'exploite vraiment\u00a0; les terrains d'entraînement, eux, ne m'appartiennent pas.",
-    primaryCta: 'Ouvrir la carte',
-    secondaryCta: "L'opérateur",
-    scaleNote: 'une pièce, aucun cloud loué',
+    claim: 'J’exploite mon réseau de bout en bout. Je cherche une alternance en cybersécurité.',
+    note: 'SOC ou sécurité offensive, Toulouse, 2026–2027. La carte derrière ce texte est le réseau que j’exploite vraiment\u00a0; le chapitre sombre plus bas, le relevé d’entraînement que je peux montrer.',
+    primaryCta: 'Lire le parcours',
+    secondaryCta: 'Voir le réseau',
+    scaleNote: 'relevé depuis Toulouse',
     readouts: [
-      { key: 'site', label: 'site', value: 'labo maison, FR' },
-      { key: 'cluster', label: 'cluster', value: 'pve1 + pve3' },
-      { key: 'edge', label: 'périmètre', value: 'OPNsense + WireGuard' },
-      { key: 'backup', label: 'sauvegarde', value: 'PBS + hors site' },
+      { key: 'study', label: 'études', value: 'ESGI B3, SRC' },
+      { key: 'ctf', label: 'ctf', value: 'THCon 2025' },
+      { key: 'cluster', label: 'cluster', value: '52 invités' },
+      { key: 'routes', label: 'reverse proxy', value: '38 routes publiques' },
     ],
   },
 }

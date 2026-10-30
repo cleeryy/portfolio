@@ -1,18 +1,23 @@
 import type { Bi } from '../lib/i18n'
 
 /**
- * The installations — the software pinned to the sheet.
+ * The projects — the software pinned to the sheet.
  *
- * Gazetteer rules for this file:
- * - Four real projects, no fifth, nothing aspirational. Every `href` resolves
- *   today; there is exactly one address per entry, because a second link turns a
- *   gazetteer into a card with buttons.
- * - Mealboard's repository is private, so its only public door is the running
- *   service. That asymmetry is real and the section's foot note says so.
- * - No user counts, no "used by", no star counts: none of it is verifiable and
- *   none of it is the point.
- * - `stack` is set in mono, joined with `+` — a list of instruments, not a
+ * This is the CV's engineering register, not a product page. Six entries, which
+ * is the cap, chosen for a security hire: the tools that read a network, then
+ * the software that ships. Every entry carries four checkable things — one line
+ * of what it is, the stack in mono, the status it has today, and exactly one real
+ * address (the running service, or the code when the code is the door).
+ *
+ * Rules:
+ * - No seventh entry, nothing aspirational. Every `href` resolves today.
+ * - Status is a fact read off the deployment, never a promise: `in production`
+ *   only where something actually serves, `in progress` otherwise.
+ * - No user counts, no star counts, no "used by" — none of it is verifiable.
+ * - `stack` is set in mono, joined with `+` at render: instruments, not a
  *   sentence. Never `Node · React · Docker`, which the design refuses.
+ * - The portfolio itself is deliberately absent: a slot spent on this page is a
+ *   slot not spent on work the reader can judge.
  */
 
 export type InstallationKind = 'hosted' | 'desk' | 'sheet'
@@ -28,9 +33,8 @@ export type InstallationLink = {
 export type Installation = {
   id: string
   /**
-   * Display name. Proper names are the same in both languages; a name that is
-   * really a description ("This sheet") is written in each language separately
-   * and the apostrophe stays typographic.
+   * Display name, written exactly as the repository names it. A proper name is
+   * the same in both languages.
    */
   name: Bi
   /** Which survey symbol marks it. See `kindLabel` for the legend. */
@@ -39,34 +43,72 @@ export type Installation = {
   what: Bi
   /** Instruments, in the order they matter. Joined with `+` at render. */
   stack: string[]
+  /** Where it stands today, in two or three words. */
+  status: Bi
   link: InstallationLink
 }
 
+const IN_PRODUCTION: Bi = { en: 'in production', fr: 'en production' }
+
 export const installations: Installation[] = [
   {
-    id: 'mealboard',
-    name: { en: 'Mealboard', fr: 'Mealboard' },
+    id: 'cipherbot',
+    name: { en: 'cipherbot', fr: 'cipherbot' },
     kind: 'hosted',
     what: {
-      en: 'A meal planner and a shopping list that agree with each other: plan the week, and the list follows.',
-      fr: 'Un planificateur de repas et une liste de courses qui s’accordent\u00a0: on planifie la semaine, la liste suit.',
+      en: 'A Discord bot for a security community: CVE lookup on the NVD, MITRE ATT&CK techniques, RDAP, and hash or URL reputation from VirusTotal.',
+      fr: 'Un bot Discord pour une communauté cybersécurité\u00a0: recherche de CVE sur le NVD, techniques MITRE ATT&CK, RDAP, et réputation de hash ou d’URL via VirusTotal.',
     },
-    stack: ['Next.js', 'SQLite', 'Docker'],
+    stack: ['Rust', 'SQLite'],
+    status: IN_PRODUCTION,
     link: {
-      label: { en: 'live site', fr: 'site en ligne' },
-      display: 'mealboard.cleeryy.cloud',
-      href: 'https://mealboard.cleeryy.cloud',
+      label: { en: 'source', fr: 'code source' },
+      display: 'github.com/cleeryy/cipherbot',
+      href: 'https://github.com/cleeryy/cipherbot',
+    },
+  },
+  {
+    id: 'atlas-live',
+    name: { en: 'atlas-live', fr: 'atlas-live' },
+    kind: 'hosted',
+    what: {
+      en: 'A live map of the cluster: a dependency-free Python collector behind an SVG page that refreshes every 15 seconds — 52 documented flows, 17 TCP probes.',
+      fr: 'Une carte du cluster en direct\u00a0: un collecteur Python sans dépendance derrière une page SVG qui se rafraîchit toutes les 15 secondes — 52 flux documentés, 17 sondes TCP.',
+    },
+    stack: ['Python', 'SVG', 'JavaScript'],
+    status: IN_PRODUCTION,
+    link: {
+      label: { en: 'live map', fr: 'carte en ligne' },
+      display: 'atlas.cleeryy.cloud',
+      href: 'https://atlas.cleeryy.cloud',
+    },
+  },
+  {
+    id: 'vegjustice',
+    name: { en: 'VegJustice', fr: 'VegJustice' },
+    kind: 'hosted',
+    what: {
+      en: 'A Paper and Purpur plugin that runs justice, police and a judicial economy on a roleplay server — 230 commits, the project I have iterated on the longest.',
+      fr: 'Un plugin Paper et Purpur qui fait tourner la justice, la police et une économie judiciaire sur un serveur RP — 230 commits, le projet que j’ai le plus itéré.',
+    },
+    stack: ['Java 21', 'Paper', 'Purpur'],
+    status: IN_PRODUCTION,
+    link: {
+      label: { en: 'source', fr: 'code source' },
+      display: 'git.cleeryy.cloud/cleeryy/VegJustice',
+      href: 'https://git.cleeryy.cloud/cleeryy/VegJustice',
     },
   },
   {
     id: 'micforge',
-    name: { en: 'MicForge', fr: 'MicForge' },
+    name: { en: 'micforge', fr: 'micforge' },
     kind: 'desk',
     what: {
-      en: 'A desktop app that shapes microphone audio in real time, with a preset for the mic you actually own.',
-      fr: 'Une appli de bureau qui travaille le son du micro en direct, avec un préréglage pour n’importe quel micro.',
+      en: 'Real-time microphone processing on Windows: noise suppression, gate, compressor, EQ, de-esser, limiter — pure-Rust DSP, AGPL-3.0.',
+      fr: 'Traitement du micro en temps réel sous Windows\u00a0: réduction de bruit, gate, compresseur, EQ, de-esser, limiteur — DSP en Rust pur, AGPL-3.0.',
     },
     stack: ['Rust', 'Tauri v2', 'cpal'],
+    status: { en: 'in progress', fr: 'en cours' },
     link: {
       label: { en: 'source', fr: 'code source' },
       display: 'github.com/cleeryy/micforge',
@@ -74,33 +116,35 @@ export const installations: Installation[] = [
     },
   },
   {
-    id: 'tchounis',
-    name: { en: 'Tchouni’s Pharmacy', fr: 'Tchouni’s Pharmacy' },
+    id: 'balcon',
+    name: { en: 'balcon', fr: 'balcon' },
     kind: 'hosted',
     what: {
-      en: 'Coursework turned into a documentation site: each page is a file, and pushing the file publishes it.',
-      fr: 'Des cours de pharmacie transformés en site de documentation\u00a0: chaque page est un fichier du dépôt, on pousse le fichier, la page est publiée.',
+      en: 'A modern changedetection.io: point it at a page, get told when the page changes.',
+      fr: 'Un changedetection.io moderne\u00a0: on vise une page, on est prévenu quand elle change.',
     },
-    stack: ['Next.js', 'Fumadocs', 'MDX'],
+    stack: ['Next.js 16', 'Prisma', 'SQLite', 'FastAPI'],
+    status: IN_PRODUCTION,
     link: {
-      label: { en: 'live site', fr: 'site en ligne' },
-      display: 'tchounis-pharmacy.cleeryy.cloud',
-      href: 'https://tchounis-pharmacy.cleeryy.cloud',
+      label: { en: 'source', fr: 'code source' },
+      display: 'github.com/cleeryy/balcon',
+      href: 'https://github.com/cleeryy/balcon',
     },
   },
   {
-    id: 'sheet',
-    name: { en: 'This sheet', fr: 'Cette feuille' },
-    kind: 'sheet',
+    id: 'mealboard',
+    name: { en: 'mealboard', fr: 'mealboard' },
+    kind: 'hosted',
     what: {
-      en: 'The page you are reading: a survey drawn in React, one WebGL plot, no template.',
-      fr: 'La page que vous lisez\u00a0: un relevé dessiné en React, une seule vue WebGL, aucun gabarit.',
+      en: 'A weekly meal planner and a shopping list that agree with each other, self-hosted, one SQLite file.',
+      fr: 'Un planificateur de repas et une liste de courses qui s’accordent, auto-hébergés, un seul fichier SQLite.',
     },
-    stack: ['React', 'GSAP', 'Three.js'],
+    stack: ['Next.js', 'SQLite', 'Docker'],
+    status: IN_PRODUCTION,
     link: {
-      label: { en: 'source', fr: 'code source' },
-      display: 'github.com/cleeryy/portfolio',
-      href: 'https://github.com/cleeryy/portfolio',
+      label: { en: 'live site', fr: 'site en ligne' },
+      display: 'mealboard.cleeryy.cloud',
+      href: 'https://mealboard.cleeryy.cloud',
     },
   },
 ]
@@ -112,35 +156,35 @@ export type ServicesCopy = {
   keyLabel: string
   /** One line per survey symbol. */
   kindLabel: Record<InstallationKind, string>
-  /** Ledger column keys: the installation, and its one address. */
-  columnKeys: { installation: string; address: string }
+  /** Ledger column keys: the project, and its one address. */
+  columnKeys: { project: string; address: string }
   /** Foot note. Explains the asymmetry of the addresses, nothing else. */
   note: string
 }
 
 export const servicesCopy: Bi<ServicesCopy> = {
   en: {
-    title: 'Built here, kept running.',
-    lead: 'The things I could not find ready-made: services on the cluster, a tool for a desk, and this page. Each carries one address — the live site, or the code when the code is the only way in.',
+    title: 'The software I build.',
+    lead: 'Six projects: what each one is, what it is built with, and whether it runs today. One address per entry — the running service, or the code.',
     keyLabel: 'key',
     kindLabel: {
-      hosted: 'hosted',
+      hosted: 'on a server',
       desk: 'on a desk',
       sheet: 'this sheet',
     },
-    columnKeys: { installation: 'installation', address: 'address' },
+    columnKeys: { project: 'project', address: 'address' },
     note: 'Where the repository is private, the link goes to the thing that runs.',
   },
   fr: {
-    title: 'Construits ici, maintenus en marche.',
-    lead: 'Ce que je n’ai pas trouvé tout fait\u00a0: des services sur le cluster, un outil posé sur un bureau, et cette page. Une seule adresse chacun — le site en ligne, ou le code quand c’est le code qui ouvre la porte.',
+    title: 'Les logiciels que je construis.',
+    lead: 'Six projets\u00a0: ce que chacun est, avec quoi il est construit, et s’il tourne aujourd’hui. Une adresse par entrée — le service en ligne, ou le code.',
     keyLabel: 'légende',
     kindLabel: {
-      hosted: 'hébergé',
+      hosted: 'sur un serveur',
       desk: 'sur un bureau',
       sheet: 'cette feuille',
     },
-    columnKeys: { installation: 'installation', address: 'adresse' },
+    columnKeys: { project: 'projet', address: 'adresse' },
     note: 'Quand le dépôt est privé, le lien mène à la chose qui tourne.',
   },
 }

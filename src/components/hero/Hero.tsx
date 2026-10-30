@@ -95,10 +95,13 @@ export default function Hero() {
         </div>
 
         <div className="hero__actions">
-          <MagneticButton href="#territory" onClick={() => scrollToId('territory')}>
+          {/* The claim has already made the request; the primary action is the
+              evidence for it. `#contact` stays one click away in the nav and
+              closes the sheet, so nothing is hidden behind this order. */}
+          <MagneticButton href="#path" onClick={() => scrollToId('path')}>
             {copy.primaryCta}
           </MagneticButton>
-          <MagneticButton href="#about" variant="quiet" onClick={() => scrollToId('about')}>
+          <MagneticButton href="#territory" variant="quiet" onClick={() => scrollToId('territory')}>
             {copy.secondaryCta}
           </MagneticButton>
         </div>

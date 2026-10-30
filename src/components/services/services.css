@@ -3,8 +3,8 @@
    ----------------------------------------------------------------------------
    A list of places, not a list of cards. Each entry is one hairline with a
    survey symbol pinned to it, a name in display type, one sentence, the stack
-   in mono and exactly one address set against the right margin — the column a
-   printed gazetteer gives to its coordinates.
+   and the current status in mono, and exactly one address set against the right
+   margin — the column a printed gazetteer gives to its coordinates.
 
    The only ornament is that symbol: a filled square (hosted), a cross (a build
    that lives on a desk), a ring in the survey mark (this sheet — the control
@@ -136,9 +136,10 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
   grid-template-areas:
-    'name  link'
-    'what  link'
-    'stack link';
+    'name   link'
+    'what   link'
+    'stack  link'
+    'status link';
   column-gap: clamp(1.5rem, 3.5vw, 3rem);
   row-gap: var(--s-2);
   padding-block: clamp(1.5rem, 2.6vw, 2.25rem);
@@ -251,6 +252,15 @@
   padding-block-start: 0.1rem;
 }
 
+/* Where the project stands today. Mono, quiet, its own line: a reading, not a
+   badge, and never joined to the stack with a dot. */
+.svc__status {
+  grid-area: status;
+  margin: 0;
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+}
+
 /* ---------------------------------------------------------------------------
    Address — the coordinate column
    --------------------------------------------------------------------------- */
@@ -345,6 +355,7 @@
       'name'
       'what'
       'stack'
+      'status'
       'link';
     row-gap: var(--s-2);
     padding-inline-start: 1.75rem;

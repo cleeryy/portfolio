@@ -14,8 +14,14 @@ import './services.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
-/** Reading order of the symbol key. Matches the order of the register. */
-const kindOrder: InstallationKind[] = ['hosted', 'desk', 'sheet']
+/**
+ * Reading order of the symbol key: fixed, but filtered to the symbols the
+ * register actually uses. A key that lists a mark no entry carries is a lie in
+ * the margin, and the register is now six projects with no self-reference.
+ */
+const kindOrder: InstallationKind[] = (['hosted', 'desk', 'sheet'] as const).filter((kind) =>
+  installations.some((item) => item.kind === kind),
+)
 
 /**
  * One survey symbol per entry, drawn in CSS, never an image.
@@ -29,12 +35,12 @@ function Glyph({ kind }: { kind: InstallationKind }) {
 }
 
 /**
- * The installations, as a gazetteer.
+ * The projects, as a gazetteer.
  *
  * A register, not cards: one hairline per entry, the symbol pinned to that
- * hairline, the name in display type, one line of what it is, the stack in mono
- * and exactly one address on the right — the live site, or the source. Nothing
- * is a screenshot and nothing pretends to be one.
+ * hairline, the name in display type, one line of what it is, the stack and the
+ * current status in mono, and exactly one address on the right — the live site,
+ * or the source. Nothing is a screenshot and nothing pretends to be one.
  *
  * Motion is the quietest on the page: one rule-wipe per entry, once, staggered.
  * The text never moves. If the script never runs the rules are simply drawn,
@@ -116,7 +122,7 @@ export default function Services() {
 
         <div className="svc__register">
           <div className="svc__cols mono" aria-hidden="true">
-            <span>{copy.columnKeys.installation}</span>
+            <span>{copy.columnKeys.project}</span>
             <span>{copy.columnKeys.address}</span>
           </div>
 
@@ -129,6 +135,9 @@ export default function Services() {
                 <h3 className="svc__name">{pick(item.name)}</h3>
                 <p className="svc__what">{pick(item.what)}</p>
                 <p className="svc__stack mono">{item.stack.join(' + ')}</p>
+                {/* Status is its own line, not a chip and not a dot-separated
+                    string: the design refuses `a · b · c` metadata. */}
+                <p className="svc__status mono">{pick(item.status)}</p>
 
                 <a
                   className="svc__link"

@@ -2,7 +2,14 @@ import { useLayoutEffect, useRef } from 'react'
 import { useLang } from '../../lib/i18n'
 import { initSectionRig } from '../../lib/reveal'
 import { sound } from '../../lib/sound'
-import { contact, contactEmail, sourceLabel, sourceUrl } from '../../content/contact'
+import {
+  blogLabel,
+  blogUrl,
+  contact,
+  contactEmail,
+  sourceLabel,
+  sourceUrl,
+} from '../../content/contact'
 import SplitText from '../ui/SplitText'
 import './contact.css'
 
@@ -30,12 +37,13 @@ function MailAddress() {
 }
 
 /**
- * The closing page: one question, one line, one address.
+ * The closing page: the request, one line of invitation, three addresses.
  *
  * No form, no availability badge, no newsletter — a `mailto:` that works with
- * the script switched off, and the one profile he actually uses. The address is
- * the primary action and it is set in display type, not in a plate: a plate
- * would make a link look like a control, and this is a letter.
+ * the script switched off, then the two pages that prove the rest: the code and
+ * the writeups. The address is the primary action and it is set in display type,
+ * not in a plate: a plate would make a link look like a control, and this is a
+ * letter.
  *
  * This component renders two things: the `#contact` section and the page's
  * colophon (`<footer>`), so `<Contact />` belongs last inside `<main>`. The
@@ -107,6 +115,17 @@ export default function Contact() {
                     onClick={() => sound.click()}
                   >
                     {sourceLabel}
+                  </a>
+                </dd>
+              </div>
+
+              {/* The third address is the record: the writeups the training
+                  chapter points at. It is a link, never a badge. */}
+              <div className="ct__row">
+                <dt className="mono">{copy.blogKey}</dt>
+                <dd>
+                  <a className="ct__link" href={blogUrl} onClick={() => sound.click()}>
+                    {blogLabel}
                   </a>
                 </dd>
               </div>

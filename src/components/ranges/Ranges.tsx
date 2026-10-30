@@ -4,14 +4,14 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useLang } from '../../lib/i18n'
 import { initSectionRig } from '../../lib/reveal'
 import { sound } from '../../lib/sound'
-import { fieldwork, platforms, rangesCopy } from '../../content/ranges'
+import { evidence, platforms, rangesCopy } from '../../content/ranges'
 import SplitText from '../ui/SplitText'
 import './ranges.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
-/** The platforms, then the field. Order is the register's reading order. */
-const grounds = [...platforms, fieldwork]
+/** The record first, then the practice. Order is the register's reading order. */
+const grounds = [...evidence, ...platforms]
 
 /**
  * Which register the reader gets.
@@ -34,7 +34,7 @@ const MOTION_CONDITIONS = {
  * The content plate is pinned for exactly the distance the strip has to travel,
  * so the page cannot scroll past panels that have not been shown, and cannot sit
  * still after the last one has. The head stays put — it is the chapter title —
- * while the five rows cross the sheet from right to left on one continuous rule.
+ * while the six rows cross the sheet from right to left on one continuous rule.
  *
  * Bounds: at progress 0 the first panel is flush with the content column; at
  * progress 1 the last panel's right edge is flush with it. `scrub` is short
@@ -135,12 +135,13 @@ function buildRegister(root: HTMLElement): void {
 /**
  * The ranges — the only dark band on the site.
  *
- * A register, not cards: one rule per row, the platform on the left, what he
- * does there on the right. No score, no rank, no event name. Rows carry a link
- * only once a confirmed profile exists; today every row is plain text.
+ * A register, not cards: one rule per row, the ground on the left, what it was
+ * or what he does there on the right. No score, no rank. A row carries a link
+ * only where a public page documents it, and the platform rows carry neither a
+ * handle nor a number because neither is documented.
  *
  * On a wide screen with a mouse the register becomes a transect: the chapter
- * pins and the five rows travel across the sheet, because a register of places
+ * pins and the six rows travel across the sheet, because a register of places
  * read along one horizontal line is the one moment on the page where the map is
  * not read top to bottom.
  */
@@ -246,10 +247,10 @@ export default function Ranges() {
 
                     <div className="rng__cell rng__cell--ground">
                       <h3 className="rng__name">
-                        {ground.profileUrl ? (
+                        {ground.href ? (
                           <a
                             className="rng__link"
-                            href={ground.profileUrl}
+                            href={ground.href}
                             rel="noopener noreferrer"
                           >
                             {pick(ground.name)}
@@ -258,6 +259,9 @@ export default function Ranges() {
                           pick(ground.name)
                         )}
                       </h3>
+                      {/* One measured line under the name: a date, a format.
+                          Never a result — the register has no scoreboard. */}
+                      {ground.meta ? <p className="rng__meta mono">{pick(ground.meta)}</p> : null}
                     </div>
 
                     <div className="rng__cell rng__cell--practice">

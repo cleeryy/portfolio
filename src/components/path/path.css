@@ -1,0 +1,564 @@
+/* ============================================================================
+   path.css — the parcours, as a traverse
+   ----------------------------------------------------------------------------
+   One ruled spine, one station per step. The date is printed above the line in
+   mono, the step below it: the sheet's own convention (a measurement above the
+   rule, the thing measured under it) applied to a career.
+
+   There is no card in this file. An entry is a station, a title, a second line
+   and one sentence; the rule does the grouping, exactly as it does in the
+   gazetteer next door.
+
+   Two registers, one markup:
+
+   - **vertical** (default, and every touch screen): the spine runs down the
+     left, the year sits in the margin against it, the entry opens to its right.
+     This is the printed CV and the fallback — it is what the page shows if the
+     script never runs.
+   - **traverse** (`data-mode="h"`, written by Path.tsx under exactly the same
+     media conditions as the ScrollTrigger pin): the chapter pins and the panels
+     cross the sheet along the line, so the one section that is a sequence is the
+     one section read sideways.
+
+   The crimson appears once, on the station of the step that is happening now,
+   and it is a control ring: the sheet's mark for "you are here".
+   ========================================================================== */
+
+.pth {
+  /* The margin that carries the date against the spine. Sized for the longest
+     label (`2026–2027`, 9 mono characters) so it never reflows. */
+  --pth-margin: 4.75rem;
+  /* The band above the line in the traverse: the date, then its status. */
+  --pth-date-h: 2.75rem;
+  /* One panel of the transect. */
+  --pth-panel: clamp(20rem, 30vw, 28rem);
+  /* The window's fade, and the panel's inline padding: the same value, so at
+     rest — first panel flush left, last flush right — no glyph is inside it. */
+  --pth-fade: var(--s-6);
+  --pth-pad: var(--s-5);
+
+  position: relative;
+  padding-block: clamp(4rem, 9vw, 8rem) clamp(4rem, 8vw, 7rem);
+  padding-inline: var(--gutter);
+  border-top: var(--hair) solid var(--rule);
+  background-color: var(--ground);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+.pth__inner {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Head — ref, claim, context, and the one sentence a recruiter needs
+   --------------------------------------------------------------------------- */
+
+.pth__head {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 26rem);
+  grid-template-areas: 'ref title intro';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: var(--s-5);
+}
+
+.pth__ref {
+  grid-area: ref;
+  padding-block-start: 0.85rem;
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+}
+
+.pth__title {
+  grid-area: title;
+  max-width: 15ch;
+  margin: 0;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+}
+
+.pth__intro {
+  grid-area: intro;
+  padding-block-start: 0.7rem;
+}
+
+.pth__intro p {
+  max-width: 44ch;
+  margin: 0;
+  font-size: var(--step-0);
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+/* The ask. Full ink and one step up, not a badge: it is a sentence he would
+   say, and the only line on this sheet that is a wish instead of a record. */
+.pth__ask {
+  margin-block-start: 1em;
+  font-size: var(--step-1);
+  line-height: 1.45;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+/* ---------------------------------------------------------------------------
+   Register — the ruled spine and its stations
+   --------------------------------------------------------------------------- */
+
+.pth__register {
+  margin-block-start: clamp(2.5rem, 6vw, 4rem);
+}
+
+.pth__strip {
+  position: relative;
+}
+
+/* The traverse's axis. In the vertical register the list rules its own line
+   below, so these two are not rendered at all. */
+.pth__spine,
+.pth__ink {
+  display: none;
+}
+
+.pth__list {
+  position: relative;
+}
+
+/* The vertical spine: one continuous rule down the margin, from the first
+   station to the last. It is the axis of the register, so it spans the whole
+   list rather than starting and stopping at each entry. */
+.pth__list::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--pth-margin);
+  inline-size: 1px;
+  background-color: var(--rule);
+}
+
+.pth__entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--pth-margin) minmax(0, 1fr);
+  padding-block: var(--pth-pad);
+}
+
+.pth__cell {
+  min-width: 0;
+}
+
+.pth__when {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  padding-inline-end: var(--s-2);
+  text-align: end;
+}
+
+.pth__date {
+  margin: 0;
+  font-size: var(--step--2);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+
+.pth__now {
+  font-size: var(--step--2);
+  line-height: 1.3;
+  color: var(--mark);
+  white-space: nowrap;
+}
+
+/* A station: a short tick crossing the spine, at the height of the date it
+   belongs to. Decoration only — the date is the real reading. */
+.pth__station {
+  position: absolute;
+  inset-inline-start: var(--pth-margin);
+  inset-block-start: calc(var(--pth-pad) + 0.48rem);
+  inline-size: 0.5625rem;
+  block-size: 1px;
+  background-color: var(--text);
+  pointer-events: none;
+}
+
+/* The control ring: the step in progress, and the only crimson here. Its
+   background is the sheet so the rule passes behind it, not through it. */
+.pth__station--now {
+  inset-inline-start: calc(var(--pth-margin) - 4px);
+  inset-block-start: calc(var(--pth-pad) + 0.2rem);
+  inline-size: 9px;
+  block-size: 9px;
+  background-color: var(--ground);
+  border: 1.5px solid var(--mark);
+  border-radius: 50%;
+}
+
+.pth__body {
+  grid-column: 2;
+  padding-inline-start: var(--s-4);
+}
+
+.pth__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.15;
+  letter-spacing: -0.014em;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+.pth__org {
+  margin-block-start: 0.3rem;
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--text-quiet);
+  text-wrap: pretty;
+}
+
+.pth__what {
+  max-width: 56ch;
+  margin-block-start: var(--s-3);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+/* The site's link language: an underline, never an arrow, never a colour. */
+.pth__link {
+  display: block;
+  inline-size: fit-content;
+  margin-block-start: var(--s-3);
+  font-size: var(--step--1);
+  text-decoration-line: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.16em;
+  text-decoration-color: var(--text-quiet);
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.pth__link:hover {
+  text-decoration-color: var(--mark);
+  color: var(--text);
+}
+
+.pth__link:focus-visible {
+  outline: 2px solid var(--mark);
+  outline-offset: 4px;
+  text-decoration-color: var(--mark);
+}
+
+/* The register's foot: reading order and provenance in one line. */
+.pth__note {
+  margin-block-start: var(--s-4);
+  padding-block-start: var(--s-3);
+  border-top: var(--hair) solid var(--rule);
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+  text-align: end;
+}
+
+/* A wide sheet, read as a register (reduced motion, no script, or a coarse
+   pointer on a large screen): what the step is on the left, what happened on the
+   right, so the entry uses the width instead of trailing off into the margin.
+   Never in the traverse — there a panel is one column. */
+@media (min-width: 1181px) {
+  .pth:not([data-mode='h']) .pth__body {
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    column-gap: clamp(2rem, 4vw, 3.5rem);
+    align-items: start;
+  }
+
+  .pth:not([data-mode='h']) .pth__ident {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .pth:not([data-mode='h']) .pth__what {
+    grid-column: 2;
+    grid-row: 1;
+    margin-block-start: 0;
+  }
+
+  .pth:not([data-mode='h']) .pth__link {
+    grid-column: 2;
+    grid-row: 2;
+    margin-block-start: var(--s-2);
+  }
+}
+
+.pth__ident {
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   The traverse — wide screens with a mouse only
+   ---------------------------------------------------------------------------
+   `data-mode="h"` is written by Path.tsx under exactly the same media
+   conditions as the ScrollTrigger pin, so the layout and the pin can never
+   disagree about whether the register is horizontal.
+   --------------------------------------------------------------------------- */
+
+.pth[data-mode='h'] {
+  /* The padding and the height move to the pinned plate, so the section — the
+     thing the nav scrolls to — starts exactly where the pin starts. */
+  padding: 0;
+}
+
+/* Vertical register: the plate is not a box at all. */
+.pth__pin {
+  display: contents;
+}
+
+.pth[data-mode='h'] .pth__pin {
+  display: flex;
+  align-items: center;
+  min-height: 100svh;
+  padding-block: calc(var(--nav-h) + var(--s-4)) var(--s-6);
+  padding-inline: var(--gutter);
+}
+
+.pth[data-mode='h'] .pth__inner {
+  width: 100%;
+}
+
+.pth[data-mode='h'] .pth__head {
+  /* The areas are restated, not inherited: the narrow-viewport rule below drops
+     to two columns with a two-area template, and a pinned head that keeps those
+     areas while carrying three columns would place the intro under the title. */
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 23rem);
+  grid-template-areas: 'ref title intro';
+  align-items: start;
+}
+
+.pth[data-mode='h'] .pth__title {
+  max-width: 17ch;
+}
+
+.pth[data-mode='h'] .pth__intro p {
+  max-width: 40ch;
+  font-size: var(--step-0);
+}
+
+.pth[data-mode='h'] .pth__register {
+  margin-block-start: clamp(1.75rem, 4.5vh, 3rem);
+}
+
+/* The window the transect is seen through. A panel crossing the edge dissolves
+   instead of being sliced through a glyph, and the line fades with it. */
+.pth[data-mode='h'] .pth__strip {
+  overflow: clip;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--pth-fade),
+    #000 calc(100% - var(--pth-fade)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--pth-fade),
+    #000 calc(100% - var(--pth-fade)),
+    transparent 100%
+  );
+}
+
+/* The printed rule: always there, never re-drawn. */
+.pth[data-mode='h'] .pth__spine {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: var(--pth-date-h);
+  display: block;
+  block-size: 1px;
+  background-color: var(--rule);
+}
+
+/* The inked stretch, drawn by the same scrub as the travel: the line is
+   surveyed as the panels pass it. */
+.pth[data-mode='h'] .pth__ink {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: var(--pth-date-h);
+  display: block;
+  block-size: 1px;
+  background-color: var(--text);
+  transform-origin: left center;
+}
+
+.pth[data-mode='h'] .pth__list {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+/* The strip owns the axis in this mode. */
+.pth[data-mode='h'] .pth__list::before {
+  content: none;
+}
+
+.pth[data-mode='h'] .pth__entry {
+  flex: 0 0 var(--pth-panel);
+  display: block;
+  padding: 0 var(--pth-fade) var(--s-4);
+}
+
+/* The date sits above the line, against it, left-aligned with the station. The
+   4px of padding keeps the status off the rule itself. */
+.pth[data-mode='h'] .pth__when {
+  block-size: var(--pth-date-h);
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-inline-end: 0;
+  padding-block-end: 4px;
+  text-align: start;
+}
+
+.pth[data-mode='h'] .pth__body {
+  padding-inline-start: 0;
+  padding-block-start: var(--s-4);
+}
+
+.pth[data-mode='h'] .pth__station {
+  inset-inline-start: var(--pth-fade);
+  inset-block-start: calc(var(--pth-date-h) - 4.5px);
+  inline-size: 1px;
+  block-size: 9px;
+}
+
+/* The control ring sits in the panel's own gutter, not on the first glyph: the
+   date column stays aligned with every other panel, and the symbol reads as a
+   station on the axis with its label to the right. */
+.pth[data-mode='h'] .pth__station--now {
+  inset-inline-start: calc(var(--pth-fade) - 1rem);
+  inline-size: 9px;
+  block-size: 9px;
+}
+
+.pth[data-mode='h'] .pth__what {
+  max-width: 40ch;
+}
+
+.pth[data-mode='h'] .pth__note {
+  margin-block-start: var(--s-3);
+}
+
+/* ---------------------------------------------------------------------------
+   The traverse, on a laptop — compact, not truncated
+   ---------------------------------------------------------------------------
+   Between 901 and 1180px every rule below buys vertical room for the pinned
+   plate: a narrower panel re-wraps each sentence into more lines, so the width
+   is bought back rather than the type shrunk; the intro tightens; the register
+   sits closer to the head. The traverse never clips a line of an entry.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 1180px) {
+  .pth[data-mode='h'] {
+    --pth-panel: clamp(19rem, 34vw, 26rem);
+  }
+
+  .pth[data-mode='h'] .pth__head {
+    grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 21rem);
+  }
+
+  .pth[data-mode='h'] .pth__title {
+    font-size: var(--step-3);
+  }
+
+  .pth[data-mode='h'] .pth__intro p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .pth[data-mode='h'] .pth__register {
+    margin-block-start: var(--s-4);
+  }
+}
+
+@media (max-width: 1024px) {
+  .pth[data-mode='h'] {
+    --pth-panel: clamp(21rem, 40vw, 28rem);
+  }
+}
+
+/* A short viewport must not turn the pinned chapter into a crop. */
+@media (max-height: 800px) and (min-width: 901px) {
+  .pth[data-mode='h'] .pth__pin {
+    padding-block: calc(var(--nav-h) + var(--s-3)) var(--s-5);
+  }
+
+  .pth[data-mode='h'] .pth__register {
+    margin-block-start: var(--s-4);
+  }
+
+  .pth[data-mode='h'] .pth__intro p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive — the vertical register
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 1080px) {
+  .pth__head {
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    grid-template-areas:
+      'ref title'
+      'ref intro';
+  }
+
+  .pth__intro {
+    padding-block-start: 0;
+  }
+
+  .pth__intro p {
+    max-width: 54ch;
+  }
+}
+
+@media (max-width: 720px) {
+  .pth {
+    padding-block-start: calc(var(--nav-h-compact) + clamp(2.5rem, 8vw, 4rem));
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .pth__head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'ref'
+      'title'
+      'intro';
+    row-gap: var(--s-4);
+  }
+
+  .pth__ref,
+  .pth__intro {
+    padding-block-start: 0;
+  }
+
+  .pth__title {
+    max-width: 13ch;
+  }
+
+  .pth__note {
+    text-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pth__link {
+    transition: none;
+  }
+}

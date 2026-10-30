@@ -302,7 +302,7 @@ one plan. Drawn with 3 draw calls (lines + points, no triangles), DOM labels (ma
 motion renders one static frame, no WebGL falls back to the SVG plate. The DOM register below
 carries the same inventory as text.
 
-Counts are re-surveyed from the config: **41 published hostnames, 30 internal**.
+Counts are re-surveyed from the config and stated as *routes*: **39 published, 28 internal** (one file = one route).
 
 **CV chapter.** `#path` is a pinned horizontal traverse of dated steps (oldest first, the
 open year last) and `#skills` is a ledger: a sticky margin rail of seven domains, each with an
