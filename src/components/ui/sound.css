@@ -34,9 +34,8 @@
     border-color 160ms ease;
 }
 
-/* The hairline box is a resting state, not chrome: it stays invisible until the
-   control is touched, so the nav keeps a single quiet baseline. */
-
+/* The hairline box stays invisible until the control is touched, so the nav keeps
+   a single quiet baseline instead of a row of boxes. */
 .sound-toggle__label {
   opacity: 0.78;
   transition: opacity 160ms ease;
@@ -46,9 +45,8 @@
   display: inline-flex;
   flex: none;
   align-items: center;
-  justify-content: space-between;
   gap: 2px;
-  width: 11px;
+  width: 10px;
   height: 12px;
 }
 
@@ -57,22 +55,18 @@
   width: 2px;
   border-radius: 0.5px;
   background-color: currentColor;
-  transform: scaleY(0.34);
-  transform-origin: center;
-  opacity: 0.3;
-  transition:
-    opacity 240ms ease,
-    transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  opacity: 0.24;
+  transition: opacity 240ms ease;
 }
 
 .sound-toggle__bar:nth-child(1) {
   height: 6px;
 }
 .sound-toggle__bar:nth-child(2) {
-  height: 11px;
+  height: 12px;
 }
 .sound-toggle__bar:nth-child(3) {
-  height: 8px;
+  height: 9px;
 }
 
 /* --- on ------------------------------------------------------------------ */
@@ -120,6 +114,14 @@
   }
 
   .sound-toggle:hover .sound-toggle__label {
+    opacity: 1;
+  }
+
+  .sound-toggle:hover .sound-toggle__bar {
+    opacity: 0.5;
+  }
+
+  .sound-toggle[aria-pressed='true']:hover .sound-toggle__bar {
     opacity: 1;
   }
 }

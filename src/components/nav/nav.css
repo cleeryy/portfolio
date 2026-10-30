@@ -1,0 +1,296 @@
+/* ============================================================================
+   nav.css — the fixed collar of the sheet
+   A solid bar with a single hairline. No blur, no pill, no floating card.
+   ========================================================================== */
+
+.nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--z-nav);
+  background-color: var(--ground);
+  border-bottom: var(--hair) solid var(--contour);
+  transition: border-color var(--t-base) var(--ease-out);
+}
+
+.nav[data-scrolled='true'] {
+  border-bottom-color: var(--ink);
+}
+
+.nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  height: var(--nav-h);
+  padding-inline: var(--gutter);
+  transition: height var(--t-base) var(--ease-out);
+}
+
+.nav[data-scrolled='true'] .nav__inner {
+  height: var(--nav-h-compact);
+}
+
+/* ---------------------------------------------------------------------------
+   Brand — a station mark and the handle
+   --------------------------------------------------------------------------- */
+
+.nav__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  letter-spacing: -0.008em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav__brand::before {
+  content: '';
+  display: block;
+  inline-size: 6px;
+  block-size: 6px;
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Section links
+   --------------------------------------------------------------------------- */
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.2vw, 2.1rem);
+}
+
+.nav__link {
+  position: relative;
+  padding-block: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: var(--w-regular);
+  color: var(--text-soft);
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.nav__link::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--hair);
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--t-base) var(--ease-out);
+}
+
+.nav__link:hover,
+.nav__link[aria-current='true'] {
+  color: var(--ink);
+}
+
+.nav__link:hover::after {
+  transform: scaleX(1);
+}
+
+/* The active section is marked, not underlined: a short red rule at the base. */
+.nav__link[aria-current='true']::after {
+  transform: scaleX(1);
+  height: var(--hair-strong);
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Tools: language, sound, index
+   --------------------------------------------------------------------------- */
+
+.nav__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+}
+
+.nav__lang {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.nav__lang-btn {
+  min-width: 2.125rem;
+  min-height: 32px;
+  padding: 0 0.35rem;
+  border-bottom: var(--hair-strong) solid transparent;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: var(--w-regular);
+  letter-spacing: 0.04em;
+  color: var(--text-quiet);
+  transition:
+    color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out);
+}
+
+.nav__lang-btn:hover {
+  color: var(--ink);
+}
+
+.nav__lang-btn[aria-pressed='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--mark);
+}
+
+/* SoundToggle owns its own plate; it only needs the right ink here. */
+.nav__sound {
+  color: var(--text-soft);
+}
+
+.nav__index {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+  padding: 0 0.35rem;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: var(--w-medium);
+}
+
+.nav__index-sign {
+  position: relative;
+  display: block;
+  inline-size: 10px;
+  block-size: 10px;
+  transition: transform var(--t-base) var(--ease-out);
+}
+
+.nav__index-sign::before,
+.nav__index-sign::after {
+  content: '';
+  position: absolute;
+  background-color: currentColor;
+}
+
+.nav__index-sign::before {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: var(--hair);
+  margin-top: -0.5px;
+}
+
+.nav__index-sign::after {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: var(--hair);
+  margin-left: -0.5px;
+}
+
+.nav__index[aria-expanded='true'] .nav__index-sign {
+  transform: rotate(45deg);
+}
+
+/* ---------------------------------------------------------------------------
+   Index panel — pushes down from the bar, never covers the page
+   --------------------------------------------------------------------------- */
+
+.nav__panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  max-height: 0;
+  background-color: var(--ground);
+  border-bottom: var(--hair) solid var(--ink);
+  transition: max-height 400ms var(--ease-out);
+}
+
+.nav[data-open='true'] .nav__panel {
+  max-height: 24rem;
+}
+
+.nav__panel-list {
+  padding: 0 var(--gutter) var(--s-3);
+}
+
+.nav__panel-link {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding-block: 0.85rem;
+  border-top: var(--hair) solid var(--contour);
+  font-size: 1.0625rem;
+  font-weight: var(--w-medium);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav__panel-list li:first-child .nav__panel-link {
+  border-top: 0;
+}
+
+.nav__panel-ref {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-quiet);
+}
+
+.nav__panel-link:hover {
+  color: var(--mark);
+}
+
+.nav__panel-link:hover .nav__panel-ref {
+  color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  .nav__links {
+    display: none;
+  }
+
+  .nav__index {
+    display: inline-flex;
+  }
+
+  .nav__inner {
+    gap: var(--s-3);
+  }
+
+  .nav__tools {
+    gap: var(--s-2);
+  }
+}
+
+/* The panel only exists on small screens; on desktop the links are inline. */
+@media (min-width: 861px) {
+  .nav__panel {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav__index-label {
+    display: none;
+  }
+
+  .nav__inner {
+    gap: var(--s-2);
+  }
+}

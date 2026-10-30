@@ -1,0 +1,252 @@
+/* ============================================================================
+   ranges.css — the one dark chapter
+   ----------------------------------------------------------------------------
+   The map stops and the training grounds begin. Everything here relies on the
+   `.on-deep` scope in base.css: `--text`, `--text-soft`, `--text-quiet` and
+   `--rule` are re-pointed at the ink surface, so this file never writes a colour
+   of its own — and never uses `--ink`, which stays light down here.
+
+   A register, not cards: five rows, one rule each, no scores anywhere.
+   ========================================================================== */
+
+.rng {
+  position: relative;
+  padding-block: clamp(4rem, 9vw, 8rem) clamp(4rem, 8vw, 7rem);
+  padding-inline: var(--gutter);
+  border-top: var(--hair) solid var(--rule);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+.rng__inner {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+/* The chapter break's one red mark, aligned with the content column at any
+   viewport width. */
+.rng__mark {
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline-start: max(var(--gutter), calc((100% - 72rem) / 2));
+  width: 76px;
+  height: 2px;
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Head — the chapter's opening spread
+   --------------------------------------------------------------------------- */
+
+.rng__head {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 27rem);
+  grid-template-areas: 'ref title intro';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: var(--s-5);
+}
+
+.rng__ref {
+  grid-area: ref;
+  padding-block-start: 0.85rem;
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+}
+
+.rng__title {
+  grid-area: title;
+  max-width: 16ch;
+  margin: 0;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+}
+
+.rng__intro {
+  grid-area: intro;
+  padding-block-start: 0.7rem;
+}
+
+.rng__intro p {
+  max-width: 46ch;
+  margin: 0;
+  font-size: var(--step-0);
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+.rng__intro p + p {
+  margin-block-start: 0.9em;
+}
+
+/* ---------------------------------------------------------------------------
+   Register
+   --------------------------------------------------------------------------- */
+
+.rng__register {
+  margin-block-start: clamp(3rem, 7vw, 6rem);
+}
+
+/* Column keys, at annotation scale: the register is a table that behaves like a
+   ledger. Decorative for assistive tech — the headings carry the names. */
+.rng__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+  column-gap: clamp(2rem, 6vw, 5rem);
+  padding-block-end: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  line-height: 1.3;
+  color: var(--text-quiet);
+}
+
+.rng__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+  column-gap: clamp(2rem, 6vw, 5rem);
+  padding-block: var(--s-5);
+}
+
+/* The row's rule is a real element so it can be drawn left to right. */
+.rng__rule {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background-color: var(--rule);
+  transform-origin: left center;
+}
+
+.rng__cell {
+  min-width: 0;
+}
+
+.rng__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.15;
+  letter-spacing: -0.014em;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+/* Only rendered when a confirmed profile exists. The underline is the site's
+   link language; the focus ring is the design's 2px mark. */
+.rng__link {
+  text-decoration-line: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.16em;
+  text-decoration-color: var(--text-quiet);
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.rng__link:hover {
+  text-decoration-color: var(--mark);
+  color: var(--text);
+}
+
+.rng__link:focus-visible {
+  outline: 2px solid var(--mark);
+  outline-offset: 4px;
+  text-decoration-color: var(--mark);
+}
+
+.rng__cell--practice p {
+  max-width: 52ch;
+  margin: 0;
+  font-size: var(--step-1);
+  line-height: 1.55;
+  color: var(--text-soft);
+}
+
+.rng__note {
+  margin: 0;
+  padding-block-start: var(--s-3);
+  border-top: var(--hair) solid var(--rule);
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+  text-align: end;
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 1080px) {
+  .rng__head {
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    grid-template-areas:
+      'ref title'
+      'ref intro';
+  }
+
+  .rng__intro {
+    padding-block-start: 0;
+  }
+
+  .rng__intro p {
+    max-width: 54ch;
+  }
+}
+
+@media (max-width: 860px) {
+  .rng__cols,
+  .rng__row {
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+    column-gap: var(--s-5);
+  }
+}
+
+@media (max-width: 720px) {
+  .rng {
+    padding-block-start: calc(var(--nav-h-compact) + clamp(2.5rem, 8vw, 4rem));
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .rng__head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'ref'
+      'title'
+      'intro';
+    row-gap: var(--s-4);
+  }
+
+  .rng__ref,
+  .rng__intro {
+    padding-block-start: 0;
+  }
+
+  .rng__title {
+    max-width: 14ch;
+  }
+
+  /* The register stacks: platform above practice, one rule per row. The keys are
+     only meaningful while the columns exist, so they go. */
+  .rng__cols {
+    display: none;
+  }
+
+  .rng__row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-2);
+    padding-block: var(--s-5);
+  }
+
+  .rng__cell--practice p {
+    font-size: var(--step-0);
+    max-width: 56ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rng__link {
+    transition: none;
+  }
+}

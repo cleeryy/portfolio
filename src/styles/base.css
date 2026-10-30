@@ -1,1 +1,325 @@
-/* placeholder — design lane owns this file */
+/* ============================================================================
+   base.css — cleeryy portfolio
+   ----------------------------------------------------------------------------
+   Reset, page type, and the states that must be identical everywhere: focus,
+   selection, scrollbars, smooth-scroll interplay, reduced motion.
+
+   Loaded after tokens.css. Nothing here targets a section layout; sections own
+   their own files.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Reset
+   ------------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  /* The sheet colour shows through overscroll and behind the nav. */
+  background-color: var(--ground);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scrollbar-color: var(--ink-3) var(--ground);
+  scrollbar-width: thin;
+}
+
+body {
+  min-height: 100svh;
+  background-color: var(--ground);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: var(--step-0);
+  font-weight: var(--w-regular);
+  font-stretch: var(--width-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures contextual;
+
+  /* Guarantees no horizontal scroll at 320px without turning <body> into a
+     scroll container (which would break position: sticky for later lanes).
+     `clip` wins where supported; `hidden` is the fallback. */
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+img,
+svg,
+video,
+canvas,
+picture {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Type
+   ------------------------------------------------------------------------ */
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: var(--w-semi);
+  /* The width axis only. `font-variation-settings` is avoided here on purpose:
+     it is inherited and would override any `font-stretch` a component sets. */
+  font-stretch: var(--width-heading);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+}
+
+h1,
+h2 {
+  text-wrap: pretty;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Prose blocks cap their measure here; components may narrow it further. */
+.prose {
+  max-width: var(--measure);
+  font-size: var(--step-1);
+  line-height: var(--leading-body);
+  color: var(--text-soft);
+}
+
+.prose > * + * {
+  margin-block-start: 1em;
+}
+
+strong,
+b {
+  font-weight: var(--w-semi);
+  color: var(--text);
+}
+
+/* Measurements only. Coordinate strings, legend keys, the scale bar. */
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-quiet);
+}
+
+/* --------------------------------------------------------------------------
+   3. Links
+   A link is a marked measurement: a hairline under the text, not an arrow and
+   not a colour change. Colour is reserved for the survey accent.
+   ------------------------------------------------------------------------ */
+
+a {
+  color: inherit;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.22em;
+  text-decoration-color: currentColor;
+}
+
+a:hover {
+  text-decoration-color: var(--mark);
+}
+
+/* --------------------------------------------------------------------------
+   4. Focus — visible on every surface, keyboard only
+   ------------------------------------------------------------------------ */
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--r-1);
+}
+
+/* Utility: force the ring for roving-focus patterns that manage focus themselves. */
+.focus-ring:focus {
+  outline: var(--hair-strong) solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   5. Selection
+   ------------------------------------------------------------------------ */
+
+::selection {
+  background-color: var(--mark);
+  color: var(--ground);
+}
+
+/* --------------------------------------------------------------------------
+   6. Scrollbar
+   ------------------------------------------------------------------------ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ground);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--contour);
+  border: 3px solid var(--ground);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-3);
+}
+
+/* --------------------------------------------------------------------------
+   7. Smooth-scroll interplay
+   scroll.ts creates one Lenis instance at boot and adds `.has-smooth-scroll`.
+   When it is active, native smooth scrolling must be off so the two do not
+   fight. These are Lenis's own required rules, kept here because the design
+   layer owns the stylesheet load order.
+   ------------------------------------------------------------------------ */
+
+html.has-smooth-scroll {
+  scroll-behavior: auto;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   8. Dark chapter break
+   Exactly one section of the page sits on ink. These overrides let later lanes
+   drop `.on-deep` on that section and keep using the same token names.
+   ------------------------------------------------------------------------ */
+
+.on-deep {
+  --surface: var(--deep);
+  --surface-raised: var(--deep-2);
+  --text: var(--deep-ink);
+  --text-soft: var(--deep-ink-2);
+  --text-quiet: var(--deep-ink-2);
+  --rule: #2b3733;
+  color: var(--text);
+  background-color: var(--deep);
+}
+
+.on-deep ::selection {
+  background-color: var(--mark);
+  color: var(--deep);
+}
+
+/* --------------------------------------------------------------------------
+   9. Utilities
+   ------------------------------------------------------------------------ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: var(--s-3);
+  left: var(--s-3);
+  z-index: var(--z-skip);
+  padding: var(--s-2) var(--s-4);
+  background: var(--ink);
+  color: var(--ground);
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform var(--t-fast) var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline-color: var(--ground);
+}
+
+/* --------------------------------------------------------------------------
+   10. Reduced motion
+   JS-driven animation gates itself on the same query; this block is the floor.
+   It never hides content — only removes movement and smoothing.
+   ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}

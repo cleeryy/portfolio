@@ -1,0 +1,238 @@
+/* ============================================================================
+   ui.css — shared primitives
+   SplitText · MagneticButton · Cursor · Grain
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   SplitText
+   The mask is the wrapper, the moving part is the inner span. `overflow: clip`
+   with a small clip margin keeps descenders alive while still hiding a word
+   that has been displaced a full line height for the intro.
+   --------------------------------------------------------------------------- */
+
+.split {
+  display: block;
+}
+
+.split__w {
+  display: inline-block;
+  /* The bottom-edge baseline trap: an inline-block with non-visible overflow
+     aligns on its bottom margin edge, so pin the box to the line top instead. */
+  vertical-align: top;
+  overflow: clip;
+  /* Lets the glyph breathe past the line box (descenders, the tail of a y). */
+  overflow-clip-margin: 0.16em;
+  padding-block-end: 0.06em;
+  margin-block-end: -0.06em;
+}
+
+.split__i {
+  display: inline-block;
+}
+
+/* Fallback for engines without overflow-clip-margin: plain clipping with a
+   little more room reserved under the baseline. */
+@supports not (overflow-clip-margin: 1px) {
+  .split__w {
+    overflow: hidden;
+    padding-block-end: 0.16em;
+    margin-block-end: -0.16em;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   MagneticButton
+   A plate, not a pill. Square corners, ink fill, one registration square.
+   --------------------------------------------------------------------------- */
+
+.magnet {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.25rem;
+  padding: 0 1.4rem 0 1.05rem;
+  border: var(--hair) solid var(--ink);
+  border-radius: var(--r-0);
+  background-color: var(--ink);
+  color: var(--ground);
+  font-family: var(--font-text);
+  font-size: 0.9375rem;
+  font-weight: var(--w-medium);
+  line-height: 1;
+  letter-spacing: 0.004em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out),
+    color var(--t-base) var(--ease-out);
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.magnet__mark {
+  display: block;
+  inline-size: 7px;
+  block-size: 7px;
+  flex: none;
+  background-color: var(--mark);
+  transition:
+    transform var(--t-base) var(--ease-out),
+    background-color var(--t-base) var(--ease-out);
+}
+
+.magnet__label {
+  display: block;
+  will-change: transform;
+}
+
+.magnet:hover,
+.magnet:focus-visible {
+  background-color: var(--mark);
+  border-color: var(--mark);
+  color: var(--ground);
+}
+
+.magnet:hover .magnet__mark,
+.magnet:focus-visible .magnet__mark {
+  background-color: var(--ground);
+  transform: rotate(45deg);
+}
+
+.magnet:active {
+  transform: translateY(1px);
+}
+
+/* Secondary action: a marked measurement, not a second button. */
+.magnet--quiet {
+  min-height: 2.75rem;
+  padding: 0;
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.34em;
+  text-decoration-color: var(--contour);
+}
+
+.magnet--quiet .magnet__mark {
+  display: none;
+}
+
+.magnet--quiet:hover,
+.magnet--quiet:focus-visible {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--ink);
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Cursor — survey reticle
+   `difference` keeps one shape legible on the sheet and on the ink break.
+   --------------------------------------------------------------------------- */
+
+.reticle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: var(--z-cursor);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t-fast) linear;
+}
+
+.reticle[data-on='true'] {
+  opacity: 1;
+}
+
+.reticle__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  /* Transform (translate + scale) is written by Cursor.tsx as a single value. */
+}
+
+/* Each arm is inked and then ringed in the sheet colour. Over the pale ground
+   the halo disappears; over the ink chapter break the ink disappears and the
+   halo remains. No blend mode, so the accent is never inverted into a fourth
+   colour. */
+.reticle__frame::before,
+.reticle__frame::after {
+  content: '';
+  position: absolute;
+  background-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ground);
+  transition:
+    block-size var(--t-base) var(--ease-out),
+    inline-size var(--t-base) var(--ease-out);
+}
+
+.reticle__frame::before {
+  top: calc(50% - 0.5px);
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.reticle__frame::after {
+  left: calc(50% - 0.5px);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.reticle__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  background-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ground);
+}
+
+.reticle[data-hot='true'] .reticle__frame::before {
+  height: 1.5px;
+}
+
+.reticle[data-hot='true'] .reticle__frame::after {
+  width: 1.5px;
+}
+
+/* Hide the native pointer only once the reticle has a live position. Form
+   fields keep a text caret: replacing an I-beam with a crosshair is hostile. */
+.has-reticle,
+.has-reticle *:not(input):not(textarea):not(select):not([contenteditable='true']) {
+  cursor: none !important;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .reticle {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Grain
+   --------------------------------------------------------------------------- */
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.5'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px 160px;
+  contain: layout paint;
+}

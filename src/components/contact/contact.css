@@ -1,0 +1,337 @@
+/* ============================================================================
+   contact.css — the closing page and the colophon
+   ----------------------------------------------------------------------------
+   One question, one line of invitation, one address. The address is a ledger:
+   its key sits in the same margin column every other section uses, the address
+   itself sits on the reading column in display type and carries the sheet's
+   link language (a hairline underline that turns to the survey mark).
+
+   The footer is the colophon of a printed sheet: the credit line, a scale bar,
+   a way back to the top, and the section reference. No logo wall, no social
+   icons, no "built with" badge.
+   ========================================================================== */
+
+.ct {
+  position: relative;
+  padding-block: clamp(3.5rem, 7vw, 5.5rem) clamp(2.5rem, 5vw, 4rem);
+  padding-inline: var(--gutter);
+  background-color: var(--ground);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+.ct__inner {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Head
+   --------------------------------------------------------------------------- */
+
+.ct__head {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  grid-template-areas:
+    'ref title'
+    'ref invite';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: var(--s-5);
+  align-items: start;
+}
+
+.ct__ref {
+  grid-area: ref;
+  padding-block-start: 0.85rem;
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+}
+
+.ct__title {
+  grid-area: title;
+  max-width: 26ch;
+  margin: 0;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.04;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.ct__invite {
+  grid-area: invite;
+  max-width: 50ch;
+  margin: 0;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+/* ---------------------------------------------------------------------------
+   Address ledger
+   --------------------------------------------------------------------------- */
+
+.ct__address {
+  position: relative;
+  margin-block-start: clamp(2.5rem, 5vw, 4rem);
+  border-top: var(--hair) solid var(--ink);
+}
+
+/* The one red mark: a registration square pinned to the rule, at the sheet's
+   left edge — the same device as the hero collar and the territory plate. */
+.ct__registration {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 7px;
+  block-size: 7px;
+  background-color: var(--mark);
+  transform: translateY(-50%);
+}
+
+.ct__ledger {
+  margin: 0;
+}
+
+.ct__row {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  align-items: baseline;
+  padding-block: var(--s-3);
+}
+
+.ct__row + .ct__row {
+  border-top: var(--hair) solid var(--contour-soft);
+}
+
+.ct__row dt {
+  font-size: var(--step--2);
+  line-height: 1.3;
+  color: var(--text-quiet);
+}
+
+.ct__row dd {
+  margin: 0;
+  min-width: 0;
+}
+
+/* The primary action of the whole sheet. Sized to be found from across the
+   room, underlined like every other link on the page, and a real `mailto:` —
+   if the script dies, the address still opens a mail client. */
+.ct__mail {
+  display: inline-block;
+  padding-block: 0.15rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 0.95rem + 1.35vw, 2.125rem);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-heading);
+  line-height: 1.15;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.28em;
+  transition:
+    text-decoration-color var(--t-fast) var(--ease-out),
+    text-decoration-thickness var(--t-fast) var(--ease-out);
+}
+
+.ct__mail:hover,
+.ct__mail:focus-visible {
+  text-decoration-color: var(--mark);
+  text-decoration-thickness: 2px;
+}
+
+/* The second address is a measurement, not a second call to action. */
+.ct__link {
+  display: inline-block;
+  padding-block: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--tracking-mono);
+  line-height: 1.3;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.ct__link:hover,
+.ct__link:focus-visible {
+  color: var(--ink);
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Colophon
+   --------------------------------------------------------------------------- */
+
+.clp {
+  padding-inline: var(--gutter);
+  padding-block-end: clamp(1.25rem, 2.5vw, 2rem);
+  background-color: var(--ground);
+}
+
+.clp__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'credit top'
+    'scale  ref';
+  align-items: baseline;
+  column-gap: var(--s-6);
+  row-gap: var(--s-3);
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-block-start: var(--s-3);
+  border-top: var(--hair) solid var(--ink);
+}
+
+.clp__credit {
+  grid-area: credit;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.9rem;
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.3;
+  color: var(--text-soft);
+}
+
+.clp__year {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-quiet);
+}
+
+.clp__top {
+  grid-area: top;
+  justify-self: end;
+  padding-block: 0.35rem;
+  font-size: var(--step--1);
+  line-height: 1.3;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.26em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.clp__top:hover,
+.clp__top:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+.clp__scale {
+  grid-area: scale;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: 0;
+}
+
+/* Four ticks on a baseline, exactly the hero collar's scale bar at legend
+   size. Built with gradients, so it costs nothing and never shifts. */
+.clp__bar {
+  display: block;
+  flex: none;
+  inline-size: 72px;
+  block-size: 7px;
+  border-bottom: var(--hair) solid var(--ink);
+  background-image:
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px);
+  background-repeat: no-repeat;
+  background-size: 1px 7px;
+  background-position:
+    0 100%,
+    33.33% 100%,
+    66.66% 100%,
+    100% 100%;
+}
+
+.clp__scale-note {
+  font-size: var(--step--2);
+  line-height: 1.2;
+  color: var(--text-quiet);
+}
+
+.clp__ref {
+  grid-area: ref;
+  justify-self: end;
+  font-size: var(--step--2);
+  color: var(--text-quiet);
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 760px) {
+  .ct {
+    padding-block-start: clamp(3rem, 9vw, 4rem);
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .ct__head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'ref'
+      'title'
+      'invite';
+    row-gap: var(--s-4);
+  }
+
+  .ct__ref {
+    padding-block-start: 0;
+  }
+
+  .ct__title {
+    max-width: 18ch;
+  }
+
+  .ct__invite {
+    font-size: var(--step-0);
+  }
+
+  /* The rail collapses: the key sits above the address, which is the order the
+     ledger is read in anyway. */
+  .ct__row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.15rem;
+    padding-block: var(--s-4);
+  }
+}
+
+@media (max-width: 700px) {
+  .clp__inner {
+    grid-template-areas:
+      'credit credit'
+      'top    top'
+      'scale  ref';
+  }
+
+  .clp__top {
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct__mail,
+  .ct__link,
+  .clp__top {
+    transition: none;
+  }
+}

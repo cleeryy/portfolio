@@ -1,0 +1,327 @@
+/* ============================================================================
+   hero.css — the sheet
+   ----------------------------------------------------------------------------
+   Composition: a plotted sheet. A graticule and a cropped grid reference sit on
+   the paper, the WebGL survey is drawn on top of them, and the type is the
+   figure that everything else is subordinate to. The collar at the foot is the
+   map's legend: honest readings, one scale bar, one red survey mark on the
+   neatline.
+   ========================================================================== */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: calc(var(--nav-h) + clamp(1rem, 3vh, 2.5rem)) var(--gutter) 0;
+  background-color: var(--ground);
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+   The sheet: graticule + cropped grid reference
+   --------------------------------------------------------------------------- */
+
+.hero__sheet {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-sheet);
+  pointer-events: none;
+}
+
+.hero__graticule {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--contour-soft) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--contour-soft) 1px, transparent 1px),
+    linear-gradient(to right, var(--contour) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--contour) 1px, transparent 1px);
+  background-size:
+    24px 24px,
+    24px 24px,
+    120px 120px,
+    120px 120px;
+  opacity: 0.6;
+  /* The collar stays clear so the legend reads as printed text, not as a table
+     sitting on graph paper. */
+  mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 96%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 96%);
+}
+
+/* The production VLAN, set as a margin annotation above the collar. It is a
+   reference printed in the sheet's margin — not a watermark behind the type. */
+.hero__grid-ref {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 7.25rem;
+  font-family: var(--font-mono);
+  font-size: clamp(2rem, 4.2vw, 3.6rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--contour);
+  user-select: none;
+}
+
+@supports not (-webkit-text-stroke: 1px #000) {
+  .hero__grid-ref {
+    color: var(--contour-soft);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The plot
+   --------------------------------------------------------------------------- */
+
+.hero__plot {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-plot);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms var(--ease-out);
+}
+
+.hero[data-scene='live'] .hero__plot {
+  opacity: 1;
+}
+
+.hero-scene {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-scene__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   Type block
+   --------------------------------------------------------------------------- */
+
+.hero__body {
+  position: relative;
+  z-index: var(--z-content);
+  align-self: center;
+  display: grid;
+  gap: clamp(1.25rem, 2.6vh, 2rem);
+  width: 100%;
+  max-width: min(50rem, 58%);
+  padding-block: clamp(2rem, 6vh, 4.5rem);
+}
+
+.hero__handle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-6);
+  font-weight: var(--w-semi);
+  /* Only the width axis, set explicitly: base.css pins headings at 104%. */
+  font-variation-settings: 'wdth' 112;
+  font-stretch: var(--width-plate);
+  line-height: 0.98;
+  letter-spacing: var(--tracking-plate);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Claim and note share one column so the right half of the sheet stays clear for
+   the drawing. Two columns here would put body text on top of the plot. */
+.hero__lines {
+  display: grid;
+  gap: var(--s-5);
+  justify-items: start;
+}
+
+.hero__claim {
+  margin: 0;
+  max-width: var(--measure-tight);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: var(--w-regular);
+  line-height: 1.22;
+  letter-spacing: -0.014em;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.hero__note {
+  margin: 0;
+  max-width: 54ch;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--text-soft);
+  text-wrap: pretty;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4) var(--s-6);
+}
+
+/* ---------------------------------------------------------------------------
+   Collar — the map legend
+   --------------------------------------------------------------------------- */
+
+.hero__collar {
+  position: relative;
+  z-index: var(--z-content);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--s-5) clamp(2rem, 6vw, 4rem);
+  padding-block: var(--s-4) var(--s-5);
+  border-top: var(--hair) solid var(--ink);
+}
+
+/* The one red mark on the sheet's frame. */
+.hero__collar::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--hair) * -1);
+  left: 0;
+  width: 76px;
+  height: var(--hair-strong);
+  background-color: var(--mark);
+}
+
+.hero__legend {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.hero__read {
+  display: grid;
+  gap: 0.15rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.hero__read dt {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-quiet);
+}
+
+.hero__read dd {
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: var(--w-medium);
+  line-height: 1.3;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.hero__scale {
+  display: grid;
+  justify-items: end;
+  gap: var(--s-2);
+  min-width: 9.5rem;
+  text-align: right;
+}
+
+.hero__scale-note {
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.3;
+  color: var(--text-quiet);
+}
+
+.hero__scale-bar {
+  display: block;
+  width: 100%;
+  height: 7px;
+  border-bottom: var(--hair) solid var(--ink);
+  background-image:
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink) 0 1px, transparent 1px);
+  background-repeat: no-repeat;
+  background-size: 1px 7px;
+  background-position:
+    0 100%,
+    33.33% 100%,
+    66.66% 100%,
+    100% 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 980px) {
+  .hero__body {
+    max-width: 100%;
+  }
+
+  .hero__note {
+    max-width: 56ch;
+  }
+
+  /* The type is full width here, so the plot can no longer sit beside it. It
+     becomes the pencil layer under the sheet: present, never in the way. */
+  .hero[data-scene='live'] .hero__plot {
+    opacity: 0.4;
+  }
+}
+
+/* On a phone the hero stacks to three paragraphs; the drawing recedes to a
+   texture so body copy keeps full contrast. The poster (graticule + margin
+   reference) carries the cartography at this size. */
+@media (max-width: 640px) {
+  .hero[data-scene='live'] .hero__plot {
+    opacity: 0.26;
+  }
+}
+
+@media (max-width: 760px) {
+  /* The margin reference belongs to the wide sheet only; on a phone it would sit
+     on top of the legend. */
+  .hero__grid-ref {
+    display: none;
+  }
+
+  .hero__body {
+    padding-block: clamp(1.5rem, 5vh, 3rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding-top: calc(var(--nav-h-compact) + 0.75rem);
+  }
+
+  .hero__collar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-4);
+  }
+
+  .hero__legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3) var(--s-4);
+  }
+
+  .hero__scale {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__plot {
+    transition: none;
+  }
+}

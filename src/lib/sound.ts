@@ -600,7 +600,7 @@ class SoundEngine {
     air.loop = true
     const lowpass = ctx.createBiquadFilter()
     lowpass.type = 'lowpass'
-    lowpass.frequency.value = 520
+    lowpass.frequency.value = 600
     lowpass.Q.value = 0.55
     const airGain = ctx.createGain()
     airGain.gain.value = 0.82

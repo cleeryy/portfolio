@@ -1,1 +1,192 @@
-/* placeholder — design lane owns this file */
+/* ============================================================================
+   tokens.css — cleeryy portfolio
+   ----------------------------------------------------------------------------
+   A survey sheet, not a dashboard. Every value below is traceable to a piece of
+   the subject's actual practice: a plotted network diagram, a printed graticule,
+   drafting ink, a red grease-pencil mark on a printout.
+
+   Nothing here is borrowed from a "security" aesthetic. There is no terminal
+   green, no near-black hero, no cream paper. The ground is the pale sage of a
+   topographic land tint; the accent is the cool crimson of a survey control
+   mark, rationed to a handful of marks per screen.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --------------------------------------------------------------------------
+     COLOUR
+     Six surfaces and inks + one accent. Each has a single job.
+     ------------------------------------------------------------------------ */
+
+  /* The plotting sheet. Pale sage-grey, deliberately cool: a printed topographic
+     land tint, not paper cream (which would drag the whole page toward the
+     editorial template this brief forbids). */
+  --ground: #e7e9e2;
+
+  /* Same hue, one step lighter — used for the fixed nav and any panel that must
+     separate from the sheet without a shadow. */
+  --ground-raised: #eef0ea;
+
+  /* One step down — recessed bands, the base of the hero collar. */
+  --ground-sunk: #dde1d8;
+
+  /* Drafting ink. Near-black with a green cast so it sits inside the ground's
+     family instead of punching a hole in it. Never #000. */
+  --ink: #131c19;
+
+  /* Secondary ink for body copy; still ~9:1 on --ground. */
+  --ink-2: #3f4c47;
+
+  /* Annotations and quiet metadata; ~5.6:1 on --ground, so it stays AA at the
+     small sizes it is used at. */
+  --ink-3: #55625d;
+
+  /* The graticule: the hairline grid printed under everything, and every rule
+     on the page. One constructor token, one soft step. */
+  --contour: #b2bcb1;
+  --contour-soft: #cbd2c8;
+
+  /* Shallow-water tint. Used by the WebGL plot and by quiet fill panels; it is
+     the only blue-green on the site and it never carries text. */
+  --chart: #c9d3cc;
+
+  /* Hard chapter break. The single dark surface in the whole design — it appears
+     exactly once, where the map stops and the training ranges begin. */
+  --deep: #0e1613;
+  --deep-2: #18231f;
+  --deep-ink: #dfe4dc;
+  --deep-ink-2: #9aa8a1;
+
+  /* ACCENT — the survey mark. A cool crimson closer to a grease pencil than to
+     terracotta or vermilion. Used for: the registration mark, the live packet in
+     the plot, the active language, focus rings, one rule under the collar.
+     Never for body text, never as a large fill. */
+  --mark: #bf1f34;
+  --mark-deep: #951628;
+  --mark-wash: rgb(191 31 52 / 10%);
+
+  /* --------------------------------------------------------------------------
+     SEMANTIC ALIASES
+     Components should reach for these, not for raw hexes.
+     ------------------------------------------------------------------------ */
+  --surface: var(--ground);
+  --surface-raised: var(--ground-raised);
+  --rule: var(--contour);
+  --rule-strong: var(--ink);
+  --text: var(--ink);
+  --text-soft: var(--ink-2);
+  --text-quiet: var(--ink-3);
+  --focus: var(--mark);
+
+  /* --------------------------------------------------------------------------
+     TYPE
+     Two families, both defending a specific job.
+
+     Archivo — a grotesque drawn for signage and high-density print. Its width
+     axis lets the handle sit wide and plate-like (a map title) while body copy
+     stays at 100%. This is the surveyor's lettering.
+     Spline Sans Mono — humanist mono used ONLY for measurements: coordinates,
+     legend keys, the scale bar. Never for prose, never for every small label.
+     ------------------------------------------------------------------------ */
+  --font-display: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-text: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'Spline Sans Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo,
+    Consolas, monospace;
+
+  /* Width axis positions for Archivo (variable, 75%–115%). */
+  --width-plate: 112%; /* map-title lettering */
+  --width-heading: 104%; /* section titles, one notch wide */
+  --width-body: 100%;
+  --width-tight: 92%; /* annotations that must not sprawl */
+
+  /* Weights. Archivo is variable, so these are real interpolations. */
+  --w-light: 340;
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semi: 580;
+
+  /* Scale — a 1.22–1.5 ratio with fluid steps. Every size in the UI maps here. */
+  --step--2: 0.6875rem; /* 11px  legend keys, scale bar */
+  --step--1: 0.8125rem; /* 13px  legend values, captions */
+  --step-0: 1rem; /* 16px  base */
+  --step-1: 1.125rem; /* 18px  lead paragraph */
+  --step-2: clamp(1.25rem, 1.1rem + 0.62vw, 1.5rem); /* 20 → 24  subheads */
+  --step-3: clamp(1.5rem, 1.19rem + 1.24vw, 2.125rem); /* 24 → 34  claim */
+  --step-4: clamp(2rem, 1.32rem + 2.6vw, 3.25rem); /* 32 → 52  section titles */
+  --step-5: clamp(2.75rem, 1.2rem + 5.4vw, 5.5rem); /* 44 → 88  chapter numbers */
+  --step-6: clamp(3.25rem, 0.5rem + 17vw, 10.5rem); /* 52 → 168 the handle */
+
+  --leading-none: 0.92;
+  --leading-tight: 1.06;
+  --leading-snug: 1.28;
+  --leading-body: 1.55;
+
+  --tracking-plate: -0.045em;
+  --tracking-display: -0.028em;
+  --tracking-body: -0.006em;
+  --tracking-mono: 0.02em;
+
+  /* Measure. The brief caps lines at 80ch; these are the deliberate ceilings. */
+  --measure: 62ch;
+  --measure-tight: 40ch;
+  --measure-narrow: 30ch;
+
+  /* --------------------------------------------------------------------------
+     SPACE — a 4px base, then a wide-gutter rhythm. The page breathes in units
+     that match a plotted sheet: margin, gutter, annotation rail.
+     ------------------------------------------------------------------------ */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4.5rem;
+  --s-9: 7rem;
+  --s-10: 10rem;
+
+  /* Page gutter: the sheet margin. Collapses on small screens but never to zero. */
+  --gutter: clamp(1.25rem, 4.2vw, 4.5rem);
+  /* Width of the annotation rail used beside section titles. */
+  --rail: 8.5rem;
+
+  /* Fixed chrome heights. Other lanes: use these to offset section tops. */
+  --nav-h: 4rem;
+  --nav-h-compact: 3.25rem;
+
+  /* --------------------------------------------------------------------------
+     MOTION
+     One easing family: a fast, slightly un-mechanical settle (the pen travelling
+     to the next mark). No bounce, no elastic — a plotter has no personality.
+     ------------------------------------------------------------------------ */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.2, 1);
+  --ease-draw: cubic-bezier(0.33, 1, 0.68, 1);
+
+  --t-fast: 140ms;
+  --t-base: 280ms;
+  --t-slow: 640ms;
+  --t-draw: 1100ms;
+
+  /* --------------------------------------------------------------------------
+     GEOMETRY — corners are square. A chart has no rounded cards.
+     ------------------------------------------------------------------------ */
+  --r-0: 0;
+  --r-1: 1px;
+  --r-2: 2px;
+  --hair: 1px;
+  --hair-strong: 1.5px;
+
+  /* --------------------------------------------------------------------------
+     LAYERS
+     ------------------------------------------------------------------------ */
+  --z-sheet: 0;
+  --z-plot: 1;
+  --z-content: 2;
+  --z-nav: 60;
+  --z-grain: 90;
+  --z-cursor: 100;
+  --z-skip: 120;
+}
