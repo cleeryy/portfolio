@@ -35,6 +35,14 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
    frozen sheet is a photograph of a sheet. The cost is bounded by the pixel
    ladder above and by the skip under the ink band, so idle is cheap without
    being dead.
+
+   The sheet has one more material property, added in V3: **speed coarsens the
+   print**. The same damped throw that bends the field also grows the dither
+   cell from one device pixel to three, spreads the contour hairlines and, at the
+   top of the range, keeps the ink only where the screen prints — so the contours
+   break into dots. It is the sheet being dragged under the lamp, and it costs one
+   uniform, one multiply and two smoothsteps in the existing program. No second
+   context, no second program, no allocation: the value is a scalar in `state`.
    ========================================================================== */
 
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
@@ -45,7 +53,10 @@ const INK: [number, number, number] = [0x13 / 255, 0x1c / 255, 0x19 / 255]
 
 /** Peak ink alpha. 5.6% of the ink over the ground — the contrast budget in
     DESIGN.md, with room for 8-bit rounding at the top of the printed ladder.
-    Measured on the rendered page: see the lane report. */
+    The coarse print can only widen *coverage*: every pixel's alpha is still
+    clamped to this ceiling at the end of the shader, so a coarse frame is denser
+    but never darker than a fine one. Measured on the rendered page: see the lane
+    report. */
 const INK_BUDGET = 0.056
 
 /** It is texture, not detail. */
@@ -65,6 +76,31 @@ const VELOCITY_REF = 2600
 /** Below this fraction of VELOCITY_REF the lens stays open: slow scroll is
     almost nothing, which is the brief. */
 const VELOCITY_DEAD = 0.055
+
+/* ---- the coarse print ---------------------------------------------------
+   The same normalised speed, read again for a second property of the paper:
+   as the sheet is dragged, the screen loses its fineness. The numbers are the
+   whole mapping, so they are stated once, here. */
+
+/** Normalised speed at which the print starts to coarsen. Just above the lens's
+    dead zone, so a reading scroll is still fine print. */
+const COARSE_DEAD = 0.04
+
+/** The span above COARSE_DEAD over which the screen reaches full coarseness —
+    3× cells, spread hairlines, torn contours. */
+const COARSE_SPAN = 0.46
+
+/** Attack is nearly immediate (the paper takes the pressure), release is a hard
+    settle: 1 → 0.02 in 355ms, i.e. fine print again within the brief's ~350ms.
+    The lens is deliberately NOT reused for this: it releases over ~1.7s, and a
+    print that took that long to come back would read as a filter fading. */
+const COARSE_ATTACK = 14
+const COARSE_RELEASE = 11
+
+/** Below this the screen is a 1× cell again — the sheet has settled, and the
+    value is snapped to zero so the shader's `floor(gl_FragCoord / cell)` is
+    exactly the original screen. */
+const COARSE_FLOOR = 0.02
 
 /** Plate-change spike: attack, then decay. Peaks with the veil's plateau. */
 const PULSE_RISE = 0.24
@@ -114,6 +150,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     uAspect: { value: 1 },
     uBend: { value: 0 },
     uPulse: { value: 0 },
+    uCoarse: { value: 0 },
     uBudget: { value: INK_BUDGET },
     uInk: { value: new Vector3(INK[0], INK[1], INK[2]) },
   }
@@ -175,6 +212,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
   const state = {
     time: 0,
     bend: 0,
+    coarse: 0,
     pulse: 0,
     pulseClock: Number.POSITIVE_INFINITY,
     lastScroll: 0,
@@ -199,6 +237,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
   const draw = () => {
     uniforms.uTime.value = state.time
     uniforms.uBend.value = state.bend
+    uniforms.uCoarse.value = state.coarse
     uniforms.uPulse.value = state.pulse
     renderer.render(scene, camera)
   }
@@ -233,6 +272,18 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     const damping = Math.abs(target) > Math.abs(state.bend) ? 12 : 2.4
     state.bend += (target - state.bend) * Math.min(1, dt * damping)
 
+    /* The print's own property, read from the same signal but not through the
+       lens: it takes the speed before the lens damps it, so releasing the wheel
+       starts the settle immediately instead of waiting out a 1.7s tail. */
+    const throwSpeed = Math.abs(target)
+    const ramp = clamp((throwSpeed - COARSE_DEAD) / COARSE_SPAN, 0, 1)
+    const coarseTarget = ramp * ramp * (3 - 2 * ramp)
+    state.coarse +=
+      (coarseTarget - state.coarse) *
+      Math.min(1, dt * (coarseTarget > state.coarse ? COARSE_ATTACK : COARSE_RELEASE))
+    // The screen snaps back to exactly 1× rather than approaching it forever.
+    if (state.coarse < COARSE_FLOOR) state.coarse = 0
+
     /* The plate-change spike: rise, hold an instant, decay. Allocation-free and
        deterministic — no timers, no closure per transition. */
     if (state.pulseClock < PULSE_RISE + PULSE_FALL) {
@@ -252,9 +303,14 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     /* The drift does not need 60 Hz: while the lens is open, every second tick
        is enough, and the sheet is a texture. As soon as it is thrown — or a
        plate change spikes the lens — the full rate resumes, so the reaction
-       that the reader actually watches is never stepped. */
+       that the reader actually watches is never stepped.
+
+       The coarse print is part of "moving", but it is never the reason the loop
+       stays at full rate for long: it settles to zero in 355ms, while the lens
+       is still easing back. It therefore adds no time to the full-rate window
+       (the brief's cap is 600ms). */
     state.parity ^= 1
-    const still = Math.abs(state.bend) < 0.015 && state.pulse < 0.008
+    const still = Math.abs(state.bend) < 0.015 && state.coarse === 0 && state.pulse < 0.008
     if (state.covered || (still && state.parity === 0)) return
 
     draw()

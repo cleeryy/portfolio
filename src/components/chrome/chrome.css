@@ -1,0 +1,174 @@
+/* ============================================================================
+   chrome.css — the instrument layer
+   ----------------------------------------------------------------------------
+   Two fixed layers, both pure typography, both `aria-hidden`:
+
+   1. `.chrome` — three labelled readings in the sheet's left margin: a key line
+      over its value, the same fact-column device as the hero collar. Mid-height,
+      right-aligned to `--gutter`, so it lives in the margin at every width
+      instead of being pushed over the text. No box, no fill, no blur: a printed
+      title block has neither.
+
+   2. `.hud` — the pointer pill. One plate, 10px of blur, mono 11px, following
+      the cursor from above-left.
+
+   Neither adds a colour: the readings use the annotation inks of whichever
+   surface they are over, and the pill tints the ground it already sits on.
+   ========================================================================== */
+
+.chrome {
+  /* The clearance from the text column. It collapses to nothing in the narrow
+     band just above 900px, where the margin is only 38px wide, and never grows
+     past 8px. */
+  --chrome-gap: clamp(0px, calc(var(--gutter) - 38px), 8px);
+
+  position: fixed;
+  /* Mid-height: the one band that is free everywhere. The foot of the viewport
+     belongs to the hero collar on the first screen and to the colophon on the
+     last; the section refs sit at every section's top, just inside the gutter. */
+  inset-block-start: 50%;
+  inset-inline-start: max(var(--gutter), env(safe-area-inset-left, 0px));
+  transform: translate(calc(-100% - var(--chrome-gap)), -50%);
+  z-index: calc(var(--z-nav) - 6);
+  display: grid;
+  justify-items: end;
+  gap: 0.55rem;
+  inline-size: max-content;
+  max-inline-size: var(--gutter);
+  color: var(--text-quiet);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  line-height: 1.3;
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  pointer-events: none;
+  user-select: none;
+  --chrome-rule: var(--contour);
+  --chrome-key: var(--text-quiet);
+  --chrome-value: var(--ink);
+}
+
+/* The rule the readings hang from. Its first 7px are the layer's one crimson
+   mark — the same length as every registration tick on the sheet. */
+.chrome__rule {
+  inline-size: 100%;
+  block-size: 1px;
+  background-image: linear-gradient(to right, var(--mark) 0 7px, var(--chrome-rule) 7px 100%);
+}
+
+/* A fact column: the key sits above its value, as in the collar and the rails. */
+.chrome__read {
+  display: grid;
+  justify-items: end;
+  gap: 0.05rem;
+  white-space: nowrap;
+}
+
+.chrome__key {
+  color: var(--chrome-key);
+  line-height: 1.25;
+}
+
+.chrome__value {
+  color: var(--chrome-value);
+  line-height: 1.3;
+}
+
+/* Over the one dark chapter: the band's own two inks, and a rule that reads on
+   ink instead of on ground. */
+.chrome[data-deep='true'] {
+  --chrome-key: var(--deep-ink-2);
+  --chrome-value: var(--deep-ink);
+  --chrome-rule: color-mix(in srgb, var(--deep-ink) 26%, transparent);
+}
+
+/* Below 900px the margin is a thumb's width: the instrument goes with the
+   margin it was printed in. */
+@media (max-width: 900px) {
+  .chrome {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chrome {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Pointer HUD
+   --------------------------------------------------------------------------- */
+
+.hud {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: calc(var(--z-cursor) - 1);
+  inline-size: 0;
+  block-size: 0;
+  /* The transform is written by PointerHud.tsx from a quickSetter. */
+  pointer-events: none;
+}
+
+.hud__pill {
+  position: absolute;
+  display: block;
+  max-inline-size: 15rem;
+  padding: 0.3rem 0.45rem 0.28rem;
+  border: var(--hair) solid color-mix(in srgb, var(--ink) 16%, transparent);
+  background-color: color-mix(in srgb, var(--ground) 74%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.18s linear;
+}
+
+.hud[data-on='true'] .hud__pill {
+  opacity: 1;
+}
+
+/* Above-left by default; the pill flips to the other side rather than leave the
+   sheet when the pointer is close to an edge. */
+.hud[data-side='la'] .hud__pill {
+  inset-block-end: 14px;
+  inset-inline-end: 12px;
+}
+
+.hud[data-side='lb'] .hud__pill {
+  inset-block-start: 14px;
+  inset-inline-end: 12px;
+}
+
+.hud[data-side='ra'] .hud__pill {
+  inset-block-end: 14px;
+  inset-inline-start: 12px;
+}
+
+.hud[data-side='rb'] .hud__pill {
+  inset-block-start: 14px;
+  inset-inline-start: 12px;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .hud {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud__pill {
+    transition: none;
+  }
+}

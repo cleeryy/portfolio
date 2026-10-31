@@ -3,6 +3,7 @@ import type { MouseEvent } from 'react'
 import type { Bi } from '../../lib/i18n'
 import { useLang } from '../../lib/i18n'
 import { getLenis, scrollToId } from '../../lib/scroll'
+import RolloverLink from '../ui/Rollover'
 import SoundToggle from '../ui/SoundToggle'
 import './nav.css'
 
@@ -133,21 +134,18 @@ export default function NavBar() {
   return (
     <header className="nav" data-scrolled={scrolled ? 'true' : 'false'} data-open={open ? 'true' : 'false'} ref={rootRef}>
       <div className="nav__inner">
-        <a className="nav__brand" href="#top" onClick={goTop}>
-          cleeryy
-        </a>
+        <RolloverLink className="nav__brand" href="#top" text="cleeryy" onClick={goTop} hud="#top" />
 
         <nav className="nav__links" aria-label={pick({ en: 'Sections', fr: 'Sections' })}>
           {SECTIONS.map((section) => (
-            <a
+            <RolloverLink
               className="nav__link"
               key={section.id}
               href={`#${section.id}`}
+              text={pick(section.label)}
               onClick={goSection(section.id)}
               aria-current={active === section.id ? 'true' : undefined}
-            >
-              {pick(section.label)}
-            </a>
+            />
           ))}
         </nav>
 

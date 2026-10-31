@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 import { gsap } from 'gsap'
+import { RolloverLabel } from './Rollover'
 import './ui.css'
 
 type MagneticButtonProps = {
@@ -11,6 +12,18 @@ type MagneticButtonProps = {
   /** `mark` is the primary action: ink plate, red registration square. */
   variant?: 'mark' | 'quiet'
   className?: string
+  /**
+   * The pointer HUD's label. Omitted, an in-page `href` prints itself
+   * (`#territory`); `null` opts the plate out.
+   */
+  hud?: string | null
+}
+
+/** The HUD's reading of a destination: an in-page target prints its own id. */
+function hudFor(href: string | undefined): string | undefined {
+  if (!href) return undefined
+  if (href.startsWith('#')) return href
+  return href.replace(/^https?:\/\//, '').replace(/^\/$/, '')
 }
 
 /** Maximum travel of the plate and of its label, in px. Both are small on purpose. */
@@ -32,6 +45,7 @@ export default function MagneticButton({
   onClick,
   variant = 'mark',
   className,
+  hud,
 }: MagneticButtonProps) {
   const anchorRef = useRef<HTMLAnchorElement | null>(null)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
@@ -88,26 +102,29 @@ export default function MagneticButton({
   }
 
   const classes = ['magnet', `magnet--${variant}`, className].filter(Boolean).join(' ')
+  const hudLabel = hud === undefined ? hudFor(href) : hud ?? undefined
 
   const content = (
     <>
       <span className="magnet__mark" aria-hidden="true" />
+      {/* The label rolls over itself like every other place on the sheet; the
+          magnet above it keeps its own additive pull on this wrapper. */}
       <span className="magnet__label" ref={labelRef}>
-        {children}
+        {typeof children === 'string' ? <RolloverLabel text={children} /> : children}
       </span>
     </>
   )
 
   if (href) {
     return (
-      <a ref={anchorRef} className={classes} href={href} onClick={handleClick}>
+      <a ref={anchorRef} className={classes} href={href} onClick={handleClick} data-hud={hudLabel}>
         {content}
       </a>
     )
   }
 
   return (
-    <button ref={buttonRef} className={classes} type="button" onClick={handleClick}>
+    <button ref={buttonRef} className={classes} type="button" onClick={handleClick} data-hud={hudLabel}>
       {content}
     </button>
   )

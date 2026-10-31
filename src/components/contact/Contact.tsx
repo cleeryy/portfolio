@@ -11,6 +11,7 @@ import {
   sourceUrl,
 } from '../../content/contact'
 import SplitText from '../ui/SplitText'
+import RolloverLink from '../ui/Rollover'
 import './contact.css'
 
 /**
@@ -96,10 +97,14 @@ export default function Contact() {
               <div className="ct__row">
                 <dt className="mono">{copy.mailKey}</dt>
                 <dd>
+                  {/* The address is written, not rolled: it has to be able to
+                      wrap at 320px, and an email is a letter, not a place. It
+                      still carries a HUD reading of its destination. */}
                   <a
                     className="ct__mail"
                     href={`mailto:${contactEmail}`}
                     onClick={() => sound.click()}
+                    data-hud="mailto"
                   >
                     <MailAddress />
                   </a>
@@ -109,13 +114,12 @@ export default function Contact() {
               <div className="ct__row">
                 <dt className="mono">{copy.codeKey}</dt>
                 <dd>
-                  <a
+                  <RolloverLink
                     className="ct__link"
                     href={sourceUrl}
+                    text={sourceLabel}
                     onClick={() => sound.click()}
-                  >
-                    {sourceLabel}
-                  </a>
+                  />
                 </dd>
               </div>
 
@@ -124,9 +128,12 @@ export default function Contact() {
               <div className="ct__row">
                 <dt className="mono">{copy.blogKey}</dt>
                 <dd>
-                  <a className="ct__link" href={blogUrl} onClick={() => sound.click()}>
-                    {blogLabel}
-                  </a>
+                  <RolloverLink
+                    className="ct__link"
+                    href={blogUrl}
+                    text={blogLabel}
+                    onClick={() => sound.click()}
+                  />
                 </dd>
               </div>
             </dl>
@@ -144,9 +151,7 @@ export default function Contact() {
             <span>{copy.credit}</span>
           </p>
 
-          <a className="clp__top" href="#top">
-            {copy.backToTop}
-          </a>
+          <RolloverLink className="clp__top" href="#top" text={copy.backToTop} />
 
           {/* The colophon's legend line: the same four-tick scale bar as the
               hero collar, at the same ratio, so the sheet ends on its own

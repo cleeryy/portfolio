@@ -19,7 +19,15 @@
    5. the screen — the ink is quantised to six printed levels through the Bayer
       matrix, plus a static per-pixel grain so the falloff breaks into dots.
 
-   Everything is analytic and allocation-free: three uniforms change per frame
+   And one material property, driven by `uCoarse` (the damped scroll throw):
+
+   - the print coarsens. The screen's cell grows from one device pixel to three,
+     the hairlines spread, and at the top of the range the ink is kept only where
+     the screen prints — so the contours break into a chain of dots. The sheet is
+     being dragged under the lamp, not glitched: no split channels, no random
+     noise, one program, one branchless path.
+
+   Everything is analytic and allocation-free: four uniforms change per frame
    and the pixel cost is eight value-noise samples — four for the warp, three
    for the landform, one for the inked patches.
    ========================================================================== */
@@ -41,6 +49,7 @@ export const ATMOSPHERE_FRAG = /* glsl */ `
   uniform float uAspect;
   uniform float uBend;
   uniform float uPulse;
+  uniform float uCoarse;
   uniform float uBudget;
   uniform vec3 uInk;
 
@@ -119,13 +128,16 @@ export const ATMOSPHERE_FRAG = /* glsl */ `
     );
     float field = fbm3(p * 0.40 + warp * 1.9 + drift * 0.55);
 
-    /* 3. Contours, and the index contour every fifth level. */
+    /* 3. Contours, and the index contour every fifth level. uCoarse spreads
+          the hairline before the screen breaks it: ink under pressure is wider,
+          then it is not there. */
+    float spread = 1.0 + 2.2 * uCoarse;
     float g = field * 31.0;
-    float wLine = max(fwidth(g), 1.0e-5);
+    float wLine = max(fwidth(g), 1.0e-5) * spread;
     float line = 1.0 - smoothstep(wLine * 0.16, wLine * 0.62, abs(fract(g + 0.5) - 0.5));
 
     float gi = g * 0.2;
-    float wIndex = max(fwidth(gi), 1.0e-5);
+    float wIndex = max(fwidth(gi), 1.0e-5) * spread;
     float index = 1.0 - smoothstep(wIndex * 0.24, wIndex * 0.80, abs(fract(gi + 0.5) - 0.5));
 
     float ink = line * 0.55 + index * 1.0;
@@ -137,12 +149,25 @@ export const ATMOSPHERE_FRAG = /* glsl */ `
     float reach = length(s * vec2(0.78, 1.0));
     ink *= mix(0.55, 1.0, smoothstep(0.02, 0.72, reach));
 
-    /* 5. The screen. Six levels of ink through the 8 × 8 matrix; the grain is
-          fixed in screen space, so it reads as paper tooth and not as video. */
-    float v = clamp(ink, 0.0, 1.0) * 6.0;
-    v += (hash12(gl_FragCoord.xy) - 0.5) * 0.55;
+    /* 5. The screen. Six levels of ink through the 8 × 8 matrix, on cells that
+          grow with the throw — one device pixel at rest, three at the top — so
+          the halftone itself becomes the thing you can see. The grain is fixed
+          in screen space and quantised to the same cell, so it reads as paper
+          tooth and not as video.
 
-    float b = bayer8(gl_FragCoord.xy);
+          The tear: at the top of the throw the ink is kept only on the cells the
+          screen prints, which turns a widened hairline into a chain of dots
+          instead of a bar. It can only remove ink, so the contrast budget — the
+          alpha clamp at the foot of this shader — is never approached from
+          above. */
+    vec2 cell = floor(gl_FragCoord.xy / (1.0 + 2.0 * uCoarse));
+    float b = bayer8(cell);
+
+    ink *= mix(1.0, 0.45 + 0.55 * smoothstep(0.22, 0.62, b), smoothstep(0.45, 1.0, uCoarse));
+
+    float v = clamp(ink, 0.0, 1.0) * 6.0;
+    v += (hash12(cell) - 0.5) * 0.55;
+
     float level = (floor(max(v, 0.0)) + step(b, fract(v))) / 6.0;
 
     /* Blank paper stays blank: no scattered dots where the field is empty.

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { sound } from './lib/sound'
 import About from './components/about/About'
 import Atmosphere from './components/atmosphere/Atmosphere'
+import SheetGrid from './components/grid/SheetGrid'
 import BootGate from './components/boot/BootGate'
 import Contact from './components/contact/Contact'
 import Hero from './components/hero/Hero'
@@ -14,6 +15,8 @@ import Territory from './components/territory/Territory'
 import Cursor from './components/ui/Cursor'
 import Grain from './components/ui/Grain'
 import ScrollProgress from './components/ui/ScrollProgress'
+import InstrumentChrome from './components/chrome/InstrumentChrome'
+import PointerHud from './components/chrome/PointerHud'
 import { initMotionSystem } from './lib/reveal'
 
 /**
@@ -76,6 +79,8 @@ export default function App() {
       {/* The sheet itself, and the plate change. Both fixed, both behind the
           reading: mounted first so the canvas is painted under every section. */}
       <Atmosphere />
+      {/* The printed column grid: also z 0, also before every section. */}
+      <SheetGrid />
       <BootGate />
       <NavBar />
       <Hero />
@@ -88,6 +93,8 @@ export default function App() {
       <Contact />
       <ScrollProgress />
       <Cursor />
+      <InstrumentChrome />
+      <PointerHud />
       <Grain />
     </main>
   )

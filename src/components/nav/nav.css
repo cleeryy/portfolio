@@ -70,6 +70,7 @@
 
 .nav__link {
   position: relative;
+  display: inline-block;
   padding-block: 0.4rem;
   font-size: 0.875rem;
   font-weight: var(--w-regular);
@@ -78,6 +79,10 @@
   transition: color var(--t-fast) var(--ease-out);
 }
 
+/* The rule under a section link is drawn in two registers. On the wide sheet the
+   label rolls over itself (Rollover.tsx) and the rule is kept for the active
+   section alone; where the rollover cannot run — ≤900px, a coarse pointer, or
+   reduced motion — the rule returns as the hover state, drawn from the left. */
 .nav__link::after {
   content: '';
   position: absolute;
@@ -91,13 +96,18 @@
   transition: transform var(--t-base) var(--ease-out);
 }
 
+.nav__link[data-roll='plain']::after {
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.nav__link[data-roll='plain']:hover::after,
+.nav__link[data-roll='plain']:focus-visible::after {
+  transform: scaleX(1);
+}
+
 .nav__link:hover,
 .nav__link[aria-current='true'] {
   color: var(--ink);
-}
-
-.nav__link:hover::after {
-  transform: scaleX(1);
 }
 
 /* The active section is marked, not underlined: a short red rule at the base. */

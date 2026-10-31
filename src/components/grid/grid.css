@@ -1,0 +1,99 @@
+/* ============================================================================
+   grid.css — the sheet's graticule
+   ----------------------------------------------------------------------------
+   Twelve columns across the printed field, one 1px rule per column boundary.
+   The container is exactly the field every section centres its content in
+   (`--field-start` / `--field-width`, base.css §12), so a rule lands on the
+   content edge and on each boundary at every viewport width. It is fixed: the
+   drawing scrolls, the plate does not.
+
+   The line is a tint of `--contour` — the same constructor token as every other
+   hairline — at 30%, which is 16/255 over the ground: strong enough to read as
+   printed structure, quiet enough to stay an underlay.
+
+   Why the layer moves. Every section on the sheet is transparent (the
+   atmosphere is the ground), so a grid stacked under them shows through the
+   paper and can never touch a glyph — that is the normal state, at z 0, with no
+   blending at all. The ink chapter is the exception: it is opaque by design and
+   would hide anything beneath it, so while it owns the viewport the layer is
+   lifted above it and `lighten` is turned on with `--deep-2` as the ink. The
+   blend makes the rule a function of its backdrop: it can lift the empty band
+   and nothing else, so the chapter's type and its crimson tick are left exactly
+   as printed. Both states are self-cancelling — the wrong ink on the wrong
+   surface renders nothing, never a wrong colour.
+
+   No transition, no scroll coupling, no reduced-motion variant: the grid is a
+   state of the plate, not a motion.
+   ========================================================================== */
+
+.sheet-grid {
+  /* The two planes this file adds; the tokens' layer order belongs to
+     tokens.css. 0 is the sheet's own plane (above the atmosphere canvas,
+     under every section); 1 is the plane the chrome and the type sit on. */
+  --z-grid: 1;
+
+  position: fixed;
+  /* `--nav-h-compact` is the bar's height once the sheet has moved. At the top
+     of the page the taller bar simply covers the first 12px of the rules, so
+     the grid always meets the nav's lower edge and never shows through it. */
+  inset-block-start: var(--nav-h-compact);
+  inset-block-end: 0;
+  inset-inline-start: var(--field-start);
+  inline-size: var(--field-width);
+  z-index: var(--z-sheet);
+  pointer-events: none;
+  user-select: none;
+
+  /* The printed value, and the ink chapter's. Both are existing tokens: no new
+     colour enters the palette. */
+  --grid-rule: color-mix(in srgb, var(--contour) 30%, transparent);
+}
+
+.sheet-grid__rule {
+  position: absolute;
+  inset-block: 0;
+  inline-size: 1px;
+  background-color: var(--grid-rule);
+}
+
+/* The ink chapter. `--deep-2` is the band's raised surface, so the rule is a
+   step of the band itself, not a new grey. Without `mix-blend-mode` the layer
+   stays at z 0 and is simply covered by the opaque band — never a dark rule
+   across the chapter's type. */
+.sheet-grid[data-deep='true'] {
+  --grid-rule: var(--deep-2);
+}
+
+@supports (mix-blend-mode: lighten) {
+  .sheet-grid[data-deep='true'] {
+    z-index: var(--z-grid);
+    mix-blend-mode: lighten;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Progressive hiding
+   ---------------------------------------------------------------------------
+   A phone must never show a cage. The 12-column subdivision is a drawing
+   instrument for a wide sheet: below 1200px every other boundary is dropped
+   (six bays), below 1024px it is every fourth (three bays), and below 900px the
+   margin is gone and the rules go with it.
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 1199px) {
+  .sheet-grid__rule:nth-child(even) {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .sheet-grid__rule:not(:nth-child(4n + 1)) {
+    display: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .sheet-grid {
+    display: none;
+  }
+}

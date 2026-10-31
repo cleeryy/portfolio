@@ -115,6 +115,9 @@
   text-decoration-thickness: var(--hair);
   text-underline-offset: 0.34em;
   text-decoration-color: var(--contour);
+  /* The rolled label draws the plate's hairline itself (see rollover.css); the
+     anchor's own decoration is only painted in the plain register. */
+  --roll-rule: var(--contour);
 }
 
 .magnet--quiet .magnet__mark {
@@ -127,6 +130,7 @@
   border-color: transparent;
   color: var(--ink);
   text-decoration-color: var(--mark);
+  --roll-rule: var(--mark);
 }
 
 /* ---------------------------------------------------------------------------

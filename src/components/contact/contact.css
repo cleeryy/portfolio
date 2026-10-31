@@ -163,12 +163,16 @@
   text-decoration-color: var(--contour);
   text-underline-offset: 0.28em;
   transition: text-decoration-color var(--t-fast) var(--ease-out);
+  /* The rolled label paints the hairline itself (see rollover.css): a
+     text-decoration would be cut by each character's mask. */
+  --roll-rule: var(--contour);
 }
 
 .ct__link:hover,
 .ct__link:focus-visible {
   color: var(--ink);
   text-decoration-color: var(--mark);
+  --roll-rule: var(--mark);
 }
 
 /* ---------------------------------------------------------------------------
@@ -228,11 +232,14 @@
   text-decoration-color: var(--contour);
   text-underline-offset: 0.26em;
   transition: text-decoration-color var(--t-fast) var(--ease-out);
+  /* As on the ledger links: the rolled label carries the rule. */
+  --roll-rule: var(--contour);
 }
 
 .clp__top:hover,
 .clp__top:focus-visible {
   text-decoration-color: var(--mark);
+  --roll-rule: var(--mark);
 }
 
 .clp__scale {

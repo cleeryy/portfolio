@@ -323,3 +323,22 @@ pointer. Facts come from `FACTS.md`; nothing is asserted that the audit could no
 
 **Known gaps.** No platform handles (THM/HTB/Root-Me/PortSwigger) are documented, so the ranges
 chapter names practice without ranks; no certifications exist and none are claimed.
+
+**Motion pass v3 — the grammar of the genre, transcribed.** Four devices, all derived from
+measurements the sheet already had:
+
+- **One curve, one table.** `MOTION` in `src/lib/reveal.ts`: duration 0.9, `cubic-bezier(.16,1,.3,1)`,
+  stagger 0.05, travel 100%. Reveals are *reversible* (`toggleActions: play/reverse`) and snap to the
+  geometry-asked state on refresh, so a font swap or a language switch can never leave a heading masked.
+- **Char rollover.** `Rollover` splits a label into two lines of characters and drives the pair from an
+  integrated hover ratio (±2/s), reverting from wherever the pointer left. The accessible name lives once,
+  in `.sr-only`; the rolling copies are `aria-hidden`. Plain pointer/touch get a drawn rule instead.
+- **Instrument chrome.** A margin column at mid-height, three labelled readings (`paris` clock,
+  `plate 0n/08`, `sheet 0nn%`), derived from the nav's `aria-current` and one ScrollTrigger — never a
+  second copy of the section list. It flips to deep ink over the band and disappears below 900px.
+- **Printed grid.** `SheetGrid` draws the 12 column boundaries on the content measure (0.00px error at
+  1440/1280/1024), reformatting to 6 bays then 3 then none, and tinting for the ink band.
+
+**Velocity is a material.** Above the lens bend, damped scroll speed now coarsens the plate itself:
+the Bayer cell grows 1×→3×, hairlines thicken and tear into dots, then the fine print returns in ~350ms.
+Denser, never darker: the text-column worst pixel stays at 12/255.
