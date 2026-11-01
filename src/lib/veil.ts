@@ -3,6 +3,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 // The tile is the veil's half of the sheet's dither: same 8 × 8 matrix, same
 // module that generates it for the atmosphere's shader.
 import { BAYER_SIZE, bayerMaskTile } from '../components/atmosphere/bayer'
+import { sound } from './sound'
 
 /* ============================================================================
    veil.ts — the plate change
@@ -88,6 +89,10 @@ export function initVeil(el: HTMLElement, onPulse: (() => void) | null): Veil {
     running = true
     el.dataset.running = 'true'
     onPulse?.()
+
+    // The sheet turning: one dry brush, tied to this sweep and nothing else.
+
+    sound.brush()
 
     gsap.fromTo(
       band,

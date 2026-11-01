@@ -364,3 +364,22 @@ would dip to 1.1:1).
 inside its own track, and the deep palette has been shifted green (`--deep #07160f`,
 `--deep-2 #0e2419`, `--deep-ink #dbe7dd`, `--deep-ink-2 #93ab9b`) so both chapters read as the
 same material. The light sheet is unchanged.
+
+**v4 — three new plates, and the page becomes eleven.**
+
+- **`#relief`** — the terrain the network stands on: a seeded height field cut into 20 contour
+  levels, each drawn top and bottom with a stitch every fourth vertex (a contour model in card),
+  17k line segments, one draw call, ~0.3ms of JS per frame. Far lines break into the same 8×8
+  Bayer screen as the atmosphere; one crimson survey pin at the summit, Toulouse's real coordinate
+  beside it. Turns 40° across its pass, tilts ±6° with the pointer.
+- **`#ascii`** — the same schematic printed as characters: 110×64 cells, 12 punctuation glyphs
+  chosen by *direction* (not luminance), 422 inked cells, one instanced draw. The `<pre>` fallback
+  is composed from the same matrix, so the text and the canvas can never disagree.
+- **`#request`** — the chapter plate before contact: the ask, set at plate scale on ink, with a
+  measure that draws and one `clip-path` step out. No button.
+- **Type as material** — Archivo's width axis now settles headings 112→104 after the mask lands,
+  lifts links to 106 on hover and breathes the handle ±2 above 900px only.
+- **Sound as a place** — four rooms (paper, machine, ink, air) crossfaded at 0.8s as you move
+  between plates, a brush on every plate change, tier-pitched node cues in the territory, the air
+  bed's band following the passage's depth, and the room tone's cutoff following scroll velocity.
+  Still off by default, still gesture-gated, still zero audio files.

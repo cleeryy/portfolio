@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import type { Bi } from '../../lib/i18n'
 import { useLang } from '../../lib/i18n'
+import { sound } from '../../lib/sound'
 import { handle } from '../../content/hero'
 import { announceSheetReady } from './handoff'
 import './boot.css'
@@ -183,6 +184,10 @@ export default function BootGate() {
       plateEl.dataset.lifting = 'true'
       setStatus('ready')
       announceSheetReady({ path: 'boot', elapsed: Math.round(performance.now() - t0) })
+
+      // The switch engaging. A no-op on a muted page — and since the layer never
+      // opens a context outside a gesture, a stored "on" stays silent here too.
+      sound.boot()
 
       ctx.add(() => {
         gsap

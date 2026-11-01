@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
+import { sound } from '../../lib/sound'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -1129,6 +1130,9 @@ export default function TerritoryScene({
         state.focus = hovered
         applyFocus(hovered)
         latest.current.onFocus(hovered)
+        // A mark under the pointer: its tier is the note, its x the pan.
+        const mark = hovered ? territoryStations.find((s) => s.id === hovered) : undefined
+        if (mark) sound.node(mark.x, mark.tier)
       }
 
       // The names arrive with the ink, not before it: a label on a mark that

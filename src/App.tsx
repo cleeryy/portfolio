@@ -1,15 +1,18 @@
 import { useEffect } from 'react'
 import { sound } from './lib/sound'
 import About from './components/about/About'
+import Ascii from './components/ascii/Ascii'
 import Atmosphere from './components/atmosphere/Atmosphere'
 import SheetGrid from './components/grid/SheetGrid'
 import BootGate from './components/boot/BootGate'
 import Contact from './components/contact/Contact'
 import Flight from './components/flight/Flight'
 import Hero from './components/hero/Hero'
+import Interlude from './components/interlude/Interlude'
 import NavBar from './components/nav/NavBar'
 import Path from './components/path/Path'
 import Ranges from './components/ranges/Ranges'
+import Relief from './components/relief/Relief'
 import Services from './components/services/Services'
 import Skills from './components/skills/Skills'
 import Territory from './components/territory/Territory'
@@ -37,8 +40,8 @@ export default function App() {
   useEffect(() => initMotionSystem(), [])
 
   // Sound has to answer a copy, not just the toggle. Chrome (nav, hero) gets a
-  // relay tick on any activation, and the page ticks once as a new plate is
-  // reached — sparse by design, and every call is a no-op while sound is off.
+  // relay tick on activation and a hover tick when the pointer arrives, and
+  // reaching a plate is a change of room — every call a no-op while sound is off.
   useEffect(() => {
     const NO_CUE = '.sound-toggle, [data-no-cue]'
 
@@ -58,19 +61,33 @@ export default function App() {
           const id = entry.target.id
           if (id && id !== current) {
             current = id
-            sound.open()
+            sound.arrive(id)
           }
         }
       },
       { rootMargin: '-40% 0px -40% 0px' },
     )
 
+    // `pointerover` bubbles, `pointerenter` does not; the relatedTarget guard
+    // makes crossing a link's own spans one tick rather than three.
+    const onPointerOver = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (target.closest(NO_CUE)) return
+      const hit = target.closest('.nav a, .nav button, .hero a, .hero button')
+      if (!hit) return
+      if (event.relatedTarget instanceof Node && hit.contains(event.relatedTarget)) return
+      sound.hover()
+    }
+
     document.addEventListener('click', onClick, true)
+    document.addEventListener('pointerover', onPointerOver, true)
     const sections = document.querySelectorAll('main > section[id]')
     sections.forEach((node) => observer.observe(node))
 
     return () => {
       document.removeEventListener('click', onClick, true)
+      document.removeEventListener('pointerover', onPointerOver, true)
       observer.disconnect()
     }
   }, [])
@@ -87,11 +104,14 @@ export default function App() {
       <Hero />
       <Path />
       <Skills />
+      <Relief />
       <Territory />
+      <Ascii />
       <Flight />
       <Ranges />
       <Services />
       <About />
+      <Interlude />
       <Contact />
       <ScrollProgress />
       <Cursor />

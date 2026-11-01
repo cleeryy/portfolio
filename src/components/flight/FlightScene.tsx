@@ -17,6 +17,7 @@ import {
   type Texture,
 } from 'three'
 import { gsap } from 'gsap'
+import { sound } from '../../lib/sound'
 import { flightLabels } from '../../content/flight'
 import { ATLAS_SIZE, createAtlasTexture, drawAtlas } from './atlas'
 import { clamp01, handoff } from './curve'
@@ -352,6 +353,9 @@ export default function FlightScene({ progress, enter, clear, onReady, onUnavail
       const chase = state.snap ? 1 : 1 - Math.exp(-dt * 4)
       const before = state.p
       state.p += (target - state.p) * chase
+
+      // The eye's depth opens the air bed; the cue is gated inside the engine.
+      sound.depth(state.p)
 
       const velocity = dt > 0 ? (state.p - before) / dt : 0
       state.vel += (velocity - state.vel) * (1 - Math.exp(-dt * 6))

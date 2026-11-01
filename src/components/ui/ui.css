@@ -248,6 +248,22 @@
   pointer-events: none;
 }
 
+/* The section's top rule, drawn.
+   A border cannot be scaled along its own length, so `reveal.ts` stands the
+   section's `border-top` colour down and puts this 1px span in exactly the same
+   place (`-1px`, because the transparent border still occupies its pixel). It
+   is the same rule in the same ink; only now it can be drawn from the left as
+   the section enters, and it is already printed if the script never runs. */
+.rig-rule {
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline: 0;
+  block-size: var(--hair);
+  background-color: var(--rule);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
 /* The printed reading under `#section`. Tabular by default (`.mono`), and the
    text is written by reveal.ts, so it is empty until JS puts a number in it. */
 .rig-coord {

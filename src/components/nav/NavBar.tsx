@@ -14,7 +14,9 @@ import './nav.css'
 const SECTIONS: { id: string; label: Bi }[] = [
   { id: 'path', label: { en: 'Path', fr: 'Parcours' } },
   { id: 'skills', label: { en: 'Skills', fr: 'Compétences' } },
+  { id: 'relief', label: { en: 'Relief', fr: 'Relief' } },
   { id: 'territory', label: { en: 'Territory', fr: 'Territoire' } },
+  { id: 'ascii', label: { en: 'Type', fr: 'Caractères' } },
   { id: 'flight', label: { en: 'Passage', fr: 'Passage' } },
   { id: 'ranges', label: { en: 'Ranges', fr: 'Terrains' } },
   { id: 'services', label: { en: 'Work', fr: 'Projets' } },

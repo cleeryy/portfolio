@@ -9,6 +9,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { gsap } from 'gsap'
+import { sound } from '../../lib/sound'
 import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
 
 /* ============================================================================
@@ -276,6 +277,12 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
        lens: it takes the speed before the lens damps it, so releasing the wheel
        starts the settle immediately instead of waiting out a 1.7s tail. */
     const throwSpeed = Math.abs(target)
+
+    /* The sound lane reads this number rather than opening a second scroll
+       listener: the room's low pass opens with the throw, and the audio side
+       damps it and returns it to rest when this loop stops being called. */
+    sound.velocity(throwSpeed)
+
     const ramp = clamp((throwSpeed - COARSE_DEAD) / COARSE_SPAN, 0, 1)
     const coarseTarget = ramp * ramp * (3 - 2 * ramp)
     state.coarse +=

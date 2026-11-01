@@ -1,0 +1,301 @@
+/* ============================================================================
+   interlude.css — the request, printed as a plate
+   ----------------------------------------------------------------------------
+   Between the operator and the closing page the sheet holds one plate: a
+   full-bleed band of ink, 70% of the viewport tall, hung under the fixed bar
+   with the pale sheet still visible beneath it. It is *not* a dark chapter in
+   the sense of `#ranges` or `#flight` — those are the page turning dark; this is
+   a printed plate tipped into the book, and the light continues around it.
+
+   Three layers, each with one job:
+
+   - `.itl__track` — the hold. 118svh at the wide sheet (108 on a phone), of
+     which the last ~48svh is the pinned travel. A plain sticky stage, never a
+     GSAP pin: no pin spacer means the offsets below this section (and
+     `#contact`'s anchor, which asks for the sheet's own 64px) are the ones the
+     layout actually declares.
+   - `.itl__stage` / `.itl__plate` — the plate itself. Ink, square, full-bleed,
+     one hairline at its foot, its own type scope (`--text` and friends are
+     re-pointed at the deep inks so every child inherits the plate's colour).
+   - `.itl__inner` — the field: the same 72rem column and the same gutter as
+     every other section, so the plate's references start on the same edge as
+     the sheet above and below it. A plate has no rail: its statement runs the
+     whole field.
+
+   Nothing here is a card: no radius, no shadow, no gradient, no button. The
+   only mark is the 7px crimson origin of the measure — the same survey mark the
+   hero collar, the colophon and the instrument chrome use.
+   ========================================================================== */
+
+.itl {
+  position: relative;
+  /* The rig's hairline (`reveal.ts`, `.rig-rule`) is drawn on this section's
+     top edge, which is the plate's own top edge: it has to be read in the
+     plate's ink, not on the pale sheet. The border exists only so the rig has a
+     rule to stand down and draw — it is transparent the moment the rig runs. */
+  --rule: color-mix(in srgb, var(--deep-ink) 26%, transparent);
+  border-block-start: var(--hair) solid var(--rule);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* The injected rule sits on the plate's edge (the padding box top), not in the
+   transparent border above it: on ink, a 1px sliver of sheet between the rule
+   and the plate would be visible. */
+.itl .rig-rule {
+  inset-block-start: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   The hold
+   --------------------------------------------------------------------------- */
+
+.itl__track {
+  position: relative;
+  block-size: 118vh;
+  block-size: 118svh;
+}
+
+.itl__stage {
+  position: sticky;
+  /* The compact bar is the one that is on screen this deep in the sheet, and
+     its 1px border is the plate's top edge. */
+  inset-block-start: var(--nav-h-compact);
+  block-size: 70vh;
+  block-size: 70svh;
+  /* A short phone still has to hold the plate and its measure. */
+  min-block-size: 22rem;
+}
+
+/* ---------------------------------------------------------------------------
+   The plate
+   --------------------------------------------------------------------------- */
+
+.itl__plate {
+  /* The plate is its own surface: re-point the inks the sheet's children use,
+     exactly as `.on-deep` does for the chapter break, without claiming the
+     class (three other layers read `main > section.on-deep` and must keep
+     finding `#ranges`). */
+  --text: var(--deep-ink);
+  --text-soft: var(--deep-ink-2);
+  --text-quiet: var(--deep-ink-2);
+  --itl-hair: color-mix(in srgb, var(--deep-ink) 24%, transparent);
+
+  position: relative;
+  display: grid;
+  block-size: 100%;
+  padding-inline: var(--gutter);
+  border-block-end: var(--hair) solid var(--itl-hair);
+  background-color: var(--deep);
+  color: var(--text);
+}
+
+.itl__plate ::selection {
+  background-color: var(--mark);
+  color: var(--deep);
+}
+
+/* The registration segment sits *on* the plate's top edge, not 1px above it:
+   above it is the pale sheet, where a pale mark would disappear. */
+.itl__plate .rig-tick {
+  inset-block-start: 0;
+}
+
+.itl__inner {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'refs'
+    'title'
+    'measure';
+  row-gap: clamp(1.25rem, 3.2svh, 2.5rem);
+  inline-size: 100%;
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  block-size: 100%;
+  padding-block: clamp(0.9rem, 3svh, 1.9rem) clamp(1rem, 3.2svh, 2.25rem);
+}
+
+/* ---------------------------------------------------------------------------
+   The running head: what this plate is, and where it sits
+   ---------------------------------------------------------------------------
+   Plate number at the left edge, the section's own reference and its coordinate
+   at the right — the sheet's annotation grammar, on the plate's own margin line
+   rather than in a rail, because a plate has no rail: its type runs the field.
+   --------------------------------------------------------------------------- */
+
+.itl__refs {
+  grid-area: refs;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-5);
+  min-inline-size: 0;
+}
+
+.itl__plate-ref {
+  margin: 0;
+  font-size: var(--step--2);
+  letter-spacing: 0.09em;
+  color: var(--text);
+}
+
+.itl__ref {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  margin: 0;
+  font-size: var(--step--2);
+  line-height: 1.3;
+  text-align: end;
+  color: var(--text-quiet);
+}
+
+/* ---------------------------------------------------------------------------
+   The ask
+   ---------------------------------------------------------------------------
+   Plate scale (`--step-5`), set to the whole field — a plate's statement runs
+   the measure, it is not inset into a rail — at the width the sheet gives a
+   heading. Then the axis settles, because `revealWords` treats this h2 like
+   every other section heading. Running the field (rather than a 22ch column) is
+   also what makes the settle safe: the sentence keeps its two lines from 104 to
+   114, so the width is a gesture and never a re-wrap.
+   --------------------------------------------------------------------------- */
+
+.itl__title {
+  grid-area: title;
+  align-self: center;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-5);
+  font-weight: var(--w-medium);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------------------
+   The measure
+   ---------------------------------------------------------------------------
+   Four ticks on a hairline, the destination at its right end, and a drawn ink
+   line that arrives with the scroll. The drawn line's stylesheet position is
+   its *finished* one: if the script never runs, the measure is printed in full
+   rather than missing (only `Interlude.tsx` may set it back to zero).
+   --------------------------------------------------------------------------- */
+
+.itl__measure {
+  grid-area: measure;
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  min-inline-size: 0;
+}
+
+.itl__bar {
+  position: relative;
+  flex: 1 1 auto;
+  min-inline-size: 4rem;
+  block-size: 9px;
+  border-block-end: var(--hair) solid var(--itl-hair);
+  /* The ticks: one hairline every quarter of the measure, 6px tall, sitting on
+     the rule. Same construction as the colophon's scale bar. */
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--itl-hair) 0 1px,
+    transparent 1px 25%
+  );
+  background-repeat: repeat-x;
+  background-size: 100% 6px;
+  background-position: 0 0;
+}
+
+/* The origin of the measure: the plate's one crimson mark, 7px, the length the
+   chrome's rule and the registration ticks share. */
+.itl__bar::before {
+  content: '';
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  inline-size: 7px;
+  block-size: 2px;
+  background-color: var(--mark);
+}
+
+.itl__fill {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 7px 0;
+  block-size: 1px;
+  background-color: var(--deep-ink);
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+.itl__dest {
+  flex: none;
+  font-size: var(--step--2);
+  line-height: 1.2;
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   The instrument in the sheet's margin
+   ---------------------------------------------------------------------------
+   The chrome flips its own ink for the chapter break and for the passage. This
+   plate is neither, so `Interlude.tsx` tells it when the plate holds the middle
+   of the frame; the two inks below are the chapter break's, for the same
+   reason (they are the only pair that reads on ink).
+   --------------------------------------------------------------------------- */
+
+.chrome[data-plate='true'] {
+  --chrome-key: var(--deep-ink-2);
+  --chrome-value: var(--deep-ink);
+  --chrome-rule: color-mix(in srgb, var(--deep-ink) 26%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive
+   ---------------------------------------------------------------------------
+   Below the wide sheet the margin column collapses, the plate keeps its hold
+   (a phone can hold a plate), and the measure keeps its destination.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .itl {
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .itl__track {
+    block-size: 108vh;
+    block-size: 108svh;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion
+   ---------------------------------------------------------------------------
+   No pin, no track, no crop: the plate becomes a static band with its measure
+   printed in full. The scroll distance it occupied goes with the pin, so the
+   page is shorter — which is the honest reading of "no pin".
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .itl__track {
+    block-size: auto;
+  }
+
+  .itl__stage {
+    position: static;
+    block-size: auto;
+    min-block-size: 0;
+  }
+
+  .itl__plate {
+    block-size: auto;
+    min-block-size: 70svh;
+  }
+
+  .itl__inner {
+    block-size: auto;
+  }
+}

@@ -1,56 +1,152 @@
+import { Foundry, MASTER_LEVEL, clamp, clamp01, holdAt } from './sound/graph'
+import { RoomBank, type RoomId } from './sound/rooms'
+import { CueBank, type CueStamp, type NodeTier } from './sound/cues'
+
 /**
  * Sound layer — entirely synthesized with the Web Audio API.
  *
- * Design thesis: the sound of an operated territory, not a soundtrack. Relay ticks,
- * a sonar reading, the low room tone of a machine hall. No melody, no rhythm, no
- * chase music. Everything is quiet enough that the site still reads as a document.
+ * Design thesis: the sound of an operated territory, not a soundtrack. Relay
+ * ticks, a sonar reading, the low room tone of a machine hall. No melody, no
+ * rhythm, no chase music. Everything is quiet enough that the site still reads
+ * as a document.
  *
- * Rules this module enforces:
- * - No AudioContext before a real user gesture, ever. Nothing autoplays.
- * - Default off. The preference is stored, but a stored "on" still waits for the
- *   next gesture before any node is created (browser autoplay policy + etiquette).
+ * The site is four rooms, not one page with clicks:
+ *
+ * | room      | what is heard                                        | where            |
+ * |-----------|------------------------------------------------------|------------------|
+ * | `paper`   | air, a slow breath, a fifth of hum                   | the sheet        |
+ * | `machine` | fan, a 50 Hz transformer, an occasional relay        | `#territory`     |
+ * | `air`     | moving air, its band opened by the flight's depth    | `#flight`        |
+ * | `ink`     | sub-bass pressure, almost no highs                   | `#ranges`        |
+ *
+ * Rooms crossfade over 0.6–0.9 s (see `sound/rooms.ts`) and are built lazily,
+ * released when left. `arrive(sectionId)` is the whole integration: it maps the
+ * section to its room and plays the arrival cue.
+ *
+ * Rules this module enforces, and why:
+ * - No AudioContext before a real user gesture, ever. Nothing autoplays. A
+ *   stored "on" still waits for the next gesture before any node is created.
+ * - Default off. The preference is stored, and a stored "on" never starts a cue
+ *   or a bed on a page the reader has not touched.
  * - Nothing is scheduled on a frame loop. Every modulation (filter sweep, air
- *   breathing) lives in the audio graph as an oscillator driving an AudioParam.
- * - Every cue is safe to call while disabled, during teardown, or without WebAudio.
+ *   breathing, the fan's wander) lives in the audio graph as an oscillator
+ *   driving an AudioParam. The two signals that do come from the page — scroll
+ *   velocity and the flight's depth — are pushed in by the loops that already
+ *   run, and settle on their own when those loops stop.
+ * - Every cue is safe to call while disabled, during teardown, or without
+ *   WebAudio. Every room is released; `inspect()` reports the live node count.
  */
 
 const STORAGE_KEY = 'portfolio:sound'
 
-/** Master ceiling: ≈ −7.5 dBFS. All mixes below are relative to this. */
-const MASTER_LEVEL = 0.42
-/** Ambient bed bus. Deliberately below the threshold of attention. */
-const AMBIENT_LEVEL = 0.18
 /** Minimum gap between hover ticks. Bursty pointer moves must not turn into a rattle. */
 const HOVER_GAP_MS = 125
 /** Section transitions can fire in quick succession on fast scrolls; keep it sparse. */
 const OPEN_GAP_MS = 320
+/** The veil already gates itself at 1.1 s; this is the second lock on the same door. */
+const BRUSH_GAP_MS = 420
+/** Six marks a second is already faster than a hand can read them. */
+const NODE_GAP_MS = 160
+/** Air accents while the passage moves. */
+const DEPTH_GAP_MS = 180
+/** A creak is an event, not a texture. */
+const CREAK_GAP_MS = 520
 
-const CUE_PEAK = {
-  click: 0.62,
-  ping: 0.45,
-  hover: 0.20,
-  open: 0.42,
-} as const
+/** Below this the passage is at its mouth: no accent, nothing to hear yet. */
+const DEPTH_FLOOR = 0.06
+/** And it has to have moved at least this much since the last accent. */
+const DEPTH_STEP = 0.02
+
+/** A throw, not a reading scroll. */
+const CREAK_FLOOR = 0.34
+
+/**
+ * The page reports 0 as soon as the scroll stops, so the bed settles on its own
+ * through the filter's release. This timer covers the other case — the loop
+ * stops being called at all (a hidden tab, the atmosphere off-screen) while a
+ * throw is still open. 120 ms without a call and the bed is put back at rest,
+ * which the release finishes in about 300 ms: inside the 400 ms it is allowed.
+ */
+const VELOCITY_HOLD_MS = 120
+
+/** Cues that can be bound to an element: no arguments, nothing to decide. */
+export type CueName = 'click' | 'ping' | 'hover' | 'open' | 'brush'
+
+/** Every cue the engine can fire, including the ones the page never binds. */
+type FiredCue = CueName | 'boot' | 'node' | 'depth' | 'creak'
+
+const GAP: Record<FiredCue, number> = {
+  click: 0,
+  ping: 0,
+  hover: HOVER_GAP_MS,
+  open: OPEN_GAP_MS,
+  brush: BRUSH_GAP_MS,
+  boot: 0,
+  node: NODE_GAP_MS,
+  depth: DEPTH_GAP_MS,
+  creak: CREAK_GAP_MS,
+}
+
+/**
+ * Reduced motion removes everything the page does on its own: beds do not
+ * exist, and the cues tied to movement do not fire. What is left is the sound
+ * of the reader's own hand — a click, a hover, a mark.
+ */
+const KIND: Record<FiredCue, 'user' | 'motion'> = {
+  click: 'user',
+  hover: 'user',
+  node: 'user',
+  ping: 'motion',
+  open: 'motion',
+  brush: 'motion',
+  boot: 'motion',
+  depth: 'motion',
+  creak: 'motion',
+}
 
 const REDUCED_CUE_SCALE = 0.62
 
-export type CueName = keyof typeof CUE_PEAK
 export type SoundListener = (enabled: boolean) => void
 
-type Graph = {
-  ctx: AudioContext
-  master: GainNode
-  cueBus: GainNode
-  ambientBus: GainNode
-  roomIn: GainNode
-  white: AudioBuffer
-  pink: AudioBuffer
+/** What `inspect()` reports. Also the contract the validation reads. */
+export type SoundState = {
+  enabled: boolean
+  ctx: AudioContextState | 'none'
+  room: RoomId | null
+  beds: number
+  nodes: number
+  timers: number
+  /** Cues fired since the page loaded. */
+  fired: number
+  /** The master gain's current value, so a fade can be watched. */
+  master: number
+  /** The current room's noise-path cutoff, in Hz. */
+  tone: number | null
+  last: CueStamp | null
+  levels: Partial<Record<RoomId, number>>
 }
 
-type AmbientRig = {
-  bus: GainNode
-  nodes: AudioNode[]
-  sources: AudioScheduledSourceNode[]
+/* -------------------------------------------------------------------------- */
+/* the map                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Which room a section is. One source of truth: the nav owns the ids, this owns
+ * the places. Anything unknown (the hero has no id) is the sheet.
+ */
+const ROOM_BY_SECTION: Record<string, RoomId> = {
+  path: 'paper',
+  skills: 'paper',
+  services: 'paper',
+  about: 'paper',
+  contact: 'paper',
+  territory: 'machine',
+  flight: 'air',
+  ranges: 'ink',
+}
+
+export function roomOf(sectionId: string): RoomId {
+  return ROOM_BY_SECTION[sectionId] ?? 'paper'
 }
 
 /* -------------------------------------------------------------------------- */
@@ -70,81 +166,6 @@ function readStoredPreference(): boolean {
   }
 }
 
-/**
- * Cancel pending automation without jumping: `cancelAndHoldAtTime` keeps the value
- * the parameter currently has, so ramps never snap back to a stale target (which
- * is exactly how clicks and pops are born).
- */
-function holdAt(param: AudioParam, at: number): number {
-  if (typeof param.cancelAndHoldAtTime === 'function') param.cancelAndHoldAtTime(at)
-  else param.cancelScheduledValues(at)
-  return Math.max(param.value, 0.0001)
-}
-
-function disconnectAll(nodes: AudioNode[]): void {
-  for (const node of nodes) {
-    try {
-      node.disconnect()
-    } catch {
-      /* already detached — nothing to do */
-    }
-  }
-}
-
-function makeNoiseBuffer(ctx: AudioContext, seconds: number, kind: 'white' | 'pink'): AudioBuffer {
-  const length = Math.max(1, Math.floor(ctx.sampleRate * seconds))
-  const buffer = ctx.createBuffer(1, length, ctx.sampleRate)
-  const data = buffer.getChannelData(0)
-
-  if (kind === 'white') {
-    for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1
-    return buffer
-  }
-
-  // Pink-ish noise (Kellet approximation): less hiss than white, closer to real air.
-  let b0 = 0
-  let b1 = 0
-  let b2 = 0
-  let b3 = 0
-  let b4 = 0
-  let b5 = 0
-  let b6 = 0
-  for (let i = 0; i < length; i += 1) {
-    const white = Math.random() * 2 - 1
-    b0 = 0.99886 * b0 + white * 0.0555179
-    b1 = 0.99332 * b1 + white * 0.0750759
-    b2 = 0.969 * b2 + white * 0.153852
-    b3 = 0.8665 * b3 + white * 0.3104856
-    b4 = 0.55 * b4 + white * 0.5329522
-    b5 = -0.7616 * b5 - white * 0.016898
-    data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11
-    b6 = white * 0.115926
-  }
-  return buffer
-}
-
-/**
- * A small dark room rather than a reverb: 1.5 s of decaying filtered noise with a
- * 14 ms pre-delay. Gives the cues a place to happen without smearing the transient.
- */
-function makeRoomImpulse(ctx: AudioContext, seconds: number, decay: number): AudioBuffer {
-  const length = Math.max(1, Math.floor(ctx.sampleRate * seconds))
-  const preDelay = Math.floor(ctx.sampleRate * 0.014)
-  const buffer = ctx.createBuffer(2, length, ctx.sampleRate)
-
-  for (let channel = 0; channel < 2; channel += 1) {
-    const data = buffer.getChannelData(channel)
-    let lowpassed = 0
-    for (let i = preDelay; i < length; i += 1) {
-      const t = (i - preDelay) / ctx.sampleRate
-      const noise = Math.random() * 2 - 1
-      lowpassed += 0.24 * (noise - lowpassed)
-      data[i] = lowpassed * Math.exp(-t * decay)
-    }
-  }
-  return buffer
-}
-
 /* -------------------------------------------------------------------------- */
 /* engine                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -152,15 +173,23 @@ function makeRoomImpulse(ctx: AudioContext, seconds: number, decay: number): Aud
 class SoundEngine {
   #enabled = false
   #disposed = false
-  #graph: Graph | null = null
-  #ambient: AmbientRig | null = null
+  #graph: Foundry | null = null
+  #rooms: RoomBank | null = null
+  #cues: CueBank | null = null
   #listeners = new Set<SoundListener>()
-  #timers = new Set<number>()
-  #lastFired: Partial<Record<CueName, number>> = {}
+  #lastFired: Partial<Record<FiredCue, number>> = {}
+  #lastStamp: CueStamp | null = null
+  #fired = 0
   #motion: MediaQueryList | null = null
   #motionHandler: (() => void) | null = null
   #gestureHandler: (() => void) | null = null
   #armed = false
+  #booted = false
+
+  /** The room the reader is in, whether or not sound is on. */
+  #wanted: RoomId = 'paper'
+  #velocityTimer = 0
+  #lastDepth = -1
 
   constructor() {
     this.#enabled = readStoredPreference()
@@ -201,13 +230,20 @@ class SoundEngine {
 
     holdAt(graph.master.gain, now)
     graph.master.gain.setTargetAtTime(0.0001, now, 0.06)
-    this.#stopAmbient(graph, 0.1)
+
+    if (this.#velocityTimer !== 0) {
+      graph.cancel(this.#velocityTimer)
+      this.#velocityTimer = 0
+    }
+    this.#rooms?.dispose(0.12)
+    this.#rooms = null
 
     // Let the tail die, then park the context so a muted page costs nothing.
-    this.#later(() => {
-      const current = this.#graph
-      if (!current || this.#enabled) return
-      if (current.ctx.state === 'running') void current.ctx.suspend().catch(() => undefined)
+    graph.later(() => {
+      if (!this.#graph || this.#enabled) return
+      if (this.#graph.ctx.state === 'running') {
+        void this.#graph.ctx.suspend().catch(() => undefined)
+      }
     }, 700)
   }
 
@@ -226,63 +262,223 @@ class SoundEngine {
     }
   }
 
+  /* --------------------------------- cues --------------------------------- */
+
   /** Soft relay tick — the default interface acknowledgement. */
-  click = (): void => this.#fire('click')
+  click = (): void => {
+    this.#play('click')
+  }
+
   /** Sonar reading — for section arrivals, never for buttons. */
-  ping = (): void => this.#fire('ping')
+  ping = (): void => {
+    this.#play('ping')
+  }
+
   /** Barely-there tick for pointer travel. Rate-limited. */
-  hover = (): void => this.#fire('hover')
+  hover = (): void => {
+    this.#play('hover')
+  }
+
   /** Filtered swell for a section transition. Rate-limited. */
-  open = (): void => this.#fire('open')
+  open = (): void => {
+    this.#play('open')
+  }
+
+  /** The plate change: one sheet of paper turned over. */
+  brush = (): void => {
+    this.#play('brush')
+  }
+
+  /** The boot plate engaging. One per page, and only with sound already on. */
+  boot = (): void => {
+    if (this.#booted) return
+    this.#booted = true
+    this.#play('boot')
+  }
+
+  /**
+   * A mark under the pointer: pitch is its plan, pan is its x.
+   * `x` is the mark's position, normalised to −1…1.
+   */
+  node = (x: number, tier: NodeTier = 'edge'): void => {
+    this.#play('node', clamp(x, -1, 1), tier)
+  }
+
+  /**
+   * The passage's depth, 0…1, pushed from the flight's own frame. Muted below
+   * the mouth, rate-limited above it, and never a bed: `#play` refuses it under
+   * reduced motion.
+   */
+  depth = (p: number): void => {
+    if (this.#disposed) return
+    const value = clamp01(p)
+    this.#rooms?.setDepth(value)
+
+    if (value < DEPTH_FLOOR) return
+    if (this.#lastDepth >= 0 && Math.abs(value - this.#lastDepth) < DEPTH_STEP) return
+    this.#lastDepth = value
+
+    // Called from a scroll loop: it may not create a context on its own.
+    const graph = this.#graph
+    if (!graph || graph.ctx.state !== 'running') return
+    this.#play('depth', 0, 'edge', value)
+  }
+
+  /**
+   * The page's scroll speed, 0…1, pushed from the atmosphere's frame. It opens
+   * the current room's low pass and, at speed, creaks. When the page settles the
+   * calls stop; the bed is back at rest ~400 ms later.
+   */
+  velocity = (v: number): void => {
+    if (this.#disposed) return
+    const value = clamp01(Math.abs(v))
+    this.#rooms?.setVelocity(value)
+
+    const graph = this.#graph
+    if (!graph) return
+    if (value > 0) {
+      if (this.#velocityTimer !== 0) graph.cancel(this.#velocityTimer)
+      this.#velocityTimer = graph.later(() => {
+        this.#velocityTimer = 0
+        this.#rooms?.setVelocity(0)
+      }, VELOCITY_HOLD_MS)
+    } else if (this.#velocityTimer !== 0) {
+      // The page has already told us it is at rest; nothing left to settle.
+      graph.cancel(this.#velocityTimer)
+      this.#velocityTimer = 0
+    }
+
+    if (value <= CREAK_FLOOR) return
+    if (!this.#enabled || graph.ctx.state !== 'running') return
+    this.#play('creak', 0, 'edge', (value - CREAK_FLOOR) / (1 - CREAK_FLOOR))
+  }
+
+  /* -------------------------------- rooms --------------------------------- */
+
+  /** Cross to a room. Safe to call while disabled: it is remembered for later. */
+  room = (id: RoomId): void => {
+    if (this.#disposed) return
+    this.#wanted = id
+    const graph = this.#graph
+    if (!this.#enabled || !graph) return
+    this.#ensureRooms(graph)?.enter(id)
+  }
+
+  /**
+   * A section was reached: cross to its room and mark the arrival.
+   *
+   * ```ts
+   * if (id !== current) sound.arrive(id)
+   * ```
+   */
+  arrive = (sectionId: string): void => {
+    this.room(roomOf(sectionId))
+    this.#play('open')
+  }
+
+  /** What the engine is doing, for a debug overlay or a validation run. */
+  inspect = (): SoundState => ({
+    enabled: this.#enabled,
+    ctx: this.#graph ? this.#graph.ctx.state : 'none',
+    room: this.#rooms?.current ?? null,
+    beds: this.#rooms?.count ?? 0,
+    nodes: this.#graph?.count() ?? 0,
+    timers: this.#graph?.timers() ?? 0,
+    fired: this.#fired,
+    master: this.#graph ? Math.round(this.#graph.master.gain.value * 1000) / 1000 : 0,
+    tone: this.#rooms?.tone() ?? null,
+    last: this.#lastStamp,
+    levels: this.#rooms?.levels() ?? {},
+  })
+
+  /**
+   * Dev-only: the master bus, so a validation run can tap an analyser onto it.
+   * Nothing in the app calls this; it exists so the rooms can be measured
+   * rather than described.
+   */
+  tap = (): AudioNode | null => this.#graph?.master ?? null
 
   dispose = (): void => {
     if (this.#disposed) return
     this.#disposed = true
     this.#disarm()
     this.#unwatchMotion()
-
-    if (typeof window !== 'undefined') {
-      for (const id of this.#timers) window.clearTimeout(id)
-    }
-    this.#timers.clear()
     this.#listeners.clear()
 
     const graph = this.#graph
-    const ambient = this.#ambient
     this.#graph = null
-    this.#ambient = null
+    this.#cues = null
+    this.#rooms?.dispose(0.05)
+    this.#rooms = null
     this.#enabled = false
+    this.#velocityTimer = 0
+    this.#lastDepth = -1
 
-    if (!graph) return
-    if (ambient) disconnectAll(ambient.nodes)
-    disconnectAll([graph.master, graph.cueBus, graph.ambientBus, graph.roomIn])
-    void graph.ctx.close().catch(() => undefined)
+    graph?.dispose()
   }
 
   /* -------------------------------- plumbing ------------------------------- */
 
-  #fire(name: CueName): void {
-    if (!this.#enabled || this.#disposed) return
-    if (name === 'hover' && !this.#gate('hover', HOVER_GAP_MS)) return
-    if (name === 'open' && !this.#gate('open', OPEN_GAP_MS)) return
+  #play(name: FiredCue, x = 0, tier: NodeTier = 'edge', p = 0): CueStamp | null {
+    if (!this.#enabled || this.#disposed) return null
+    if (KIND[name] === 'motion' && this.#prefersReducedMotion()) return null
+    if (!this.#gate(name)) return null
+    // A stored "on" waits for a gesture: no context, and no cue, before one.
+    if (!this.#graph && this.#armed) return null
 
     const graph = this.#ensureGraph()
-    if (!graph) return
+    if (!graph) return null
 
-    // Cues are usually fired from a gesture, but if the context was parked (muted
-    // then re-enabled, or a backgrounded tab) nudge it back without awaiting.
+    // Cues are usually fired from a gesture, but if the context was parked
+    // (muted then re-enabled, or a backgrounded tab) nudge it back.
     if (graph.ctx.state !== 'running') {
       void graph.ctx.resume().catch(() => undefined)
       if (graph.ctx.state === 'suspended') this.#armForGesture()
     }
 
-    if (name === 'click') this.#playClick(graph)
-    else if (name === 'ping') this.#playPing(graph)
-    else if (name === 'hover') this.#playHover(graph)
-    else this.#playOpen(graph)
+    const cues = this.#cues
+    if (!cues) return null
+    const scale = this.#cueScale()
+
+    let stamp: CueStamp
+    switch (name) {
+      case 'click':
+        stamp = cues.click(scale)
+        break
+      case 'ping':
+        stamp = cues.ping(scale)
+        break
+      case 'hover':
+        stamp = cues.hover(scale)
+        break
+      case 'open':
+        stamp = cues.open(scale)
+        break
+      case 'brush':
+        stamp = cues.brush(scale)
+        break
+      case 'boot':
+        stamp = cues.boot(scale)
+        break
+      case 'node':
+        stamp = cues.node(x, tier, scale)
+        break
+      case 'depth':
+        stamp = cues.depth(p, scale)
+        break
+      default:
+        stamp = cues.creak(p, scale)
+        break
+    }
+
+    this.#lastStamp = stamp
+    this.#fired += 1
+    return stamp
   }
 
-  #gate(name: CueName, gapMs: number): boolean {
+  #gate(name: FiredCue): boolean {
+    const gapMs = GAP[name]
+    if (gapMs <= 0) return true
     const stamp = nowMs()
     const last = this.#lastFired[name]
     if (last !== undefined && stamp - last < gapMs) return false
@@ -290,59 +486,28 @@ class SoundEngine {
     return true
   }
 
-  #ensureGraph(): Graph | null {
-    if (this.#disposed || typeof window === 'undefined') return null
+  #ensureGraph(): Foundry | null {
+    if (this.#disposed) return null
     if (this.#graph) return this.#graph
-
-    const Ctor =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!Ctor) return null
-
-    let ctx: AudioContext
-    try {
-      ctx = new Ctor({ latencyHint: 'interactive' })
-    } catch {
-      return null
-    }
-
-    const master = ctx.createGain()
-    master.gain.value = 0
-    master.connect(ctx.destination)
-
-    const cueBus = ctx.createGain()
-    cueBus.gain.value = 1
-    cueBus.connect(master)
-
-    const ambientBus = ctx.createGain()
-    ambientBus.gain.value = 0
-    ambientBus.connect(master)
-
-    // One shared room for every cue. Initialised here (inside a gesture) only.
-    const roomIn = ctx.createGain()
-    roomIn.gain.value = 1
-    const convolver = ctx.createConvolver()
-    convolver.buffer = makeRoomImpulse(ctx, 1.5, 4.4)
-    const roomReturn = ctx.createGain()
-    roomReturn.gain.value = 0.32
-    roomIn.connect(convolver)
-    convolver.connect(roomReturn)
-    roomReturn.connect(master)
-
-    const graph: Graph = {
-      ctx,
-      master,
-      cueBus,
-      ambientBus,
-      roomIn,
-      white: makeNoiseBuffer(ctx, 2, 'white'),
-      pink: makeNoiseBuffer(ctx, 2, 'pink'),
-    }
+    const graph = Foundry.create()
+    if (!graph) return null
     this.#graph = graph
+    this.#cues = new CueBank(graph)
     return graph
   }
 
-  #wake(graph: Graph): void {
+  /**
+   * The room bank exists only if the reader has not asked for reduced motion.
+   * This is the single gate that guarantees a reduced-motion session holds zero
+   * beds — not a faded bed, not a suspended one.
+   */
+  #ensureRooms(graph: Foundry): RoomBank | null {
+    if (this.#prefersReducedMotion()) return null
+    if (!this.#rooms) this.#rooms = new RoomBank(graph)
+    return this.#rooms
+  }
+
+  #wake(graph: Foundry): void {
     const { ctx } = graph
     if (ctx.state !== 'running') {
       void ctx.resume().catch(() => undefined)
@@ -354,7 +519,9 @@ class SoundEngine {
     graph.master.gain.setValueAtTime(held, now)
     graph.master.gain.exponentialRampToValueAtTime(MASTER_LEVEL, now + 0.06)
 
-    if (!this.#prefersReducedMotion()) this.#startAmbient(graph)
+    // Enabling at #territory starts the machine room, not paper: the reader is
+    // already somewhere.
+    this.#ensureRooms(graph)?.enter(this.#wanted)
   }
 
   #persist(on: boolean): void {
@@ -376,314 +543,8 @@ class SoundEngine {
     }
   }
 
-  #later(fn: () => void, ms: number): void {
-    if (typeof window === 'undefined') return
-    const id = window.setTimeout(() => {
-      this.#timers.delete(id)
-      fn()
-    }, ms)
-    this.#timers.add(id)
-  }
-
-  /** Release a cue's private nodes once its tail has finished. */
-  #release(nodes: AudioNode[], afterMs: number): void {
-    this.#later(() => disconnectAll(nodes), afterMs)
-  }
-
   #cueScale(): number {
     return this.#prefersReducedMotion() ? REDUCED_CUE_SCALE : 1
-  }
-
-  #idlePanner(ctx: AudioContext, spread: number): StereoPannerNode {
-    const panner = ctx.createStereoPanner()
-    panner.pan.value = (Math.random() - 0.5) * spread
-    return panner
-  }
-
-  /* --------------------------------- cues ---------------------------------- */
-
-  #playClick(graph: Graph): void {
-    const { ctx } = graph
-    const t = ctx.currentTime + 0.004
-    const vary = 0.93 + Math.random() * 0.14
-    const peak = CUE_PEAK.click * vary * this.#cueScale()
-
-    const panner = this.#idlePanner(ctx, 0.14)
-    panner.connect(graph.cueBus)
-    const send = ctx.createGain()
-    send.gain.value = 0.14
-    panner.connect(send)
-    send.connect(graph.roomIn)
-
-    // Contact: a short highpassed noise scrape.
-    const tick = ctx.createBufferSource()
-    tick.buffer = graph.white
-    const highpass = ctx.createBiquadFilter()
-    highpass.type = 'highpass'
-    highpass.frequency.value = 1700 + Math.random() * 500
-    highpass.Q.value = 0.6
-    const tickEnv = ctx.createGain()
-    tickEnv.gain.setValueAtTime(0.0001, t)
-    tickEnv.gain.exponentialRampToValueAtTime(peak, t + 0.0015)
-    tickEnv.gain.exponentialRampToValueAtTime(0.0001, t + 0.018)
-    tick.connect(highpass)
-    highpass.connect(tickEnv)
-    tickEnv.connect(panner)
-
-    // Mass: a low body that makes it a switch and not a beep.
-    const body = ctx.createOscillator()
-    body.type = 'triangle'
-    body.frequency.setValueAtTime(188 * vary, t)
-    body.frequency.exponentialRampToValueAtTime(142 * vary, t + 0.04)
-    const bodyLp = ctx.createBiquadFilter()
-    bodyLp.type = 'lowpass'
-    bodyLp.frequency.value = 760
-    bodyLp.Q.value = 0.5
-    const bodyEnv = ctx.createGain()
-    bodyEnv.gain.setValueAtTime(0.0001, t)
-    bodyEnv.gain.exponentialRampToValueAtTime(peak * 0.5, t + 0.0025)
-    bodyEnv.gain.exponentialRampToValueAtTime(0.0001, t + 0.06)
-    body.connect(bodyLp)
-    bodyLp.connect(bodyEnv)
-    bodyEnv.connect(panner)
-
-    tick.start(t, Math.random() * 1.5)
-    tick.stop(t + 0.03)
-    body.start(t)
-    body.stop(t + 0.08)
-
-    this.#release([tick, highpass, tickEnv, body, bodyLp, bodyEnv, panner, send], 180)
-  }
-
-  #playPing(graph: Graph): void {
-    const { ctx } = graph
-    const t = ctx.currentTime + 0.003
-    const base = 806 * (0.98 + Math.random() * 0.04)
-    const peak = CUE_PEAK.ping * this.#cueScale()
-
-    const panner = this.#idlePanner(ctx, 0.36)
-    panner.connect(graph.cueBus)
-    const send = ctx.createGain()
-    send.gain.value = 0.4
-    panner.connect(send)
-    send.connect(graph.roomIn)
-
-    const body = ctx.createOscillator()
-    body.type = 'sine'
-    body.frequency.setValueAtTime(base, t)
-    body.frequency.exponentialRampToValueAtTime(base * 0.76, t + 1.2)
-
-    // The tail darkens as it travels: a reading, not a chime.
-    const tone = ctx.createBiquadFilter()
-    tone.type = 'lowpass'
-    tone.Q.value = 0.4
-    tone.frequency.setValueAtTime(3800, t)
-    tone.frequency.exponentialRampToValueAtTime(820, t + 1.1)
-
-    const env = ctx.createGain()
-    env.gain.setValueAtTime(0.0001, t)
-    env.gain.exponentialRampToValueAtTime(peak, t + 0.005)
-    env.gain.exponentialRampToValueAtTime(0.0001, t + 1.4)
-
-    body.connect(tone)
-    tone.connect(env)
-    env.connect(panner)
-
-    // Faint octave partial — the steel of the transducer.
-    const edge = ctx.createOscillator()
-    edge.type = 'sine'
-    edge.frequency.setValueAtTime(base * 2.01, t)
-    edge.frequency.exponentialRampToValueAtTime(base * 1.62, t + 0.3)
-    const edgeEnv = ctx.createGain()
-    edgeEnv.gain.setValueAtTime(0.0001, t)
-    edgeEnv.gain.exponentialRampToValueAtTime(peak * 0.12, t + 0.004)
-    edgeEnv.gain.exponentialRampToValueAtTime(0.0001, t + 0.34)
-    edge.connect(edgeEnv)
-    edgeEnv.connect(panner)
-
-    body.start(t)
-    body.stop(t + 1.45)
-    edge.start(t)
-    edge.stop(t + 0.4)
-
-    this.#release([body, tone, env, edge, edgeEnv, panner, send], 1550)
-  }
-
-  #playHover(graph: Graph): void {
-    const { ctx } = graph
-    const t = ctx.currentTime + 0.002
-    const peak = CUE_PEAK.hover * this.#cueScale()
-
-    const source = ctx.createBufferSource()
-    source.buffer = graph.white
-    const band = ctx.createBiquadFilter()
-    band.type = 'bandpass'
-    band.frequency.value = 4200 + Math.random() * 1400
-    band.Q.value = 1.4
-    const env = ctx.createGain()
-    env.gain.setValueAtTime(0.0001, t)
-    env.gain.exponentialRampToValueAtTime(peak, t + 0.0008)
-    env.gain.exponentialRampToValueAtTime(0.0001, t + 0.012)
-
-    source.connect(band)
-    band.connect(env)
-    env.connect(graph.cueBus)
-
-    source.start(t, Math.random() * 1.5)
-    source.stop(t + 0.02)
-
-    this.#release([source, band, env], 90)
-  }
-
-  #playOpen(graph: Graph): void {
-    const { ctx } = graph
-    const t = ctx.currentTime + 0.005
-    const peak = CUE_PEAK.open * this.#cueScale()
-
-    const panner = this.#idlePanner(ctx, 0.2)
-    panner.connect(graph.cueBus)
-    const send = ctx.createGain()
-    send.gain.value = 0.45
-    panner.connect(send)
-    send.connect(graph.roomIn)
-
-    // Air opening: band rises as the pressure changes.
-    const air = ctx.createBufferSource()
-    air.buffer = graph.white
-    const band = ctx.createBiquadFilter()
-    band.type = 'bandpass'
-    band.Q.value = 0.8
-    band.frequency.setValueAtTime(240, t)
-    band.frequency.exponentialRampToValueAtTime(1500, t + 0.5)
-    const airEnv = ctx.createGain()
-    airEnv.gain.setValueAtTime(0.0001, t)
-    airEnv.gain.exponentialRampToValueAtTime(peak, t + 0.17)
-    airEnv.gain.exponentialRampToValueAtTime(0.0001, t + 0.66)
-    air.connect(band)
-    band.connect(airEnv)
-    airEnv.connect(panner)
-
-    // Pressure underneath it.
-    const sub = ctx.createOscillator()
-    sub.type = 'sine'
-    sub.frequency.setValueAtTime(78, t)
-    sub.frequency.exponentialRampToValueAtTime(44, t + 0.55)
-    const subEnv = ctx.createGain()
-    subEnv.gain.setValueAtTime(0.0001, t)
-    subEnv.gain.exponentialRampToValueAtTime(peak * 0.7, t + 0.08)
-    subEnv.gain.exponentialRampToValueAtTime(0.0001, t + 0.6)
-    sub.connect(subEnv)
-    subEnv.connect(panner)
-
-    air.start(t, Math.random() * 1.2)
-    air.stop(t + 0.7)
-    sub.start(t)
-    sub.stop(t + 0.65)
-
-    this.#release([air, band, airEnv, sub, subEnv, panner, send], 800)
-  }
-
-  /* -------------------------------- ambient -------------------------------- */
-
-  #startAmbient(graph: Graph): void {
-    if (this.#ambient || this.#prefersReducedMotion()) return
-    const { ctx } = graph
-    const t = ctx.currentTime
-
-    const bus = ctx.createGain()
-    bus.gain.value = 0.0001
-    bus.connect(graph.ambientBus)
-
-    // Room air: a looped pink noise through a low pass that never quite settles.
-    const air = ctx.createBufferSource()
-    air.buffer = graph.pink
-    air.loop = true
-    const lowpass = ctx.createBiquadFilter()
-    lowpass.type = 'lowpass'
-    lowpass.frequency.value = 600
-    lowpass.Q.value = 0.55
-    const airGain = ctx.createGain()
-    airGain.gain.value = 0.82
-
-    // 18 s sweep on the cutoff — slow enough to read as space, not movement.
-    const sweep = ctx.createOscillator()
-    sweep.type = 'sine'
-    sweep.frequency.value = 0.055
-    const sweepDepth = ctx.createGain()
-    sweepDepth.gain.value = 168
-
-    // 32 s breath on the air level.
-    const breathe = ctx.createOscillator()
-    breathe.type = 'sine'
-    breathe.frequency.value = 0.031
-    const breatheDepth = ctx.createGain()
-    breatheDepth.gain.value = 0.2
-
-    // Transformer drone: two sines ~0.3 Hz apart, felt more than heard.
-    const droneA = ctx.createOscillator()
-    droneA.type = 'sine'
-    droneA.frequency.value = 57.3
-    const droneAGain = ctx.createGain()
-    droneAGain.gain.value = 0.62
-
-    const droneB = ctx.createOscillator()
-    droneB.type = 'sine'
-    droneB.frequency.value = 57.62
-    const droneBGain = ctx.createGain()
-    droneBGain.gain.value = 0.2
-
-    const droneSum = ctx.createGain()
-    droneSum.gain.value = 0.55
-
-    air.connect(lowpass)
-    lowpass.connect(airGain)
-    airGain.connect(bus)
-    sweep.connect(sweepDepth)
-    sweepDepth.connect(lowpass.frequency)
-    breathe.connect(breatheDepth)
-    breatheDepth.connect(airGain.gain)
-    droneA.connect(droneAGain)
-    droneB.connect(droneBGain)
-    droneAGain.connect(droneSum)
-    droneBGain.connect(droneSum)
-    droneSum.connect(bus)
-
-    // Settles in over ~4 s so it is discovered rather than announced.
-    bus.gain.setTargetAtTime(AMBIENT_LEVEL, t + 0.2, 1.15)
-
-    air.start(t)
-    sweep.start(t)
-    breathe.start(t)
-    droneA.start(t)
-    droneB.start(t)
-
-    this.#ambient = {
-      bus,
-      sources: [air, sweep, breathe, droneA, droneB],
-      nodes: [bus, lowpass, airGain, sweepDepth, breatheDepth, droneAGain, droneBGain, droneSum],
-    }
-  }
-
-  #stopAmbient(graph: Graph, fade: number): void {
-    const rig = this.#ambient
-    if (!rig) return
-    this.#ambient = null
-    const now = graph.ctx.currentTime
-    const seconds = Math.max(0.03, fade)
-
-    holdAt(rig.bus.gain, now)
-    rig.bus.gain.setTargetAtTime(0.0001, now, seconds)
-
-    const stopAt = now + seconds * 6
-    for (const source of rig.sources) {
-      try {
-        source.stop(stopAt)
-      } catch {
-        /* already stopped */
-      }
-    }
-
-    this.#release(rig.nodes, Math.max(160, (stopAt - now) * 1000 + 120))
   }
 
   /* ------------------------------ motion pref ------------------------------ */
@@ -695,8 +556,13 @@ class SoundEngine {
     const handler = () => {
       const graph = this.#graph
       if (!graph) return
-      if (query.matches) this.#stopAmbient(graph, 0.4)
-      else if (this.#enabled) this.#startAmbient(graph)
+      if (query.matches) {
+        // Zero beds, immediately: not a faster fade, not a muted bed.
+        this.#rooms?.dispose(0.4)
+        this.#rooms = null
+      } else if (this.#enabled) {
+        this.#ensureRooms(graph)?.enter(this.#wanted)
+      }
     }
 
     if (typeof query.addEventListener === 'function') query.addEventListener('change', handler)
@@ -710,8 +576,7 @@ class SoundEngine {
     const query = this.#motion
     const handler = this.#motionHandler
     if (!query || !handler) return
-    if (typeof query.removeEventListener === 'function')
-      query.removeEventListener('change', handler)
+    if (typeof query.removeEventListener === 'function') query.removeEventListener('change', handler)
     else query.removeListener(handler)
     this.#motion = null
     this.#motionHandler = null
@@ -754,6 +619,7 @@ class SoundEngine {
 export const sound = new SoundEngine()
 
 export type SoundApi = typeof sound
+export type { CueStamp, NodeTier, RoomId }
 
 /**
  * Bind a cue to an element without repeating event plumbing:
@@ -765,10 +631,7 @@ export type SoundApi = typeof sound
  * `hover` listens to `pointerenter`; every other cue listens to `click` (which
  * already covers keyboard activation on native buttons). Returns its own cleanup.
  */
-export function bindCue(
-  element: HTMLElement | null,
-  cue: CueName = 'click',
-): () => void {
+export function bindCue(element: HTMLElement | null, cue: CueName = 'click'): () => void {
   if (!element) return () => undefined
   const eventName = cue === 'hover' ? 'pointerenter' : 'click'
   const handler = () => {
@@ -776,4 +639,12 @@ export function bindCue(
   }
   element.addEventListener(eventName, handler)
   return () => element.removeEventListener(eventName, handler)
+}
+
+/**
+ * The dev handle. `window.__sound` exists only in `vite dev`, where it is what
+ * the browser validation drives; a production bundle carries nothing.
+ */
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  ;(window as unknown as { __sound?: SoundEngine }).__sound = sound
 }
