@@ -15,6 +15,7 @@ const SECTIONS: { id: string; label: Bi }[] = [
   { id: 'path', label: { en: 'Path', fr: 'Parcours' } },
   { id: 'skills', label: { en: 'Skills', fr: 'Compétences' } },
   { id: 'territory', label: { en: 'Territory', fr: 'Territoire' } },
+  { id: 'flight', label: { en: 'Passage', fr: 'Passage' } },
   { id: 'ranges', label: { en: 'Ranges', fr: 'Terrains' } },
   { id: 'services', label: { en: 'Work', fr: 'Projets' } },
   { id: 'about', label: { en: 'About', fr: 'À propos' } },

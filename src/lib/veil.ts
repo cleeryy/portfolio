@@ -124,6 +124,11 @@ export function initVeil(el: HTMLElement, onPulse: (() => void) | null): Veil {
   sections.forEach((section, index) => {
     if (section.classList.contains('on-deep')) return
     if (sections[index - 1]?.classList.contains('on-deep')) return
+    // The passage is its own transition: it emerges from the sheet and hands
+    // over to the ink band. A dithered sweep on top of it would be a second
+    // curtain over an already-moving one.
+    if (section.classList.contains('flt')) return
+    if (sections[index - 1]?.classList.contains('flt')) return
 
     triggers.push(
       ScrollTrigger.create({

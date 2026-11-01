@@ -338,6 +338,15 @@
   }
 }
 
+@media (max-width: 900px) {
+  /* The compact instrument is fixed at the foot of the page (chrome.css). The
+     colophon gives it the strip it prints in, so the sheet's last line and its
+     last reading never sit on top of each other. */
+  .clp {
+    padding-block-end: max(3.5rem, calc(env(safe-area-inset-bottom, 0px) + 3.25rem));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ct__mail,
   .ct__link,

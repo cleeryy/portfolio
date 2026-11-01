@@ -161,22 +161,66 @@ export default function InstrumentChrome() {
     return () => trigger.kill()
   }, [])
 
+  /* ---- the cover --------------------------------------------------------- */
+
+  useEffect(() => {
+    const root = rootRef.current
+    const cover = document.querySelector<HTMLElement>('.hero')
+    if (!root || !cover) return
+
+    // The strip the readings occupy: the bottom 8% of the viewport. While the
+    // cover reaches into it, the cover's collar is the instrument on screen and
+    // this one is not printed — the same rule that retires it over the ink band.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) root.dataset.cover = entry.isIntersecting ? 'true' : 'false'
+      },
+      { rootMargin: '-92% 0px 0px 0px' },
+    )
+    observer.observe(cover)
+
+    return () => observer.disconnect()
+  }, [])
+
   /* ---- the ink follows the surface -------------------------------------- */
 
   useEffect(() => {
     const root = rootRef.current
-    const deep = document.querySelector<HTMLElement>('main > section.on-deep')
-    if (!root || !deep) return
+    if (!root) return
+
+    // Two surfaces own the ink: the chapter band (`.on-deep`, always dark) and
+    // the passage, which turns dark part-way through its own track and says so
+    // on `data-ground`. Watching the attribute as well means the readings stop
+    // printing dark-on-dark during the hand-off.
+    const band = document.querySelector<HTMLElement>('main > section.on-deep')
+    const passage = document.querySelector<HTMLElement>('.flt[data-ground]')
 
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) root.dataset.deep = entry.isIntersecting ? 'true' : 'false'
+        for (const entry of entries) {
+          if (entry.target === passage) {
+            root.dataset.passage = entry.isIntersecting && passage?.dataset.ground === 'deep' ? 'true' : 'false'
+            continue
+          }
+          root.dataset.deep = entry.isIntersecting ? 'true' : 'false'
+        }
       },
       { rootMargin: CHROME_BAND },
     )
-    observer.observe(deep)
+    if (band) observer.observe(band)
+    if (passage) observer.observe(passage)
 
-    return () => observer.disconnect()
+    const onGround = () => {
+      if (!passage) return
+      root.dataset.passage = passage.dataset.ground === 'deep' ? 'true' : 'false'
+    }
+    const mutation = passage ? new MutationObserver(onGround) : null
+    if (passage && mutation) mutation.observe(passage, { attributes: true, attributeFilter: ['data-ground'] })
+
+    return () => {
+      observer.disconnect()
+      mutation?.disconnect()
+    }
   }, [])
 
   return (

@@ -46,7 +46,7 @@ const MOTION_CONDITIONS = {
 function buildTraverse(root: HTMLElement, pin: HTMLElement): () => void {
   const strip = root.querySelector<HTMLElement>('.rng__strip')
   const list = root.querySelector<HTMLElement>('.rng__list')
-  const scale = root.querySelector<HTMLElement>('.rng__scale')
+  const scale = root.querySelector<HTMLElement>('.rng__ruler')
   const index = root.querySelector<HTMLElement>('.rng__index')
 
   // The layout mode is owned by CSS; this attribute is the only switch.
@@ -156,6 +156,7 @@ function buildDeck(root: HTMLElement): () => void {
   const panels = gsap.utils.toArray<HTMLElement>('.rng__row', strip)
   if (panels.length < 2) return () => undefined
 
+  const count = root.querySelector<HTMLElement>('.rng__count')
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const last = panels.length - 1
 
@@ -163,14 +164,41 @@ function buildDeck(root: HTMLElement): () => void {
   let index = -1
   let userScroll = false
   let settle = 0
+  /**
+   * Where the keyboard is heading, not where the smooth scroll currently is.
+   * Two ArrowRight presses 80ms apart must land on panel three: reading the
+   * index would send both to panel two, because the index only changes once
+   * the scroll crosses the halfway mark.
+   */
+  let target = 0
+  let glideUntil = 0
+
+  /**
+   * One panel's advance, in CSS pixels. Measured from the panels themselves
+   * (`offsetLeft` is unaffected by the scroll position) rather than from the
+   * strip's width: a panel is 84vw — not a screen — so the two are different
+   * numbers and dividing by the wrong one would report the wrong panel.
+   */
+  const step = () => {
+    const delta = panels[1].offsetLeft - panels[0].offsetLeft
+    return delta > 0 ? delta : strip.clientWidth || 1
+  }
+
+  const pad2 = (value: number) => String(value).padStart(2, '0')
 
   const commit = () => {
     frame = 0
-    const width = strip.clientWidth || 1
+    const width = step()
     const next = Math.max(0, Math.min(last, Math.round(strip.scrollLeft / width)))
     if (next === index) return
     index = next
+    // A scroll the reader made by hand re-bases the key target on what is
+    // actually on screen; a glide we started keeps the target it was given.
+    if (performance.now() > glideUntil) target = next
     root.style.setProperty('--rng-at', `${(next / last) * 100}%`)
+    // The ruler's counter: the same reading as the index, in numbers, because a
+    // tick tells you where you are only once you know how many there are.
+    if (count) count.textContent = `${pad2(next + 1)}/${pad2(panels.length)}`
     if (userScroll) sound.click()
   }
 
@@ -192,18 +220,19 @@ function buildDeck(root: HTMLElement): () => void {
     }, 220)
   }
 
-  const go = (target: number) => {
-    const next = Math.max(0, Math.min(last, target))
+  const go = (panel: number) => {
+    target = Math.max(0, Math.min(last, panel))
+    glideUntil = performance.now() + (reduced ? 60 : 700)
     strip.scrollTo({
-      left: next * strip.clientWidth,
+      left: target * step(),
       behavior: reduced ? 'auto' : 'smooth',
     })
   }
 
   const onKeyDown = (event: KeyboardEvent) => {
     let next: number | null = null
-    if (event.key === 'ArrowRight') next = index + 1
-    else if (event.key === 'ArrowLeft') next = index - 1
+    if (event.key === 'ArrowRight') next = target + 1
+    else if (event.key === 'ArrowLeft') next = target - 1
     else if (event.key === 'Home') next = 0
     else if (event.key === 'End') next = last
     if (next === null) return
@@ -410,12 +439,20 @@ export default function Ranges() {
             </div>
 
             {/* The traverse's own scale: one tick per register row, one index.
-                It exists only while the register is horizontal. */}
+                It exists only while the register is horizontal. The deck reuses
+                it and adds the numeric reading, because `01/06` is what makes
+                the first panel announce that there are five more. */}
             <div className="rng__scale" aria-hidden="true">
-              {grounds.map((ground) => (
-                <span className="rng__tick" key={ground.id} />
-              ))}
-              <span className="rng__index" />
+              <span className="rng__ruler">
+                {grounds.map((ground) => (
+                  <span className="rng__tick" key={ground.id} />
+                ))}
+                <span className="rng__index" />
+              </span>
+              {/* Written by buildDeck, not by React: a language switch
+                  re-renders this section, and a JSX-owned counter would snap
+                  back to 01/06 while the deck sits on panel four. */}
+              <span className="rng__count" />
             </div>
 
             <p className="rng__note mono">{copy.registerNote}</p>

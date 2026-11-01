@@ -1,0 +1,308 @@
+/* ============================================================================
+   flight.css — the passage
+   ----------------------------------------------------------------------------
+   A full-bleed plate that is scrubbed by a tall track. Three layers, and each
+   one has exactly one job:
+
+   - `.flt__plate` — the ink the chapter will be printed on. Opacity 0 on the
+     sheet, 1 on the plate, written per frame from the same hand-off curve the
+     shader reads. It is the *same* `--deep` as `#ranges`, so the seam between
+     the two chapters has no colour to see.
+   - the canvas (or the still) — the field. `pointer-events: none`: nothing in
+     the drawing is a control, and the page must scroll through it.
+   - `.flt__cartouche` — the copy, laid directly on the sheet.
+
+   **No box.** DESIGN.md §1 refuses cards, chips and panels, and a filled title
+   block would have been the only one on the site. So the cartouche is type and
+   rules only: a registration mark, the `#flight` reference, the heading, the
+   paragraph, and a ruled scale carrying the two readings. What keeps it legible
+   over a moving field is not a background — it is the field's own shader, told
+   where the type lives and cleared there (`uClear` in shaders.ts).
+
+   The ink reverses out with the plate: `--flt-*` tokens are re-pointed by
+   `.flt__cartouche[data-ink='plate']`, a step taken at the luminance crossover
+   (see `INK_FLIP` in curve.ts). It is deliberately not a colour transition: at
+   a 62.5%-deep plate a blend between the two inks sits at about 1.1:1 against
+   the ground, which is how a cross-fade loses the paragraph. A step at the
+   crossover keeps 3.6:1 on the sheet side and 3.8:1 on the plate side — the
+   most either ink can do there.
+   ========================================================================== */
+
+.flt {
+  position: relative;
+  background-color: var(--ground);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* ---------------------------------------------------------------------------
+   The track and the plate
+   --------------------------------------------------------------------------- */
+
+.flt__track {
+  position: relative;
+  block-size: 320vh;
+}
+
+.flt__viewport {
+  position: sticky;
+  top: 0;
+  block-size: 100svh;
+  block-size: 100dvh;
+  overflow: hidden;
+}
+
+.flt__plate {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--deep);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flt__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.flt__canvas {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   The still frame — reduced motion, no WebGL, or a lost context
+   ---------------------------------------------------------------------------
+   Two composed layouts, not one cropped: the wide sheet rules from a vanishing
+   point right of centre, the narrow plate is a vertical shaft. The CSS picks
+   one, so neither is a fallback of the other.
+   --------------------------------------------------------------------------- */
+
+.flt__still {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.flt[data-ground='deep'] .flt__still {
+  color: var(--deep-ink-2);
+}
+
+.flt__still svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.flt__still text {
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-mono);
+  fill: currentColor;
+}
+
+.flt__still line {
+  stroke: currentColor;
+}
+
+.flt-still__rays line {
+  stroke-width: 0.6;
+  opacity: 0.15;
+}
+
+.flt-still__rule {
+  stroke-width: 0.8;
+  opacity: 0.55;
+}
+
+.flt__still--narrow {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   The cartouche — type on the sheet
+   ---------------------------------------------------------------------------
+   The left margin column, lower third, on a 34ch measure. It is registered
+   with the same 76 × 2 crimson mark the chapter and the hero collar carry, and
+   read with the same devices: a mono reference, a display heading, a paragraph
+   at measure, and a scale bar with two readings hanging off it.
+   --------------------------------------------------------------------------- */
+
+.flt__cartouche {
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: var(--gutter);
+  inset-block-end: calc(clamp(1.5rem, 4.5vh, 3.25rem) + env(safe-area-inset-bottom, 0px));
+  inline-size: min(34ch, calc(100% - var(--gutter) * 2));
+
+  /* The sheet's own inks. Re-pointed wholesale by the plate state below, so no
+     element can be left printing dark on dark. */
+  --flt-title: var(--ink);
+  --flt-body: var(--ink-2);
+  --flt-key: var(--ink-3);
+  --flt-rule: var(--contour);
+}
+
+.flt__cartouche[data-ink='plate'] {
+  --flt-title: var(--deep-ink);
+  --flt-body: var(--deep-ink-2);
+  --flt-key: var(--deep-ink-2);
+  --flt-rule: color-mix(in srgb, var(--deep-ink) 26%, transparent);
+}
+
+/* The one crimson on the plate: the registration mark that heads a survey
+   block, at the length the chapter mark and the hero collar use. */
+.flt__mark {
+  display: block;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+}
+
+.flt__ref {
+  margin-block-start: 0.8rem;
+  color: var(--flt-key);
+}
+
+.flt__title {
+  margin-block-start: 0.4rem;
+  font-size: var(--step-3);
+  line-height: 1.02;
+  color: var(--flt-title);
+}
+
+.flt__lead {
+  margin-block-start: 0.55rem;
+  max-inline-size: 34ch;
+  font-size: var(--step-0);
+  line-height: 1.5;
+  color: var(--flt-body);
+}
+
+/* A scale bar, not a divider: three ticks on a hairline, and the readings under
+   it. The same device as the hero collar and the territory plate's legend. */
+.flt__scale {
+  position: relative;
+  block-size: var(--hair);
+  margin-block-start: 1.15rem;
+  background-color: var(--flt-rule);
+}
+
+.flt__tick {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: var(--hair);
+  block-size: 6px;
+  background-color: var(--flt-rule);
+}
+
+.flt__tick--mid {
+  inset-inline-start: calc(50% - 0.5px);
+}
+
+.flt__tick--end {
+  inset-inline-start: calc(100% - 1px);
+}
+
+.flt__readings {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-block-start: 0.45rem;
+  color: var(--flt-key);
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion — the track collapses to the plate's natural height
+   --------------------------------------------------------------------------- */
+
+.flt__static {
+  position: relative;
+  min-block-size: 100svh;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+   Narrow plates
+   ---------------------------------------------------------------------------
+   The track shortens and the cartouche takes the width it is given. Nothing is
+   shrunk to fit: the phone gets its own frame.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .flt__track {
+    block-size: 220vh;
+  }
+
+  .flt__still--wide {
+    display: none;
+  }
+
+  .flt__still--narrow {
+    display: block;
+  }
+
+  .flt__cartouche {
+    inline-size: calc(100% - var(--gutter) * 2);
+    /* The page's own instrument owns the phone's bottom strip (it is printed
+       there at 14px); the cartouche clears it rather than printing a second
+       mono row on the same line. */
+    inset-block-end: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .flt__ref {
+    margin-block-start: 0.7rem;
+  }
+
+  .flt__lead {
+    margin-block-start: 0.45rem;
+    max-inline-size: 42ch;
+    font-size: 0.9375rem;
+    line-height: 1.48;
+  }
+
+  .flt__scale {
+    margin-block-start: 0.95rem;
+  }
+}
+
+/* A short window (a landscape phone, a split screen): the block gives up its
+   air before it gives up its words. */
+@media (max-height: 34rem) {
+  .flt__cartouche {
+    inset-block-end: calc(2.4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .flt__ref {
+    margin-block-start: 0.5rem;
+  }
+
+  .flt__title {
+    margin-block-start: 0.3rem;
+    font-size: 1.3rem;
+  }
+
+  .flt__lead {
+    margin-block-start: 0.35rem;
+    font-size: 0.8125rem;
+    line-height: 1.42;
+  }
+
+  .flt__scale {
+    margin-block-start: 0.6rem;
+  }
+
+  .flt__readings {
+    margin-block-start: 0.3rem;
+  }
+
+  /* The page's instrument already prints the plate and the position on the
+     phone's bottom strip; a second mono row there just collides with it. */
+  .flt__readings {
+    display: none;
+  }
+}

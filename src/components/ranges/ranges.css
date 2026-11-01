@@ -310,16 +310,18 @@
   display: none;
 }
 
-.rng[data-mode='h'] .rng__scale {
+/* The ruler: one rule, a tick per row, and the crimson index riding it. The
+   deck adds a numeric reading at its end (`.rng__count`); the traverse does
+   not need one, because its strip is the measurement. */
+.rng__ruler {
   position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   block-size: 8px;
-  margin-block-start: var(--s-3);
 }
 
-.rng[data-mode='h'] .rng__scale::before {
+.rng__ruler::before {
   content: '';
   position: absolute;
   inset-block-start: 0;
@@ -337,6 +339,21 @@
 
 .rng__index {
   display: none;
+}
+
+.rng__count {
+  display: none;
+}
+
+.rng[data-mode='h'] .rng__scale {
+  display: flex;
+  align-items: flex-start;
+  block-size: 8px;
+  margin-block-start: var(--s-3);
+}
+
+.rng[data-mode='h'] .rng__ruler {
+  flex: 1;
 }
 
 .rng[data-mode='h'] .rng__index {
@@ -483,6 +500,18 @@
    --------------------------------------------------------------------------- */
 
 @media (max-width: 900px) {
+  /* The chapter gives up its inline padding so the deck can run edge to edge:
+     the type re-pads itself, the strip does not. This is what keeps
+     `.rng__inner` and `.rng__register` free of internal overflow — the old
+     negative margin on the strip made them 20px wider than their own box. */
+  .rng {
+    padding-inline: 0;
+  }
+
+  .rng__head {
+    padding-inline: var(--gutter);
+  }
+
   .rng__register {
     margin-block-start: clamp(2rem, 6vw, 3rem);
   }
@@ -493,10 +522,13 @@
   }
 
   .rng__strip {
-    margin-inline: calc(var(--gutter) * -1);
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
+    /* A panel is 84vw and its gutter lives inside it, so the snap start is the
+       panel's own edge: `scroll-padding-inline` would subtract the gutter a
+       second time and pull the first panel's text under the screen edge. */
+    scroll-padding-inline: 0;
     /* The browser's own edge gestures stop at the deck; the page's vertical
        scroll still passes straight through it. */
     overscroll-behavior-x: contain;
@@ -518,15 +550,16 @@
   .rng__list {
     display: flex;
     align-items: stretch;
-    /* The panels are 100% of *this* box, so the list keeps the strip's width
-       and the panels overflow it: six screens of deck, one scrollbar. (A
-       max-content list would ask each panel for its unwrapped text width.) */
+    /* The panels are 84vw, so the list keeps the strip's width and they overflow
+       it: six panels, one scrollbar, and 16vw of the next one always in view. */
     inline-size: 100%;
     will-change: auto;
   }
 
   .rng__row {
-    flex: 0 0 100%;
+    /* 84vw + 16vw of the next panel = one screen. The peek is the whole
+       argument of the deck: at rest a reader can see the deck continues. */
+    flex: 0 0 84vw;
     display: block;
     scroll-snap-align: start;
     padding: var(--s-5) var(--gutter) var(--s-5);
@@ -577,34 +610,23 @@
   }
 
   /* The ruler. The same instrument as the traverse's scale, turned into the
-     deck's position readout: `--rng-at` is written by Ranges.tsx as a
-     percentage of the deck's own width, so the index cannot drift from the
-     panels it measures. */
+     deck's position readout: `--rng-at` is written by Ranges.tsx as the panel's
+     progress along the ruler, so the index cannot drift from the panels it
+     measures. */
   .rng__scale {
-    position: relative;
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    block-size: 9px;
+    gap: 0.7rem;
     /* The ruler is the deck's bottom edge, not a separate instrument: it closes
        the panel and measures it in the same line. */
+    block-size: 12px;
     margin-block-start: 0;
+    padding-inline: var(--gutter);
   }
 
-  .rng__scale::before {
-    content: '';
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline: 0;
-    block-size: 1px;
-    background-color: var(--rule);
-  }
-
-  .rng__tick {
-    display: block;
-    inline-size: 1px;
-    block-size: 5px;
-    background-color: var(--text-quiet);
+  .rng__ruler {
+    flex: 1;
+    block-size: 9px;
   }
 
   .rng__index {
@@ -621,8 +643,24 @@
     transition: inset-inline-start var(--t-base) var(--ease-out);
   }
 
+  /* `01/06` — the reading that makes the deck announce itself. Mono, 10px,
+     tabular, at the end of the scale it annotates. */
+  .rng__count {
+    display: block;
+    margin-block-start: -0.35rem;
+    font-size: 0.625rem;
+    line-height: 1;
+    letter-spacing: var(--tracking-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-quiet);
+    white-space: nowrap;
+  }
+
   .rng__note {
     margin-block-start: var(--s-3);
+    padding-block-start: 0;
+    padding-inline: var(--gutter);
+    border-top: 0;
     text-align: start;
   }
 }

@@ -302,6 +302,11 @@ export type TerritoryCopy = {
   concernsLabel: string
   /** The one line that teaches the drawing before a word is hovered. */
   readInstruction: string
+  /**
+   * The compact plate's resting line. A phone has no hover, so the instruction
+   * has to name the two gestures the drawing answers: a tap, and a drag.
+   */
+  readTap: string
   /** The caption that keeps the strata from being read as machines. */
   legendNote: string
   /**
@@ -341,6 +346,7 @@ export const territoryCopy: Bi<TerritoryCopy> = {
     strataLabel: 'Strata',
     concernsLabel: 'cross-cutting',
     readInstruction: 'traffic enters above the edge → crosses the fabric → lands on a service',
+    readTap: 'tap a mark for its chain · drag to turn the plate',
     legendNote:
       'strata are roles, not machines — everything but pve1 and pve3 is a guest, and the quiet tie says which node it hangs from',
     readout: { on: 'on', trunk: 'vmbr1 trunk', guests: 'guests' },
@@ -369,6 +375,7 @@ export const territoryCopy: Bi<TerritoryCopy> = {
     strataLabel: 'Strates',
     concernsLabel: 'transversal',
     readInstruction: 'le trafic entre au-dessus de la bordure → traverse le socle → atterrit sur un service',
+    readTap: 'touchez une marque · glissez pour tourner la planche',
     legendNote:
       'les strates sont des rôles, pas des machines — tout sauf pve1 et pve3 est un invité, et le trait discret dit de quel nœud il dépend',
     readout: { on: 'sur', trunk: 'trunk vmbr1', guests: 'invités' },

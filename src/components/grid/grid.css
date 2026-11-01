@@ -93,7 +93,11 @@
 }
 
 @media (max-width: 899px) {
+  /* A phone gets the sheet's three bays, not its twelve columns. The rules sit
+     on the thirds of the content field (the 4n+1 boundaries kept above are
+     0, ⅓, ⅔ and 1), faint enough to stay paper under the type. */
   .sheet-grid {
-    display: none;
+    display: block;
+    --grid-rule: color-mix(in srgb, var(--contour) 22%, transparent);
   }
 }

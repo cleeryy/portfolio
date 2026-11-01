@@ -5,6 +5,7 @@ import Atmosphere from './components/atmosphere/Atmosphere'
 import SheetGrid from './components/grid/SheetGrid'
 import BootGate from './components/boot/BootGate'
 import Contact from './components/contact/Contact'
+import Flight from './components/flight/Flight'
 import Hero from './components/hero/Hero'
 import NavBar from './components/nav/NavBar'
 import Path from './components/path/Path'
@@ -87,6 +88,7 @@ export default function App() {
       <Path />
       <Skills />
       <Territory />
+      <Flight />
       <Ranges />
       <Services />
       <About />

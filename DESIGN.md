@@ -276,7 +276,10 @@ already imported by `main.tsx`.
 - The favicon in `public/` is still the scaffold default; it needs a real mark.
 - **Mobile is composed, not degraded.** Below 900px the hero plot is rebuilt for a portrait
 band (8 stations, larger marks, brighter ink, horizontal touch drag, `touch-action: pan-y`),
-`#ranges` becomes a native scroll-snap deck with a progress ruler, and `#path` grows an inked
+`#territory` mounts its own compact schema (three plans, 8 marks, tap to read a chain, ±20°
+drag orbit, no projected labels), `#ranges` becomes a native scroll-snap deck at 84vw with a
+16vw peek and a `01/06` counter, the printed grid keeps its three bays at a lower alpha, the
+instrument chrome becomes two readings at the foot of the page, and `#path` grows an inked
 spine that draws with scroll. Tap targets are ≥44px, `100dvh` and safe-area insets are honoured.
 
 ---
@@ -335,10 +338,29 @@ measurements the sheet already had:
   in `.sr-only`; the rolling copies are `aria-hidden`. Plain pointer/touch get a drawn rule instead.
 - **Instrument chrome.** A margin column at mid-height, three labelled readings (`paris` clock,
   `plate 0n/08`, `sheet 0nn%`), derived from the nav's `aria-current` and one ScrollTrigger — never a
-  second copy of the section list. It flips to deep ink over the band and disappears below 900px.
+  second copy of the section list. It flips to deep ink over the band; below 900px it becomes
+  two readings (`plate`, `sheet`) at 10px in the bottom-left gutter, printed over the sheet and
+  suppressed while the cover or the ink band owns that edge.
 - **Printed grid.** `SheetGrid` draws the 12 column boundaries on the content measure (0.00px error at
-  1440/1280/1024), reformatting to 6 bays then 3 then none, and tinting for the ink band.
+  1440/1280/1024), reformatting to 6 bays, then 3 bays on a phone at 22% alpha, and tinting for
+  the ink band.
 
 **Velocity is a material.** Above the lens bend, damped scroll speed now coarsens the plate itself:
 the Bayer cell grows 1×→3×, hairlines thicken and tear into dots, then the fine print returns in ~350ms.
 Denser, never darker: the text-column worst pixel stays at 12/255.
+
+**Passage (`#flight`) — the descent.** Between the map and the ink chapter: a 320vh track
+(220vh on a phone) with a sticky plate, a single instanced field of 60 mono plates (24 on
+coarse pointers) recycled in six generations both ways, drawn in one call. Each plate is a
+runtime atlas cell (40 labels drawn once from `--font-mono`, no asset); distance is
+**coverage, never alpha** — an 8×8 Bayer discard eats far plates into the same dots the
+atmosphere uses. The cartouche is type on the sheet with a measured clear-box handed to the
+shader, so the field parts around the words instead of printing under them. At 86% the plate
+turns `--deep`, the ink lerps and `#ranges` takes over with no light seam; the type flips in
+one frame at the luminance crossover (3.7:1 is the geometric maximum there — a cross-fade
+would dip to 1.1:1).
+
+**Ground alternation.** The ink band is no longer the only dark surface: `#flight` turns dark
+inside its own track, and the deep palette has been shifted green (`--deep #07160f`,
+`--deep-2 #0e2419`, `--deep-ink #dbe7dd`, `--deep-ink-2 #93ab9b`) so both chapters read as the
+same material. The light sheet is unchanged.

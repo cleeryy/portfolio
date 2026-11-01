@@ -351,9 +351,15 @@ export function initMotionSystem(): () => void {
   if (document.readyState === 'complete') onLoad()
   else window.addEventListener('load', onLoad, { once: true })
 
+  // Sections that pin (path, ranges) add their spacer *after* mount, which
+  // moves every trigger below them. One late refresh per layout settles the
+  // offsets: fonts, then the pin spacers, then whatever the images did.
+  const settles = [250, 900, 1800].map((ms) => gsap.delayedCall(ms / 1000, refresh))
+
   return () => {
     disposed = true
     pending?.kill()
+    settles.forEach((call) => call.kill())
     window.removeEventListener('load', onLoad)
   }
 }

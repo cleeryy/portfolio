@@ -53,17 +53,17 @@
 
   /* Hard chapter break. The single dark surface in the whole design — it appears
      exactly once, where the map stops and the training ranges begin. */
-  --deep: #0e1613;
-  --deep-2: #18231f;
-  --deep-ink: #dfe4dc;
-  --deep-ink-2: #9aa8a1;
+  --deep: #07160f;
+  --deep-2: #0e2419;
+  --deep-ink: #dbe7dd;
+  --deep-ink-2: #93ab9b;
 
   /* ACCENT — the survey mark. A cool crimson closer to a grease pencil than to
      terracotta or vermilion. Used for: the registration mark, the live packet in
      the plot, the active language, focus rings, one rule under the collar.
      Never for body text, never as a large fill. */
   --mark: #bf1f34;
-  --mark-deep: #951628;
+  --mark-deep: #a81f34;
   --mark-wash: rgb(191 31 52 / 10%);
 
   /* --------------------------------------------------------------------------

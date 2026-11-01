@@ -1,4 +1,10 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { initSectionRig } from '../../lib/reveal'
 import { useLang } from '../../lib/i18n'
 import {
@@ -16,6 +22,7 @@ import {
 import SplitText from '../ui/SplitText'
 import TerritoryPlate from './TerritoryPlate'
 import TerritoryScene, { type TerritorySceneHandle } from './TerritoryScene'
+import TerritoryCompact, { type CompactHandle } from './TerritoryCompact'
 import './territory.css'
 
 /* ============================================================================
@@ -37,6 +44,34 @@ type Mode = 'pending' | 'live' | 'fallback'
 const TIER_IDS: TierId[] = ['edge', 'fabric', 'services']
 
 const STATION_BY_ID = new Map(territoryStations.map((station) => [station.id, station]))
+
+/**
+ * The phone. Exactly the breakpoint territory.css uses to remove the desktop
+ * plate (`max-width: 899px`) and the inverse of the scene's own `min-width:
+ * 900px` gate — so one of the two drawings is mounted, never both, and a phone
+ * never pays for a second WebGL context.
+ *
+ * `useSyncExternalStore` rather than an effect: the first render has to know,
+ * or the section would mount the desktop plate and flash it away.
+ */
+const PHONE_QUERY = '(max-width: 899px)'
+
+let phoneQuery: MediaQueryList | null = null
+
+function subscribePhone(onChange: () => void): () => void {
+  phoneQuery ??= window.matchMedia(PHONE_QUERY)
+  phoneQuery.addEventListener('change', onChange)
+  return () => phoneQuery?.removeEventListener('change', onChange)
+}
+
+function getPhone(): boolean {
+  phoneQuery ??= window.matchMedia(PHONE_QUERY)
+  return phoneQuery.matches
+}
+
+function usePhone(): boolean {
+  return useSyncExternalStore(subscribePhone, getPhone, () => false)
+}
 
 function LegendGlyph({ kind }: { kind: LegendKey }) {
   return (
@@ -72,15 +107,20 @@ function LegendGlyph({ kind }: { kind: LegendKey }) {
 export default function Territory() {
   const { pick } = useLang()
   const copy = pick(territoryCopy)
+  const phone = usePhone()
 
   const rootRef = useRef<HTMLElement | null>(null)
   const sceneRef = useRef<TerritorySceneHandle | null>(null)
+  const miniRef = useRef<CompactHandle | null>(null)
   const [mode, setMode] = useState<Mode>('pending')
+  const [miniMode, setMiniMode] = useState<Mode>('pending')
   const [focus, setFocus] = useState<string | null>(null)
   const [activeTier, setActiveTier] = useState<TierId | null>(null)
 
   const onReady = useCallback(() => setMode('live'), [])
   const onUnavailable = useCallback(() => setMode('fallback'), [])
+  const onMiniReady = useCallback(() => setMiniMode('live'), [])
+  const onMiniUnavailable = useCallback(() => setMiniMode('fallback'), [])
   const onFocus = useCallback((id: string | null) => setFocus(id), [])
 
   // The section's entry device, owned by the shared motion system: the
@@ -104,6 +144,16 @@ export default function Territory() {
     const next = activeTier === tier ? null : tier
     setActiveTier(next)
     sceneRef.current?.frame(next)
+    miniRef.current?.frame(next)
+  }
+
+  /* On a phone the tier row belongs to the compact plate: framing a plan means
+     the readout at its foot is about the plan, not about the mark that was
+     tapped before. So a tier press clears the mark. */
+  const toggleMiniTier = (tier: TierId) => {
+    setFocus(null)
+    miniRef.current?.trace(null)
+    toggleTier(tier)
   }
 
   /**
@@ -130,6 +180,16 @@ export default function Territory() {
   } else if (activeTier) {
     readout = pick(groups.get(activeTier)?.role ?? { en: '', fr: '' })
   }
+
+  /* The compact plate's one line. At rest it teaches the gesture; on a mark it
+     is the chain; on a stratum it is that stratum's job; without WebGL it says
+     so, because the SVG under it is not the drawing that answers a tap. */
+  const miniReadout =
+    miniMode === 'fallback'
+      ? copy.fallbackLabel
+      : focus || activeTier
+        ? readout
+        : copy.readTap
 
   return (
     <section className="tty" id="territory" aria-labelledby="territory-title" ref={rootRef}>
@@ -232,6 +292,66 @@ export default function Territory() {
 
           <p className="tty__plate-note mono">{copy.legendNote}</p>
         </figure>
+
+        {phone ? (
+          <figure
+            className="tty-mini"
+            data-mode={miniMode}
+            data-tier={activeTier ?? undefined}
+            aria-label={copy.plateLabel}
+          >
+            <div className="tty-mini__head">
+              <p className="tty-mini__meta mono">
+                <span>{copy.plateLabel}</span>
+                <span>{copy.plateScale}</span>
+              </p>
+
+              <div className="tty-mini__tiers" role="group" aria-label={copy.strataLabel}>
+                {TIER_IDS.map((tier) => (
+                  <button
+                    className="tty-mini__tier"
+                    key={tier}
+                    type="button"
+                    aria-pressed={activeTier === tier}
+                    onClick={() => toggleMiniTier(tier)}
+                  >
+                    <span className="tty-mini__tier-mark" aria-hidden="true" />
+                    {label(tier)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="tty-mini__stage">
+              <TerritoryCompact
+                tier={activeTier}
+                focus={focus}
+                handleRef={miniRef}
+                onFocus={onFocus}
+                onReady={onMiniReady}
+                onUnavailable={onMiniUnavailable}
+              />
+            </div>
+
+            {/* The drawing's voice. `polite` because a tap is a question the
+                reader asked; the register below is the version a screen reader
+                and a copy-paste get in full. */}
+            <p className="tty-mini__readout mono" aria-live="polite" data-live={focus ? 'true' : undefined}>
+              {miniReadout}
+            </p>
+
+            <ul className="tty-mini__legend" role="list" aria-label={copy.legendLabel}>
+              {copy.legend
+                .filter((item) => item.key !== 'backup')
+                .map((item) => (
+                  <li key={item.key}>
+                    <LegendGlyph kind={item.key} />
+                    <span>{item.label}</span>
+                  </li>
+                ))}
+            </ul>
+          </figure>
+        ) : null}
 
         <div className="tty__register">
           <div className="tty__register-head">

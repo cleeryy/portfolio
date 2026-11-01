@@ -11,8 +11,11 @@
    - one crimson mark on the drawing (the ringed control point). The plate's own
      registration square is on the sheet's trim, not on the drawing.
    - the canvas bleeds to the sheet's right trim; the type never does.
-   - below 900px nothing is shrunk: the plate is removed and the register, which
-     is the same inventory recomposed as a vertical section, is what remains.
+   - below 900px the wide plate is removed and a compact one takes its place
+     (`TerritoryCompact.tsx`, styles at the foot of this file): the same three
+     plans and the same architecture, eight marks instead of twelve, full bleed
+     and thumb-sized. The register underneath is unchanged and still carries the
+     full inventory.
    ========================================================================== */
 
 .tty {
@@ -635,8 +638,18 @@ text {
    spur per station. Nothing is scaled down to unreadable. */
 @media (max-width: 899px) {
   .tty {
+    /* The section gives up its inline padding so the compact plate can bleed to
+       both trims: the type re-pads itself below, the drawing does not. This is
+       also what keeps `.tty__inner` free of internal overflow — no negative
+       margin is used anywhere in the phone layout. */
+    padding-inline: 0;
     padding-block-start: calc(var(--nav-h-compact) + clamp(2rem, 6vw, 3.5rem));
     scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .tty__head,
+  .tty__register {
+    padding-inline: var(--gutter);
   }
 
   .tty__plate {
@@ -728,12 +741,270 @@ text {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   The compact plate — the phone (≤899px)
+   ---------------------------------------------------------------------------
+   Same three plans, same architecture, cut down to the eight marks that carry
+   the argument. The type above and the ledger below are unchanged; this is the
+   plate in between, and it is a real drawing: a live canvas the thumb can turn
+   and tap, with one readout line in place of eight projected labels.
+
+   ┌───────────────────────────────┐  ← the plate's top rule, full bleed
+   │ territory survey · not scale  │
+   │ [ Edge ][ Fabric ][ Services ]│  44px targets, one per plan
+   ├───────────────────────────────┤
+   │                               │
+   │      three plans, 8 marks     │  46svh, full bleed, pan-y
+   │                               │
+   ├───────────────────────────────┤
+   │ internet → opnsense → caddy … │  the readout, mono, 2 lines max
+   │ ▭ service   ✕ node            │  the legend, the keys the drawing uses
+   └───────────────────────────────┘
+
+   The section's crimson is the control ring on the drawing, and nothing else
+   here: no tick, no rule, no pressed state in the accent.
+   --------------------------------------------------------------------------- */
+
+.tty-mini {
+  display: none;
+  margin: clamp(2.25rem, 7vw, 3.25rem) 0 0;
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+.tty-mini__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-1) var(--s-4);
+  padding: var(--s-2) var(--gutter) var(--s-2);
+  font-size: var(--step--2);
+  line-height: 1.3;
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-quiet);
+}
+
+.tty-mini__meta span + span {
+  color: var(--ink-3);
+}
+
+/* The stratum index. Three buttons, not three links: a press frames a plan. */
+.tty-mini__tiers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: var(--hair) solid var(--contour-soft);
+}
+
+.tty-mini__tier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  min-height: 44px;
+  padding-inline: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  line-height: 1;
+  color: var(--text-quiet);
+  transition:
+    color var(--t-fast) var(--ease-out),
+    background-color var(--t-fast) var(--ease-out);
+}
+
+.tty-mini__tier + .tty-mini__tier {
+  border-inline-start: var(--hair) solid var(--contour-soft);
+}
+
+.tty-mini__tier[aria-pressed='true'] {
+  color: var(--ink);
+  /* A sunk step of the sheet, not a tint of the accent. */
+  background-color: var(--ground-sunk);
+}
+
+/* The press is the answer on a touch screen: there is no hover to carry it. */
+.tty-mini__tier:active {
+  background-color: var(--ground-sunk);
+  color: var(--ink);
+}
+
+.tty-mini__tier-mark {
+  flex: none;
+  inline-size: 5px;
+  block-size: 5px;
+  border: var(--hair) solid currentColor;
+  background-color: transparent;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+
+.tty-mini__tier[aria-pressed='true'] .tty-mini__tier-mark {
+  background-color: currentColor;
+}
+
+/* The plotting box. Full bleed, its own height, and a wash of the sheet so the
+   engraved contours behind it do not read as a second drawing. */
+.tty-mini__stage {
+  position: relative;
+  block-size: clamp(13rem, 46svh, 26rem);
+  touch-action: pan-y;
+  background-image: radial-gradient(
+    ellipse 78% 66% at 50% 47%,
+    color-mix(in srgb, var(--ground) 68%, transparent) 0%,
+    color-mix(in srgb, var(--ground) 34%, transparent) 58%,
+    transparent 100%
+  );
+}
+
+.tty-mini__scene {
+  position: absolute;
+  inset: 0;
+}
+
+.tty-mini__canvas-host {
+  position: absolute;
+  inset: 0;
+}
+
+.tty-mini__canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  /* Vertical drags belong to the page, horizontal drags turn the plate. */
+  touch-action: pan-y;
+  opacity: 0;
+  transition: opacity var(--t-slow) var(--ease-out);
+}
+
+.tty-mini[data-mode='live'] .tty-mini__canvas {
+  opacity: 1;
+}
+
+/* The plate under the canvas: what the phone shows before the first frame and
+   whenever WebGL never arrives. Same table, same projection — it cannot drift. */
+.tty-mini__plate {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  transition: opacity var(--t-base) var(--ease-out);
+}
+
+.tty-mini[data-mode='live'] .tty-mini__plate {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--t-base) var(--ease-out),
+    visibility 0s var(--t-base);
+}
+
+.tty-mini__plane {
+  fill: none;
+  stroke: var(--contour);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: stroke var(--t-base) var(--ease-out);
+}
+
+/* Without a canvas the tier buttons still frame a plan: the plane they name is
+   inked and the other two recede, so the controls keep their meaning. */
+.tty-mini[data-tier] .tty-mini__plane {
+  stroke: var(--contour-soft);
+}
+
+.tty-mini[data-tier='edge'] .tty-mini__plane:nth-child(1),
+.tty-mini[data-tier='fabric'] .tty-mini__plane:nth-child(2),
+.tty-mini[data-tier='services'] .tty-mini__plane:nth-child(3) {
+  stroke: var(--ink);
+}
+
+.tty-mini__mark {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.tty-mini__mark--service {
+  fill: var(--ink);
+  stroke: none;
+}
+
+.tty-mini__mark--ring {
+  stroke: var(--mark);
+}
+
+/* The readout. One line at rest, the chain once a mark is read; it is the
+   drawing's voice, so it sits directly under the drawing, on the trim. */
+.tty-mini__readout {
+  display: flex;
+  align-items: flex-end;
+  min-block-size: 4.5rem;
+  margin: 0;
+  padding: var(--s-3) var(--gutter) var(--s-4);
+  border-block-start: var(--hair) solid var(--contour);
+  font-size: var(--step--2);
+  line-height: 1.45;
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-quiet);
+  overflow-wrap: anywhere;
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+.tty-mini__readout[data-live='true'] {
+  color: var(--ink);
+}
+
+/* The keys the compact drawing actually uses. The backup path is stated in the
+   readout (`… → off-site`) rather than drawn at this scale, so its key is not
+   printed here. */
+.tty-mini__legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2) var(--s-3);
+  /* A legend is a key, not a table: it keeps the gutter's two columns and stops
+     before a tablet turns them into a 300px-wide gap. */
+  max-inline-size: 26rem;
+  margin: 0;
+  padding: 0 var(--gutter) var(--s-4);
+}
+
+.tty-mini__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.4rem;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  line-height: 1.2;
+  color: var(--text-quiet);
+}
+
+.tty-mini__legend .tty__legend-glyph {
+  inline-size: 17px;
+  block-size: 8.5px;
+}
+
+@media (max-width: 899px) {
+  .tty-mini {
+    display: block;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tty-label,
   .tty__tier,
   .tty__tier-mark,
   .tty-scene__canvas,
   .tty-plate__svg {
+    transition: none;
+  }
+
+  .tty-mini__canvas,
+  .tty-mini__plate,
+  .tty-mini__plane,
+  .tty-mini__tier,
+  .tty-mini__tier-mark,
+  .tty-mini__readout {
     transition: none;
   }
 }
