@@ -1,19 +1,16 @@
 import type { Bi } from '../lib/i18n'
+import { fr } from '../lib/typo'
 
-/**
- * The closing page: the request, three addresses, and the sheet's colophon.
- *
- * The headline is the ask, not a riddle: an alternance in a SOC or on an
- * offensive team, in Toulouse, for 2026–2027. The invitation carries what he
- * brings — a network he runs, writeups he publishes — and then stops.
- *
- * Nothing here is a form: no field, no required subject, no availability badge
- * with invented dates, no newsletter. The email is the primary action and it is
- * a plain `mailto:` — navigation never depends on a script.
- *
- * The three addresses are supplied by the owner and are the only values in this
- * file that are not prose.
- */
+/* ============================================================================
+   contact.ts — the closing plate
+   ----------------------------------------------------------------------------
+   One invitation, three addresses, the colophon. No form, no availability badge,
+   no invented start date: the ask is an invitation to write, not a claim about
+   when he is free.
+
+   The email is supplied by the owner and is the one value in this file that is
+   not prose.
+   ========================================================================== */
 
 /** Approved by the owner. The primary call to action of the whole sheet. */
 export const contactEmail = 'clery.arqueferradou@gmail.com'
@@ -22,29 +19,28 @@ export const contactEmail = 'clery.arqueferradou@gmail.com'
 export const sourceUrl = 'https://github.com/cleeryy'
 export const sourceLabel = 'github.com/cleeryy'
 
-/** Where the writeups are published: the proof behind the training chapter. */
+/** Where the writeups are published. */
 export const blogUrl = 'https://blog.cleeryy.cloud'
 export const blogLabel = 'blog.cleeryy.cloud'
 
 export type ContactCopy = {
+  margin: string
   title: string
   invite: string
-  /** Ledger keys: the address, the code, the writing. */
   mailKey: string
   codeKey: string
   blogKey: string
-  /** Colophon. */
   credit: string
   backToTop: string
-  /** The legend line under the credit: a scale bar and its reading. */
   scaleNote: string
 }
 
 export const contact: Bi<ContactCopy> = {
   en: {
-    title: 'An alternance in a SOC, or on the offensive side.',
+    margin: 'the request',
+    title: 'Tell me what you are building.',
     invite:
-      'Toulouse, 2026–2027. What I bring: a network I run end to end, and writeups I publish. Write plainly — a paragraph is enough, and I answer.',
+      'I answer email. A paragraph is enough: what the system is, what is broken, or what you want built. An internship, an apprenticeship, a machine that will not boot — same address.',
     mailKey: 'mail',
     codeKey: 'code',
     blogKey: 'writing',
@@ -53,14 +49,14 @@ export const contact: Bi<ContactCopy> = {
     scaleNote: 'not to scale',
   },
   fr: {
-    title: 'Une alternance en SOC, ou en sécurité offensive.',
-    invite:
-      'Toulouse, 2026–2027. Ce que j’apporte\u00a0: un réseau que j’exploite de bout en bout, et des writeups que je publie. Écrivez simplement\u00a0: un paragraphe suffit, et je réponds.',
+    margin: 'la demande',
+    title: fr('Dites-moi ce que vous construisez.'),
+    invite: fr('Je réponds aux courriels. Un paragraphe suffit\u00a0: ce qu’est le système, ce qui est cassé, ou ce que vous voulez construire. Un stage, une alternance, une machine qui ne démarre pas — même adresse.'),
     mailKey: 'courriel',
     codeKey: 'code',
     blogKey: 'écrits',
-    credit: 'dessiné et hébergé par cleeryy',
-    backToTop: 'Retour en haut de la feuille',
+    credit: fr('dessiné et hébergé par cleeryy'),
+    backToTop: fr('Retour en haut de la feuille'),
     scaleNote: 'sans échelle',
   },
 }
