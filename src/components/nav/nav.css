@@ -59,7 +59,7 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Section links
+   Nav links — three routes and two home anchors
    --------------------------------------------------------------------------- */
 
 .nav__links {
@@ -79,10 +79,10 @@
   transition: color var(--t-fast) var(--ease-out);
 }
 
-/* The rule under a section link is drawn in two registers. On the wide sheet the
-   label rolls over itself (Rollover.tsx) and the rule is kept for the active
-   section alone; where the rollover cannot run — ≤900px, a coarse pointer, or
-   reduced motion — the rule returns as the hover state, drawn from the left. */
+/* The rule under a nav link is drawn in two registers. On the wide sheet the
+   label rolls over itself (Rollover.tsx) and the rule is kept for the current
+   destination alone; where the rollover cannot run — ≤900px, a coarse pointer,
+   or reduced motion — the rule returns as the hover state, drawn from the left. */
 .nav__link::after {
   content: '';
   position: absolute;
@@ -106,11 +106,15 @@
 }
 
 .nav__link:hover,
+.nav__link[aria-current='page'],
 .nav__link[aria-current='true'] {
   color: var(--ink);
 }
 
-/* The active section is marked, not underlined: a short red rule at the base. */
+/* The current destination is marked, not underlined: a short red rule at the
+   base. A route prints `page`; a home anchor observed at mid-viewport prints
+   `true`. Both are the same mark on the sheet. */
+.nav__link[aria-current='page']::after,
 .nav__link[aria-current='true']::after {
   transform: scaleX(1);
   height: var(--hair-strong);
