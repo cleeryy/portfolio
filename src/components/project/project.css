@@ -1,0 +1,559 @@
+/* ============================================================================
+   project.css — one file of the register
+   ----------------------------------------------------------------------------
+   The register's leaf: a title block, a reading with its labels in the margin, a
+   ruled ledger of measurements, and a foot that walks the register.
+
+   The field is the sheet's own 72rem column under the fixed bar, opening on a
+   1px ink rule and the 76 × 2 registration tick — `not-found.css`'s device, so a
+   deep link lands on a document that visibly belongs to the sheet. Nothing here
+   adds a surface: the page is the ground, and App already mounts the graticule,
+   the grain and the atmosphere.
+
+   Header: two columns — reference, name and claim in the text column; the
+   project's seal at 240px, top-right, spanning the three rows. The seal is the
+   same component as the traverse's at a larger size: a cartouche beside a title
+   block, not an illustration. At ≤900px it steps to 120px beside the reference
+   and the name takes the full width.
+
+   Body: the reading (its text measure capped at 62ch, with the margin label and
+   its gutter outside that cap) and the ledger in a 256–280px rail, sticky under
+   the bar. Each reading section is a two-column sub-grid — label in `--rail`,
+   content in the rest — so the annotation sits in the margin, never as an
+   eyebrow above the prose.
+
+   The did list's marks are 4 × 1 rules in `--mark`, positioned on the first
+   line's x-height. A bullet has a marker box, a number implies a rank; a tick is
+   a registration mark, which is the only thing these three statements are.
+
+   Accent budget: the field tick, the seal's one crimson station, and the three
+   did ticks. Every other colour on the page is ink or contour. The underline of
+   an address and the foot's rule turn `--mark` under the pointer — a response,
+   not a mark.
+
+   Narrow sheets (≤900px): one column, the label above its content, the ledger
+   in flow and not sticky, the foot's label above its name. The reading keeps the
+   62ch cap so a tablet does not set a 700px line.
+   ========================================================================== */
+
+.file {
+  /* The label margin inside the reading column. One value, so the section grid
+     and the reading column's cap cannot drift apart. */
+  --file-label-gap: clamp(1rem, 2.5vw, 2rem);
+
+  position: relative;
+  padding-block: calc(var(--nav-h) + clamp(1.75rem, 4vw, 3rem)) clamp(3.5rem, 8vw, 6rem);
+  padding-inline: var(--gutter);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* The field. The rule is the page's opening measurement, not a border on a
+   panel; the tick is hung on it at the field's left edge. */
+.file__inner {
+  position: relative;
+  inline-size: 100%;
+  max-inline-size: var(--field);
+  min-inline-size: 0;
+  margin-inline: auto;
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+.file__mark {
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline-start: 0;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Title block — reference, name, claim, seal
+   ---------------------------------------------------------------------------
+   The seal spans all three rows and hangs from the top-right corner; the text
+   stack keeps the reading column. The header's height is the seal's 240px, so
+   the title block reads as a plate's cartouche rather than as a centred hero.
+   --------------------------------------------------------------------------- */
+
+.file__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  grid-template-areas:
+    'ref   seal'
+    'name  seal'
+    'claim seal';
+  column-gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: start;
+  padding-block: clamp(1.25rem, 3vw, 2rem) clamp(2rem, 5vw, 3.5rem);
+}
+
+.file__ref {
+  grid-area: ref;
+  min-inline-size: 0;
+  margin: 0 0 clamp(0.55rem, 1.4vw, 0.9rem);
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+/* The label is the annotation; the coordinate and the domain are the reading. */
+.file__ref-label,
+.file__ref-sep {
+  color: var(--ink-3);
+}
+
+.file__ref-code,
+.file__ref-domain {
+  color: var(--ink-2);
+}
+
+/* The slash is a mark between two readings, not a word: it carries no letter
+   spacing of its own and is hidden from the accessible name. */
+.file__ref-sep {
+  margin-inline: 0.4em;
+}
+
+.file__name {
+  grid-area: name;
+  margin: 0;
+  max-inline-size: 100%;
+  font-family: var(--font-display);
+  font-size: var(--step-5);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-plate);
+  line-height: 0.98;
+  letter-spacing: var(--tracking-plate);
+  color: var(--ink);
+  /* A long slug breaks rather than widening the field. */
+  overflow-wrap: anywhere;
+}
+
+.file__claim {
+  grid-area: claim;
+  max-inline-size: 34ch;
+  margin: clamp(0.9rem, 2vw, 1.35rem) 0 0;
+  font-size: var(--step-2);
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+
+/* The seal's frame stays square at both sizes; the drawing scales inside it and
+   the hairline stays 1px (`vector-effect` on the component). */
+.file__seal {
+  grid-area: seal;
+  justify-self: end;
+  align-self: start;
+  flex: none;
+  inline-size: 240px;
+  block-size: 240px;
+}
+
+/* ---------------------------------------------------------------------------
+   Body — reading and ledger
+   ---------------------------------------------------------------------------
+   The reading's 62ch is the prose measure; the margin label sits outside it, so
+   the column's cap is the measure plus the rail plus its gutter. The ledger
+   takes the right edge of the field, under the seal, and sticks below the bar.
+   --------------------------------------------------------------------------- */
+
+.file__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(16rem, 21vw, 17.5rem);
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  align-items: start;
+  padding-block-end: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.file__reading {
+  min-inline-size: 0;
+  max-inline-size: calc(var(--measure) + var(--rail) + var(--file-label-gap));
+}
+
+/* One section, one sub-grid: the label is a column of the reading, not a
+   heading stacked above it. */
+.file__section {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  column-gap: var(--file-label-gap);
+  align-items: start;
+}
+
+.file__section + .file__section {
+  margin-block-start: clamp(2rem, 4.5vw, 3.25rem);
+}
+
+/* `.file .file__label` keeps this rule ahead of the base `h2` styles: a label is
+   an annotation, so it is mono, regular and quiet, not a second title. */
+.file .file__label {
+  margin: 0;
+  padding-block-start: 0.35rem;
+  font-weight: var(--w-regular);
+  line-height: 1.5;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.file__summary {
+  min-inline-size: 0;
+  margin: 0;
+  font-size: var(--step-1);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.file__did {
+  display: grid;
+  gap: 1.2rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The tick is hung in the item's own gutter, at the first line's x-height. */
+.file__did-item {
+  position: relative;
+  padding-inline-start: calc(4px + var(--s-3));
+  font-size: var(--step-0);
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.file__did-item::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0.72em;
+  inset-inline-start: 0;
+  inline-size: 4px;
+  block-size: var(--hair);
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   The ledger — four readings, then the addresses
+   ---------------------------------------------------------------------------
+   A ruled ledger in the operator's grammar: key in the left column, value on the
+   right, one hairline per row. Values may run to several lines — access is a
+   sentence and the stack is a list of instruments — so the value column is
+   `minmax(0, 1fr)` and breaks rather than pushing the rail wider than its field.
+   --------------------------------------------------------------------------- */
+
+.file__meta {
+  position: sticky;
+  inset-block-start: calc(var(--nav-h) + var(--s-4));
+  align-self: start;
+  min-inline-size: 0;
+  margin-block-start: 0.35rem;
+  border-block: var(--hair) solid var(--contour);
+}
+
+.file__facts {
+  margin: 0;
+}
+
+.file__fact {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--s-4);
+  align-items: baseline;
+  padding-block: 0.6rem;
+  line-height: 1.5;
+}
+
+/* The row rule is a border, not a child: it is printed even if every script
+   fails, and a ledger is ruled. */
+.file__fact + .file__fact {
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.file__fact-key {
+  margin: 0;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+
+/* The section prefix keeps this colour ahead of `.mono`: component styles can
+   be injected before base.css, and ink-2 is the ledger's value, not a label. */
+.file .file__fact-value {
+  margin: 0;
+  text-align: end;
+  color: var(--ink-2);
+  overflow-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------------------
+   Addresses — the rail's last block, and the only place an address prints
+   ---------------------------------------------------------------------------
+   Label over address rather than side by side: at 256px a full URL and a label
+   on one line would either overflow or break mid-host. The address keeps the
+   sheet's hairline underline; the hover colour is the pointer's answer.
+   --------------------------------------------------------------------------- */
+
+.file__links {
+  padding-block: var(--s-3);
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.file__links-title {
+  margin: 0 0 var(--s-2);
+  font-weight: var(--w-regular);
+  line-height: 1.5;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.file__link-list {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file__link {
+  display: grid;
+  gap: 0.1rem;
+  min-inline-size: 0;
+}
+
+.file__link-label {
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.file .file__link-address {
+  line-height: 1.5;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.3em;
+  overflow-wrap: anywhere;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.file .file__link-address:hover,
+.file .file__link-address:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Foot — the neighbouring files, then the register
+   ---------------------------------------------------------------------------
+   Two full-width links in register order, then the way back on its own rule.
+   Nothing is a button: the page already has its one destination per project, and
+   the foot is a walk, not a set of controls.
+   --------------------------------------------------------------------------- */
+
+.file__step {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  column-gap: var(--file-label-gap);
+  align-items: baseline;
+  padding-block: var(--s-4);
+  border-block-start: var(--hair) solid var(--contour);
+  color: var(--ink);
+  text-decoration: none;
+  /* Colour is the response and is allowed under reduced motion; the width lift
+     below is not, and lives in its own query. */
+  transition: border-block-start-color var(--t-fast) var(--ease-out);
+}
+
+.file__step:hover,
+.file__step:focus-visible {
+  border-block-start-color: var(--ink);
+}
+
+.file__step-label {
+  color: var(--ink-3);
+}
+
+.file__step-name {
+  min-inline-size: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-display);
+  overflow-wrap: anywhere;
+}
+
+/* The one moving gesture on the page: the name gains a little width, the way a
+   place-name is lettered a touch wider to fill its box. No transform, no change
+   to the row's box. */
+@media (prefers-reduced-motion: no-preference) {
+  .file__step-name {
+    transition: font-stretch var(--t-base) var(--ease-out);
+  }
+
+  .file__step:hover .file__step-name,
+  .file__step:focus-visible .file__step-name {
+    font-stretch: 106%;
+  }
+}
+
+.file__back-row {
+  padding-block: var(--s-2) 0;
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.file .file__back {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.3em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.file .file__back:hover,
+.file .file__back:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   A missing file — the same shell, one plate short
+   ---------------------------------------------------------------------------
+   No seal, no neighbours, no second destination: a title block on the ruled
+   field, one line of explanation and the way back. It keeps ~55vh so the empty
+   ground below it is the point.
+   --------------------------------------------------------------------------- */
+
+.file--missing {
+  min-block-size: max(55svh, 22rem);
+}
+
+.file__missing {
+  max-inline-size: 44rem;
+  padding-block-start: clamp(1.25rem, 3vw, 2rem);
+}
+
+.file__missing-title {
+  max-inline-size: 16ch;
+  margin: 0;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.04;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.file__missing-lead {
+  max-inline-size: 46ch;
+  margin: clamp(0.9rem, 2vw, 1.35rem) 0 0;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.file__missing-links {
+  margin: clamp(1.75rem, 4vw, 2.75rem) 0 0;
+}
+
+/* The sheet's link register: a hairline underline, crimson only in answer. */
+.file__missing-cta {
+  display: inline-block;
+  padding-block: 0.3rem;
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.3;
+  letter-spacing: -0.008em;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.file__missing-cta:hover,
+.file__missing-cta:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   The phone and the portrait tablet (≤900px)
+   ---------------------------------------------------------------------------
+   The seal sits beside the reference, the name and claim take the full width,
+   the body becomes one column with the label above its content, and the ledger
+   stops sticking so it can be read where it falls. Every column is
+   `minmax(0, 1fr)`: no string can push the sheet wider than the screen.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .file {
+    padding-block-start: calc(var(--nav-h-compact) + clamp(1.75rem, 6vw, 2.75rem));
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .file__head {
+    grid-template-columns: minmax(0, 1fr) 120px;
+    grid-template-areas:
+      'ref   seal'
+      'name  name'
+      'claim claim';
+    column-gap: var(--s-4);
+    padding-block: clamp(1.1rem, 4vw, 1.5rem) clamp(2rem, 6vw, 2.75rem);
+  }
+
+  .file__seal {
+    inline-size: 120px;
+    block-size: 120px;
+  }
+
+  .file__name {
+    margin-block-start: clamp(1.25rem, 5vw, 2rem);
+  }
+
+  .file__claim {
+    max-inline-size: 100%;
+  }
+
+  .file__body {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: clamp(2rem, 6vw, 3rem);
+    padding-block-end: clamp(2rem, 6vw, 3rem);
+  }
+
+  .file__reading {
+    max-inline-size: var(--measure);
+  }
+
+  .file__section {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-2);
+  }
+
+  .file .file__label {
+    padding-block-start: 0;
+  }
+
+  .file__meta {
+    position: static;
+    inset-block-start: auto;
+    margin-block-start: 0;
+    /* The ledger keeps the reading's measure instead of running the full width
+       of a tablet: key and value stay a table, not two ends of a page. */
+    max-inline-size: var(--measure);
+  }
+
+  .file__step {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-1);
+    padding-block: var(--s-3);
+  }
+
+  .file__missing-cta {
+    /* A thumb needs the target, not the label. */
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 44px;
+  }
+}

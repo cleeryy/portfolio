@@ -10,8 +10,12 @@ import ScrollProgress from './components/ui/ScrollProgress'
 import InstrumentChrome from './components/chrome/InstrumentChrome'
 import PointerHud from './components/chrome/PointerHud'
 import NotFound from './components/site/NotFound'
+import ProjectFile from './components/project/ProjectFile'
+import Register from './components/register/Register'
 import Home from './pages/Home'
+import { projectBySlug } from './content/work'
 import { descriptions, titles } from './content/site'
+import type { RouteKey } from './content/site'
 import { useLang } from './lib/i18n'
 import { initMotionSystem } from './lib/reveal'
 import { useRoute } from './lib/router'
@@ -41,6 +45,20 @@ export default function App() {
   const { pick } = useLang()
   const home = route.path === '/'
 
+  // One plate, one record. `/work` is the register, `/work/:slug` is a file, and
+  // a slug the register does not hold falls through to the missing plate — the
+  // page prints the copy, it never renders an empty shell.
+  const project = route.params.slug ? projectBySlug(route.params.slug) : undefined
+  const pageKey: RouteKey = home
+    ? 'cover'
+    : route.path === '/work'
+      ? 'work'
+      : route.path === '/notes'
+        ? 'notes'
+        : route.path === '/about'
+          ? 'about'
+          : 'notFound'
+
   // One refresh point for the whole page: webfonts land after first layout, and
   // every pinned or measured trigger has to be re-read once they do.
   useEffect(() => initMotionSystem(), [])
@@ -48,14 +66,14 @@ export default function App() {
   // Metadata follows the plate. `pick` changes identity with the language, so a
   // language switch rewrites the title as well as the page.
   useEffect(() => {
-    const key = home ? 'cover' : 'notFound'
-    setMeta(pick(titles[key]), pick(descriptions[key]))
+    if (project) setMeta(`cleeryy — ${project.name}`, pick(project.claim))
+    else setMeta(pick(titles[pageKey]), pick(descriptions[pageKey]))
 
     // After paint, not during commit: the mounted page's own triggers were
     // created in its effects, and a pinned section adds its spacer late.
     const frame = requestAnimationFrame(() => ScrollTrigger.refresh())
     return () => cancelAnimationFrame(frame)
-  }, [home, pick, route.path])
+  }, [pageKey, pick, project, route.path])
 
   // Sound has to answer a copy, not just the toggle. Chrome (nav, cover,
   // operator, contact, closing plate) gets a relay tick on activation and a
@@ -123,7 +141,15 @@ export default function App() {
       <SheetGrid />
       <BootGate />
       <NavBar />
-      {home ? <Home /> : <NotFound />}
+      {home ? (
+        <Home />
+      ) : route.path === '/work' ? (
+        <Register />
+      ) : route.params.slug ? (
+        <ProjectFile slug={route.params.slug} />
+      ) : (
+        <NotFound />
+      )}
       <ScrollProgress />
       <Cursor />
       <Grain />
