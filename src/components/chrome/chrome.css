@@ -4,7 +4,7 @@
    Two fixed layers, both pure typography, both `aria-hidden`:
 
    1. `.chrome` — three labelled readings in the sheet's left margin: a key line
-      over its value, the same fact-column device as the hero collar. Mid-height,
+      over its value, the same fact-column device as the cover's collar. Mid-height,
       right-aligned to `--gutter`, so it lives in the margin at every width
       instead of being pushed over the text. No box, no fill, no blur: a printed
       title block has neither.
@@ -24,7 +24,7 @@
 
   position: fixed;
   /* Mid-height: the one band that is free everywhere. The foot of the viewport
-     belongs to the hero collar on the first screen and to the colophon on the
+     belongs to the cover's collar on the first screen and to the colophon on the
      last; the section refs sit at every section's top, just inside the gutter. */
   inset-block-start: 50%;
   inset-inline-start: max(var(--gutter), env(safe-area-inset-left, 0px));
@@ -94,9 +94,10 @@
    cover's collar already carries it, and so does the device itself.
 
    Two surfaces own a phone's bottom edge, and neither is ours: the cover's
-   collar (the first screen is the collar's) and the ranges deck's ruler (the
-   ink band measures itself). The instrument is drawn on the ground in between,
-   and it gives the colophon a strip to itself in contact.css.
+   collar (the first screen is the collar's) and the chapters that print their
+   own foot rules (the traverse, the ink band). The instrument is drawn on the
+   ground in between, and it gives the colophon a strip to itself in
+   contact.css.
    --------------------------------------------------------------------------- */
 
 @media (max-width: 900px) {

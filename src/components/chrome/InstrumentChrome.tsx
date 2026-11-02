@@ -15,14 +15,14 @@ gsap.registerPlugin(ScrollTrigger)
    be read out of order and can never intercept a click.
 
    Each reading is a labelled fact column, not a bare number: a `key` line above
-   its value, the same device the hero collar and the section rails already use
-   (`studying` over `ESGI B3`, `ctf` over `THCon 2025`). Three keys, five
+   its value, the same device the cover's collar and the section rails already
+   use (`studying` over `ESGI B3`, `ctf` over `THCon 2025`). Three keys, five
    characters each — the widest string a 43px margin can hold at 11px:
 
    | key     | value          | job                                        |
    | ------- | -------------- | ------------------------------------------ |
    | paris   | `20:51`        | the local time, Europe/Paris               |
-   | plate   | `03/08`        | the plate you are on, out of every plate   |
+   | plate   | `03/06`        | the plate you are on, out of every plate   |
    | sheet   | `042%`         | how far through the sheet you are          |
 
    What each one costs:
@@ -30,18 +30,20 @@ gsap.registerPlugin(ScrollTrigger)
    1. **paris** — Europe/Paris, `HH:MM`, rewritten by one interval every 10s (and
       on `visibilitychange`, so a tab that slept is corrected on return). Cost:
       one `Intl.format` and one text node per 10s.
-   2. **plate** — the hero counts as plate 01 and the seven sections follow, so
-      the number a visitor reads runs 01 → 08 with no gap and no zero. Derived
-      from the nav's own `aria-current` (the single source of truth on this
-      sheet), never from a second copy of the section list. Cost: a
-      MutationObserver that fires only when the marked section changes.
+   2. **plate** — the cover counts as plate 01 and the nav's own targets follow,
+      so the number a visitor reads runs 01 → 06 with no gap and no zero. Both
+      the count and the divisor are read from `.nav__links`, so adding an item to
+      `navItems` renumbers the sheet with no second list to edit. Derived from the
+      nav's own `aria-current` (the single source of truth on this sheet), never
+      from a second copy of the section list. Cost: a MutationObserver that fires
+      only when the marked destination changes.
    3. **sheet** — the sheet's own progress, straight from one ScrollTrigger bound
       to `0 → max`. Cost: one arithmetic op per scroll frame, and one string only
       when the whole percent changes.
 
    Where it lives: the left margin at mid-height, right-aligned to `--gutter` and
    vertically centred on the viewport. Mid-height is the only band that is free
-   at every width: the foot of the viewport is the hero collar on the first
+   at every width: the foot of the viewport is the cover's collar on the first
    screen and the colophon on the last, and the section refs sit just inside the
    gutter at every section top. At 1024px the margin is 43px and the block is
    34px of type, so it clears the text column at every width the layer is
@@ -108,15 +110,20 @@ export default function InstrumentChrome() {
     const links = Array.from(list.querySelectorAll<HTMLAnchorElement>('.nav__link'))
     if (links.length === 0) return
 
-    // The hero is the sheet's first plate and carries no section id, so it is
-    // counted here rather than left as a zero: the reading runs 01/08 on the
-    // cover, 02/08 at #path, … 08/08 at #contact. A visitor counts plates, and
-    // eight of them are on the sheet.
+    // The cover is the sheet's first plate and carries no nav link, so it is
+    // counted here rather than left as a zero: the reading runs 01/06 on the
+    // cover, 02/06 at /work, … 06/06 at the contact anchor. Both the divisor and
+    // the position come from the links the nav actually rendered.
     const total = pad2(links.length + 1)
 
     const write = () => {
-      const index = links.findIndex((link) => link.getAttribute('aria-current') === 'true')
-      // No marked section means the cover: plate 01, not plate nothing.
+      // A route marks `page`, an observed home anchor marks `true`. Any other
+      // value (or none) is not a plate: it means the cover.
+      const index = links.findIndex((link) => {
+        const value = link.getAttribute('aria-current')
+        return value !== null && value !== 'false'
+      })
+      // No marked destination means the cover: plate 01, not plate nothing.
       setReading(el, `${pad2(index + 2)}/${total}`)
     }
 
@@ -165,7 +172,7 @@ export default function InstrumentChrome() {
 
   useEffect(() => {
     const root = rootRef.current
-    const cover = document.querySelector<HTMLElement>('.hero')
+    const cover = document.querySelector<HTMLElement>('.cover')
     if (!root || !cover) return
 
     // The strip the readings occupy: the bottom 8% of the viewport. While the

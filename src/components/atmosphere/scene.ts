@@ -229,7 +229,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
 
   /** The ink chapter is opaque; while it owns the viewport, nothing renders. */
   const isCovered = () => {
-    const band = document.getElementById('ranges')
+    const band = document.getElementById('operator')
     if (!band) return false
     const rect = band.getBoundingClientRect()
     return rect.top <= 1 && rect.bottom >= window.innerHeight - 1
