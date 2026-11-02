@@ -274,7 +274,7 @@
    Responsive
    --------------------------------------------------------------------------- */
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .nav__links {
     display: none;
   }
@@ -344,6 +344,12 @@
     color: var(--mark);
   }
 
+  /* The panel clips its own height while it opens. A full row's ring drawn
+     outside its box would lose its first and last edges, so it is inset. */
+  .nav__panel-link:focus-visible {
+    outline-offset: -3px;
+  }
+
   /* A short phone (or a landscape one) must not clip the index: the panel
      scrolls inside itself once it is open. */
   .nav[data-open='true'] .nav__panel {
@@ -354,7 +360,7 @@
 }
 
 /* The panel only exists on small screens; on desktop the links are inline. */
-@media (min-width: 861px) {
+@media (min-width: 901px) {
   .nav__panel {
     display: none;
   }
