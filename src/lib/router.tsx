@@ -1,5 +1,6 @@
 import { useMemo, useSyncExternalStore } from 'react'
 import type { AnchorHTMLAttributes, MouseEvent, ReactElement, ReactNode } from 'react'
+import { getReprintHandler } from './reprint'
 import { getLenis } from './scroll'
 
 /* ============================================================================
@@ -13,10 +14,11 @@ import { getLenis } from './scroll'
    - `useRoute()` is the only read. It returns the normalised pathname and the
      params filled from it (`/work/:slug` → `{ slug }`), and re-renders on both
      `popstate` and the app's own `portfolio:navigate` event.
-   - `navigate()` is the only write. It pushes history, announces the change,
-     then positions the scroll: instantly to the top of a new page, or on the
-     hash target once the destination page has committed. A hash target can be
-     mounted *after* `navigate()` returns (the home page mounts on the next
+   - `navigate()` is the only write. It pushes history, positions the scroll,
+     then announces the change: instantly for a hash destination or a same-page
+     move, or through the registered reprint on a new page. The reprint holds the
+     commit for 80ms, so the page swaps only once the plate covers it. A hash
+     target can be mounted *after* the commit (the home page mounts on the next
      commit), hence the two painted frames before the lookup.
    - `Link` is a real `<a href>`: the browser still owns middle-click,
      modifier-click, copy-link and external destinations. Only a plain left
@@ -165,7 +167,24 @@ export function navigate(to: string): void {
   } catch {
     // A failed push must not strand the reader: the scroll below still runs.
   }
-  document.dispatchEvent(new CustomEvent(NAVIGATE_EVENT))
+
+  const commit = (): void => {
+    document.dispatchEvent(new CustomEvent(NAVIGATE_EVENT))
+  }
+
+  // A new plate with no hash: the scroll is reset first, then the reprint takes
+  // the commit and calls it at t=80ms, with the opaque ground already covering
+  // the page. With no handler (reduced motion, first paint) the cut is instant.
+  if (!samePath && hash === '') {
+    hashSettleUntil = 0
+    jumpTo(0)
+    const reprint = getReprintHandler()
+    if (reprint) reprint(commit)
+    else commit()
+    return
+  }
+
+  commit()
 
   if (hash === '') {
     hashSettleUntil = 0

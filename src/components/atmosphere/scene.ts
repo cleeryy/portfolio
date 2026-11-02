@@ -48,11 +48,13 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
    context, no second program, no allocation: the value is a scalar in `state`.
 
    In V6 the pointer adds **the loupe** (`uLens`, `uLensR`, `uLensOn`, `uMark`):
-   the screen's cell grows again, the contour prints a hair out of register, and
-   the glass edge lays one ring of the survey mark. `getPointer()` is a
-   synchronous read from the one shared pointer module — no second listener, no
-   second RAF — and the positions are damped here with the same 0.18 constant.
-   Under reduced motion the loop never starts, so the aperture stays at zero.
+   under the glass the ink is printed 2.3× denser, the screen's cell reaches
+   three device pixels and holds ink back into dots, the contour prints a second
+   time 2.4 px out of register, and the rim, one inner highlight and the
+   measuring reticle bound it. `getPointer()` is a synchronous read from the one
+   shared pointer module — no second listener, no second RAF — and the positions
+   are damped here with the same 0.18 constant. Under reduced motion the loop
+   never starts, so the aperture stays at zero.
    ========================================================================== */
 
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
@@ -61,7 +63,8 @@ const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
     framebuffer, so three's colour management never enters the path. */
 const INK: [number, number, number] = [0x13 / 255, 0x1c / 255, 0x19 / 255]
 
-/** Raw sRGB, matching --mark (#bf1f34): the ring the loupe lays on the plate. */
+/** Raw sRGB, matching --mark (#bf1f34): the rim, the reticle and the ticks the
+    loupe lays on the plate. */
 const MARK: [number, number, number] = [0xbf / 255, 0x1f / 255, 0x34 / 255]
 
 /** Radius of the loupe, in UV. The brief's 0.085: about 76 px on a 900 px
@@ -76,8 +79,10 @@ const LENS_DAMP = 11.9
     DESIGN.md, with room for 8-bit rounding at the top of the printed ladder.
     The coarse print can only widen *coverage*: every pixel's alpha is still
     clamped to this ceiling at the end of the shader, so a coarse frame is denser
-    but never darker than a fine one. Measured on the rendered page: see the lane
-    report. */
+    but never darker than a fine one. The one exception is the loupe: under the
+    glass the brief lets the print reach 2.3× this ceiling, because a magnifier
+    that cannot darken the ink reveals nothing. The guard is restored outside
+    the ring. Measured on the rendered page: see the lane report. */
 const INK_BUDGET = 0.056
 
 /** It is texture, not detail. */
@@ -175,6 +180,10 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     uPulse: { value: 0 },
     uCoarse: { value: 0 },
     uBudget: { value: INK_BUDGET },
+    // Device pixels per CSS pixel, as the renderer actually draws: the shader
+    // needs it to keep the rim and reticle at a fixed CSS width after the DPR
+    // ladder has scaled the buffer back.
+    uDpr: { value: 1 },
     uInk: { value: new Vector3(INK[0], INK[1], INK[2]) },
     uLens: { value: new Vector2(0.5, 0.5) },
     uLensR: { value: LENS_RADIUS },
@@ -222,6 +231,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     renderer.setPixelRatio(ratio)
     renderer.setSize(w, h, false)
     uniforms.uAspect.value = w / h
+    uniforms.uDpr.value = ratio
 
     if (reduced) drawOnce()
   }

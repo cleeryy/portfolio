@@ -27,12 +27,14 @@
      so the contours break into a chain of dots. The sheet is being dragged under
      the lamp, not glitched: no split channels, no random noise, one program, one
      branchless path.
-   - under the pointer, `uLens` / `uLensR` / `uLensOn` open a loupe: the screen's
-     cell grows again (never past three device pixels), the contour field is
-     sampled a second time a hair to the side so the line doubles, and the rim of
-     the glass takes the survey crimson at 35 % on that doubled line. It can only
-     add a second impression, never more ink per pixel: the `uBudget` clamp at the
-     foot of the shader still owns the reading column's contrast.
+   - under the pointer, `uLens` / `uLensR` / `uLensOn` open a loupe. A printer's
+     magnifier reveals the print instead of washing it: inside the glass the ink
+     is denser (the reading-column budget is deliberately relaxed under the
+     lens), the ordered screen is a full 3-device-pixel cell, the contour prints
+     a second time 2.4 px out of register, and the glass is bounded by a hard
+     crimson rim, one 1 px inner highlight and a measuring reticle (one circle at
+     0.62 R plus eight ticks at 45°). At `uLensOn = 0` every added term is
+     exactly zero — the frame is the phase-A frame, pixel for pixel.
 
    Everything is analytic and allocation-free: six uniforms change per frame
    and the pixel cost is eight value-noise samples — four for the warp, three
@@ -59,6 +61,7 @@ export const ATMOSPHERE_FRAG = /* glsl */ `
   uniform float uPulse;
   uniform float uCoarse;
   uniform float uBudget;
+  uniform float uDpr;
   uniform vec3 uInk;
   uniform vec2 uLens;
   uniform float uLensR;
@@ -120,29 +123,41 @@ export const ATMOSPHERE_FRAG = /* glsl */ `
     return v;
   }
 
+  /* The sheet's height at a warped position. Factored out because the loupe
+     samples it a second time, 2.4 px out of register. */
+  float landformAt(vec2 p, vec2 drift) {
+    vec2 warp = vec2(
+      fbm2(p * 0.46 + drift) - 0.42,
+      fbm2(p * 0.46 + drift + vec2(13.1, 7.4)) - 0.42
+    );
+    return fbm3(p * 0.40 + warp * 1.9 + drift * 0.55);
+  }
+
   void main() {
     vec2 s = (vUv - 0.5) * vec2(uAspect, 1.0);
+
+    /* One device pixel in UV, needed by the loupe's screen and safe to take
+       here: a derivative inside the per-pixel branch below would be undefined
+       where the glass edge cuts a warp. cssPx is the same unit in CSS pixels,
+       so the rim, highlight and reticle keep their stated widths at any DPR. */
+    vec2 texel = fwidth(vUv);
+    float cssPx = max(texel.y * uDpr, 1.0e-6);
 
     /* 1. The lens. s · (1 + bend·r²) samples further out at the edges, so the
           middle of the plate magnifies — the bend a sheet takes when it is
           thrown, not a wobble. A plate change presses it further. */
     float bend = clamp(uBend + uPulse * 0.75, -1.6, 1.6);
-    vec2 p = s * (1.0 + bend * 0.30 * dot(s, s)) * 2.35;
 
     /* The sheet is never still: a drift that takes a few seconds to walk one
        contour line past a fixed point. */
     vec2 drift = vec2(uTime * 0.0130, uTime * -0.0082);
 
-    /* 2. Domain warp. */
-    vec2 warp = vec2(
-      fbm2(p * 0.46 + drift) - 0.42,
-      fbm2(p * 0.46 + drift + vec2(13.1, 7.4)) - 0.42
-    );
-    float field = fbm3(p * 0.40 + warp * 1.9 + drift * 0.55);
+    /* 2/3. Domain warp, then contours and the index contour every fifth level.
+            uCoarse spreads the hairline before the screen breaks it: ink under
+            pressure is wider, then it is not there. */
+    vec2 p = s * (1.0 + bend * 0.30 * dot(s, s)) * 2.35;
+    float field = landformAt(p, drift);
 
-    /* 3. Contours, and the index contour every fifth level. uCoarse spreads
-          the hairline before the screen breaks it: ink under pressure is wider,
-          then it is not there. */
     float spread = 1.0 + 2.2 * uCoarse;
     float g = field * 31.0;
     float wLine = max(fwidth(g), 1.0e-5) * spread;
@@ -163,65 +178,83 @@ export const ATMOSPHERE_FRAG = /* glsl */ `
 
     ink *= density;
 
-    /* 5. The loupe. Under the pointer the glass sits on the sheet: the screen's
-          cell grows, and the contour is printed a hair out of register, so one
-          hairline becomes two. The second sample is only taken inside the glass
-          (outside it ring is exactly zero, so the branch is coherent for most
-          of the sheet), and it reuses the first sample's line widths — a
-          derivative inside a per-pixel branch would be undefined where the
-          glass edge cuts a warp.
+    /* 5. The loupe. The aperture is eased in scene.ts; every term below is
+          multiplied by it, so a closed loupe is exactly the phase-A print. */
+    float lensOn = clamp(uLensOn, 0.0, 1.0);
+    float ring = 0.0;
+    float disc = 0.0;
+    float rim = 0.0;
+    float reticle = 0.0;
+    float tick = 0.0;
+    float highlight = 0.0;
 
-          ring already carries uLensOn, so a closed loupe changes nothing:
-          at zero every term below collapses to the original print. The rim
-          takes uMark — 35 % on the doubled line, and the glass edge's own
-          share under it — while the alpha is never touched: the loupe can
-          reveal a coarser screen, never a darker reading column. */
-    float d = length((vUv - uLens) * vec2(uAspect, 1.0));
-    // Reversed edges are undefined in GLSL, so the ring is written as its
-    // complement: 1 inside 0.72 · r, 0 outside r.
-    float ring = (1.0 - smoothstep(uLensR * 0.72, uLensR, d)) * uLensOn;
-    float markMix = 0.0;
-    float rimMix = 0.0;
+    if (lensOn > 0.0) {
+      vec2 q = (vUv - uLens) * vec2(uAspect, 1.0);
+      float d = length(q);
 
-    if (ring > 0.001) {
-      vec2 lensUv = vUv + vec2(0.0016, 0.0007) * ring;
-      vec2 s2 = (lensUv - 0.5) * vec2(uAspect, 1.0);
-      vec2 p2 = s2 * (1.0 + bend * 0.30 * dot(s2, s2)) * 2.35;
+      /* 1. The falloff, 1 at the centre and 0 at the glass edge. */
+      ring = (1.0 - smoothstep(uLensR * 0.72, uLensR, d)) * lensOn;
 
-      vec2 warp2 = vec2(
-        fbm2(p2 * 0.46 + drift) - 0.42,
-        fbm2(p2 * 0.46 + drift + vec2(13.1, 7.4)) - 0.42
-      );
-      float field2 = fbm3(p2 * 0.40 + warp2 * 1.9 + drift * 0.55);
+      /* The same aperture with the hard edge the screen needs: a lens does not
+         crossfade its image, it is bounded. */
+      disc = (1.0 - smoothstep(uLensR * 0.94, uLensR, d)) * lensOn;
 
-      float g2 = field2 * 31.0;
-      float line2 = 1.0 - smoothstep(wLine * 0.16, wLine * 0.62, abs(fract(g2 + 0.5) - 0.5));
+      /* Increment 1 — ink density. The plate inside the glass is printed
+         heavier: 2.3× the contour term, clamped. This is the whole reason a
+         loupe exists — the outside ink is deliberately faint, and magnifying a
+         faint mark only makes a larger faint mark. The reading-column budget
+         is relaxed by the same factor below, and only under the glass. */
+      float dens = mix(1.0, 2.3, ring);
+      ink = clamp(ink * dens, 0.0, 1.0);
 
-      float gi2 = g2 * 0.2;
-      float index2 = 1.0 - smoothstep(wIndex * 0.24, wIndex * 0.80, abs(fract(gi2 + 0.5) - 0.5));
+      /* Increment 2 — the second impression. One more sample of the same
+         contour field, 2.4 device pixels off, added at 85 %. A misregistered
+         plate doubles the hairline; it does not smear it, because the second
+         impression is a full-width contour and not a blurred copy. */
+      vec2 off = vec2(0.78, 0.63) * texel * 2.4;
+      vec2 sB = (vUv + off - 0.5) * vec2(uAspect, 1.0);
+      vec2 pB = sB * (1.0 + bend * 0.30 * dot(sB, sB)) * 2.35;
+      float fieldB = landformAt(pB, drift);
+      float gB = fieldB * 31.0;
+      float lineB = 1.0 - smoothstep(wLine * 0.16, wLine * 0.62, abs(fract(gB + 0.5) - 0.5));
+      float giB = gB * 0.2;
+      float indexB = 1.0 - smoothstep(wIndex * 0.24, wIndex * 0.80, abs(fract(giB + 0.5) - 0.5));
+      float inkB = (lineB * 0.55 + indexB) * density;
+      ink = clamp(ink + inkB * dens * 0.85, 0.0, 1.0);
 
-      float ink2 = (line2 * 0.55 + index2) * density;
+      /* Increment 4 — the rim is a lens edge, not a halo. 1.5 CSS px of --mark
+         at 0.8, transferred over 0.02 R at most: hard enough to read as the
+         cut edge of glass at 100 %, with no wash across the disc.
 
-      // The second impression joins the first; max keeps a crossing from
-      // printing darker than either line.
-      ink = max(ink, ink2 * ring);
+         The coverage is analytic rather than a smoothstep on the distance: a
+         1.5 px band sampled at 1 px can miss whole fragments, which is what
+         made the first pass a dashed line. A box filter over one device pixel
+         keeps the edge hard and the ring continuous at any DPR. */
+      float rimHalf = 0.75 * cssPx;
+      float rimEdge = abs(d - uLensR);
+      float rimCov = clamp((rimHalf - rimEdge) / max(texel.y, 1.0e-6) + 0.5, 0.0, 1.0);
+      rim = rimCov * lensOn * 0.8;
 
-      // One ring of crimson where the glass edge passes. A band, not the disc:
-      // the tint rides on whatever the screen prints there, so the circle is
-      // broken by the same dots as the rest of the plate and never becomes a
-      // vector outline laid over the paper.
-      float rim =
-        smoothstep(uLensR * 0.88, uLensR * 0.91, d) *
-        (1.0 - smoothstep(uLensR * 0.95, uLensR * 0.98, d));
-      rimMix = rim * uLensOn;
-      // The doubled line takes the mark at 35 %...
-      markMix = rimMix * 0.35;
+      /* One CSS pixel of white at 4 % just inside the edge: the light that
+         catches the bevel. It is a highlight, never a fill. */
+      float hiEdge = abs(d - (uLensR - 2.0 * cssPx));
+      float hiCov = clamp((0.5 * cssPx - hiEdge) / max(texel.y, 1.0e-6) + 0.5, 0.0, 1.0);
+      highlight = hiCov * lensOn * 0.04;
 
-      /* A ring that exists only where a contour happens to cross the rim is
-         not a rim. The glass edge lays a band of its own, at the same alpha
-         ceiling as any other ink, and the screen breaks it into the same dots
-         as the rest of the plate: a printed circle, not a vector overlay. */
-      ink = max(ink, rimMix);
+      /* Increment 5 — the measuring reticle. One hairline circle at 0.62 R and
+         eight 2 px ticks on the inner edge at 45° steps, all --mark at 0.28.
+         This is the difference between a printer's loupe and a browser
+         magnifier; it is quiet enough to sit under the ink. */
+      float circleEdge = abs(d - uLensR * 0.62);
+      float circleCov = clamp((0.5 * cssPx - circleEdge) / max(texel.y, 1.0e-6) + 0.5, 0.0, 1.0);
+      reticle = circleCov * lensOn * 0.28;
+
+      float sector = abs(mod(atan(q.y, q.x) + 0.3926991, 0.7853982) - 0.3926991);
+      float lateral = sector * max(d, 1.0e-5);
+      float tickWidth = clamp((0.5 * cssPx - lateral) / max(texel.y, 1.0e-6) + 0.5, 0.0, 1.0);
+      float tickIn = clamp((d - (uLensR - 3.0 * cssPx)) / max(texel.y, 1.0e-6) + 0.5, 0.0, 1.0);
+      float tickOut = clamp(((uLensR - 0.75 * cssPx) - d) / max(texel.y, 1.0e-6) + 0.5, 0.0, 1.0);
+      tick = tickWidth * tickIn * tickOut * lensOn * 0.28;
     }
 
     /* 6. The screen. Six levels of ink through the 8 × 8 matrix, on cells that
@@ -230,36 +263,49 @@ export const ATMOSPHERE_FRAG = /* glsl */ `
           in screen space and quantised to the same cell, so it reads as paper
           tooth and not as video.
 
-          The tear: at the top of the throw the ink is kept only on the cells the
-          screen prints, which turns a widened hairline into a chain of dots
-          instead of a bar. It can only remove ink, so the contrast budget — the
-          alpha clamp at the foot of this shader — is never approached from
-          above.
-
-          The loupe adds its own coarsening to the same term, capped with the
-          throw at three device pixels. */
-    vec2 cell = floor(gl_FragCoord.xy / (1.0 + 2.0 * clamp(uCoarse + ring, 0.0, 1.0)));
+          Inside the glass the cell reaches three device pixels and the ladder
+          drops from six printed levels to three: the same ink is carried by
+          3 px dots and the empty cells between them, so a contour is read as a
+          halftone, not as a smooth darkening. It can only remove ink, never
+          add it, so the relaxed density above is untouched. */
+    vec2 cell = floor(gl_FragCoord.xy / (1.0 + 2.0 * clamp(uCoarse + disc, 0.0, 1.0)));
     float b = bayer8(cell);
 
     ink *= mix(1.0, 0.45 + 0.55 * smoothstep(0.22, 0.62, b), smoothstep(0.45, 1.0, uCoarse));
 
-    float v = clamp(ink, 0.0, 1.0) * 6.0;
-    v += (hash12(cell) - 0.5) * 0.55;
+    float levels = mix(6.0, 3.0, ring);
+    float v = clamp(ink, 0.0, 1.0) * levels;
+    // The grain is screen-space paper tooth; on a 3 px cell a full-strength
+    // tooth reads as frost over the glass, so the loupe damps it and leaves the
+    // print alone. At rest the multiplier is exactly 1.
+    v += (hash12(cell) - 0.5) * 0.55 * (1.0 - 0.85 * disc);
 
-    float level = (floor(max(v, 0.0)) + step(b, fract(v))) / 6.0;
+    float level = (floor(max(v, 0.0)) + step(b, fract(v))) / levels;
 
     /* Blank paper stays blank: no scattered dots where the field is empty.
-       The clamp is the contrast budget: the grain can push one level past the
-       top of the ladder, and the layer must never write more ink than stated. */
+       The clamp is the contrast budget outside the glass; under the glass the
+       budget is raised by the same 2.3× as the ink, and never above. */
     level = clamp(level * step(0.015, v), 0.0, 1.0);
 
-    /* ...and the glass edge itself carries the rest of the mark. At 35 % of a
-       5.6 % ink the ring is a grey smudge rather than a crimson one; the
-       remaining 65 % is what makes the rim read as one ring. The alpha below is
-       untouched, so the reading column's contrast is exactly what it was. */
-    vec3 tone = mix(uInk, uMark, markMix);
-    tone = mix(tone, uMark, rimMix * 0.65);
+    float budget = uBudget * mix(1.0, 2.3, ring);
+    vec4 plate = vec4(uInk, level * budget);
 
-    gl_FragColor = vec4(tone, level * uBudget);
+    /* The marks are furniture on the plate, not ink over the reading column:
+       they carry their own alpha instead of the print's ladder. */
+    float markA = max(rim, max(reticle, tick));
+    if (markA > 0.0) {
+      float a = markA + plate.a * (1.0 - markA);
+      vec3 rgb = (uMark * markA + plate.rgb * plate.a * (1.0 - markA)) / max(a, 1.0e-4);
+      plate = vec4(rgb, a);
+    }
+
+    /* The bevel. White at four per cent, composited over the print. */
+    if (highlight > 0.0) {
+      float a = highlight + plate.a * (1.0 - highlight);
+      vec3 rgb = (vec3(1.0) * highlight + plate.rgb * plate.a * (1.0 - highlight)) / max(a, 1.0e-4);
+      plate = vec4(rgb, a);
+    }
+
+    gl_FragColor = plate;
   }
 `
