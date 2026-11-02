@@ -1,0 +1,274 @@
+/* ============================================================================
+   operator.css — the operator, on ink
+   ----------------------------------------------------------------------------
+   The second half of the dark passage. `#flight` turns the sheet to ink and
+   hands over here with no light seam, and this chapter keeps the ink through its
+   whole height, so the reader crosses the operator and the contact chapter
+   without a flash of ground in between.
+
+   The surface and every ink on it come from `.on-deep` in base.css, which
+   re-points `--text`, `--text-soft`, `--text-quiet` and `--rule` at the deep
+   palette. This file therefore writes no colour of the deep theme of its own —
+   no second dark surface, no invented `--deep-2` panel.
+
+   Composition: a vertical margin label, one reading column, and the four facts
+   as a ledger in the right margin, aligned to the title's cap-height the way a
+   plate's cartouche sits against its title block. Nothing is a card: the ledger
+   is ruled top and bottom and hangs on the field.
+
+   Accent: exactly one crimson mark on the chapter, the 76 × 2 registration tick
+   on the top rule — the same length and the same position as the mark in every
+   other chapter. The ledger's rules are `--rule`, which under `.on-deep` is the
+   quiet ink-green; the link's hairline turns crimson under the pointer, as every
+   link on the sheet does, because that is a response and not a mark.
+
+   The top rule is the one place the brief asks for `--deep-ink-2` rather than
+   `--rule`. `initSectionRig` stands that border down and injects its own
+   `.rig-rule`, which is painted `--rule` in ui.css — so both are repainted here,
+   otherwise the rule would change colour the moment the script takes over.
+   ========================================================================== */
+
+.op {
+  /* `border-top`, not a child element: the rig draws this border where it is,
+     and a failed script leaves it printed. */
+  position: relative;
+  padding-block: clamp(4.5rem, 10vw, 9rem) clamp(4rem, 8vw, 7rem);
+  padding-inline: var(--gutter);
+  border-top: var(--hair) solid var(--deep-ink-2);
+  /* The fixed bar must not cover the chapter when `/#operator` is followed. */
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* ---------------------------------------------------------------------------
+   The field — rail · reading · ledger
+   ---------------------------------------------------------------------------
+   The rail spans all three rows and stretches to the field's height, so its
+   coordinate prints at the foot of the chapter and its label at the head: one
+   margin reading running the length of the composition.
+   --------------------------------------------------------------------------- */
+
+.op__inner {
+  display: grid;
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(10rem, 17rem);
+  grid-template-areas:
+    'rail title facts'
+    'rail text  facts'
+    'rail more  facts';
+  align-items: start;
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: clamp(1.5rem, 2.6vw, 2.25rem);
+}
+
+.op__rail {
+  grid-area: rail;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-6);
+}
+
+/* The margin label, set down the rail. `vertical-rl` is how a printed sheet
+   names a margin: the words run top to bottom and the rail stays one line wide.
+   Its tracking is opened a step — vertical text set at the mono's own 0.02em
+   reads as a stack of letters rather than a word. The section prefix keeps this
+   rule ahead of `.mono` whatever order the stylesheets load in. */
+.op .op__margin {
+  margin: 0;
+  padding-block-start: 0.55rem;
+  writing-mode: vertical-rl;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  color: var(--text-quiet);
+}
+
+/* The reference and its measurement, printed at the foot of the rail. */
+.op__ref {
+  margin: 0;
+  color: var(--text-quiet);
+}
+
+/* ---------------------------------------------------------------------------
+   Title and prose
+   --------------------------------------------------------------------------- */
+
+.op__title {
+  grid-area: title;
+  max-width: 22ch;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.04;
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+}
+
+.op__text {
+  grid-area: text;
+  max-width: var(--measure);
+}
+
+.op__para {
+  margin: 0;
+  font-size: var(--step-1);
+  line-height: 1.55;
+  color: var(--text-soft);
+}
+
+.op__para + .op__para {
+  margin-block-start: 1.05em;
+}
+
+/* ---------------------------------------------------------------------------
+   The ledger — four readings, right margin
+   ---------------------------------------------------------------------------
+   Aligned to the title's cap-height rather than to the top of its line box: the
+   ledger's first rule sits on the same line the title is set on, which is what
+   makes it read as a cartouche and not as a second column of prose.
+   --------------------------------------------------------------------------- */
+
+.op__facts {
+  grid-area: facts;
+  align-self: start;
+  max-width: 22rem;
+  margin: 0.55rem 0 0;
+  border-block: var(--hair) solid var(--rule);
+  font-size: var(--step--2);
+  color: var(--text-soft);
+}
+
+.op__fact {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--s-4);
+  align-items: baseline;
+  padding-block: 0.6rem;
+}
+
+/* The row rule is a border, not a child: a ledger is ruled, and a border cannot
+   be left behind by a failed script. */
+.op__fact + .op__fact {
+  border-block-start: var(--hair) solid var(--rule);
+}
+
+.op__fact-key {
+  margin: 0;
+  color: var(--text-quiet);
+}
+
+.op__fact-value {
+  margin: 0;
+  text-align: end;
+  color: var(--text-soft);
+  overflow-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------------------
+   The way out
+   ---------------------------------------------------------------------------
+   A text link, not a plate: the chapter ends on the way to the record, and a
+   filled control here would make the page look like it was asking for
+   something. The hairline under the label is drawn twice for the two registers
+   of `Rollover` — by `--roll-rule` when the label splits into characters, by
+   `text-decoration` when it stays plain (narrow sheet, coarse pointer, reduced
+   motion).
+   --------------------------------------------------------------------------- */
+
+.op__more {
+  grid-area: more;
+  justify-self: start;
+  display: inline-block;
+  padding-block: 0.3rem;
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--deep-ink-2);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+  --roll-rule: var(--deep-ink-2);
+}
+
+.op__more:hover,
+.op__more:focus-visible {
+  text-decoration-color: var(--mark);
+  --roll-rule: var(--mark);
+}
+
+/* The drawable copies of the chapter's top rule, and the one accent on it. */
+.op .rig-rule {
+  background-color: var(--deep-ink-2);
+}
+
+.op .op__mark {
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Narrower sheets
+   ---------------------------------------------------------------------------
+   The ledger gives width first, because the prose is the chapter and the
+   readings are annotations.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+  .op__inner {
+    grid-template-columns: var(--rail) minmax(0, 1fr) minmax(10rem, 13rem);
+  }
+}
+
+/* The rail turns horizontal above the title and the ledger moves under the
+   prose: the same four readings, in the order a phone reads them. */
+@media (max-width: 900px) {
+  .op {
+    padding-block-start: clamp(3.5rem, 9vw, 6rem);
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .op__inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'rail'
+      'title'
+      'text'
+      'facts'
+      'more';
+    row-gap: clamp(1.5rem, 4vw, 2rem);
+  }
+
+  .op__rail {
+    align-self: auto;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+  }
+
+  .op .op__margin {
+    padding-block-start: 0;
+    writing-mode: horizontal-tb;
+    letter-spacing: var(--tracking-mono);
+    white-space: normal;
+  }
+
+  .op__facts {
+    max-width: none;
+    margin-block-start: 0;
+  }
+
+  .op__more {
+    /* A thumb needs the target, not the label. */
+    min-block-size: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
