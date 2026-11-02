@@ -1,0 +1,576 @@
+/* ============================================================================
+   practice-page.css — the offensive record
+   ----------------------------------------------------------------------------
+   One field, three ruled chapters, one ink break. The page is a document in the
+   register's grammar: a title block opening on the sheet's ink rule and its
+   76 × 2 registration tick, then ranges, accounts and instruments, each under a
+   ruled header.
+
+   **One track for the header and the rows.** `--pr-cols` and `--pr-gap` are
+   declared once on the page and used by the rows, so a name, a technique and
+   the off-sheet mark line up from the first row to the last.
+
+   **The entry is its hairline, not a box.** Nothing is filled, rounded or
+   shadowed. A row is a bottom rule and four readings above it, and the whole
+   ruled line is the link.
+
+   **The response is colour plus a width lift**, exactly as in the register: the
+   rule darkens to `--ink`, the name opens to 106 on the width axis, and the
+   off-sheet tick inks. Only the width lift is transitioned, and only inside
+   `prefers-reduced-motion: no-preference`; hover is declared under
+   `@media (hover: hover)` so a tap leaves nothing sticky behind.
+
+   **The ask is the page's one dark break.** `on-deep` re-points the tokens; the
+   band bleeds to the viewport edges with the negative gutter and the content is
+   constrained back to the field. One crimson mark, no second dark surface.
+
+   **The phone is a block, not a squeezed table.** Date and kind on one mono
+   line with the tick at its end, then the name, then the technique printed in
+   full. The whole block is still the link, with a 44px floor under the thumb.
+   ========================================================================== */
+
+.pr {
+  /* The page's one track and one gap, shared by every row of the two registers. */
+  --pr-cols: repeat(12, minmax(0, 1fr));
+  --pr-gap: clamp(1rem, 2vw, 2rem);
+
+  padding-block: calc(var(--nav-h) + clamp(2rem, 6vw, 4rem)) clamp(4rem, 9vw, 7rem);
+  padding-inline: var(--gutter);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* ---------------------------------------------------------------------------
+   The field and its opening rule
+   --------------------------------------------------------------------------- */
+
+.pr__inner {
+  position: relative;
+  inline-size: 100%;
+  max-inline-size: var(--field);
+  min-inline-size: 0;
+  margin-inline: auto;
+  padding-block-end: clamp(2.5rem, 6vw, 4.5rem);
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+/* The sheet's registration tick: 76 × 2, laid on the rule, at its left end. */
+.pr__mark {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--hair));
+  inset-inline-start: 0;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Head — count, title, lead
+   ---------------------------------------------------------------------------
+   The register's three-column opening: the measurement in the annotation rail,
+   the title on the reading column, the lead in the right half. Below 900px it
+   is one column, read count → title → lead.
+   --------------------------------------------------------------------------- */
+
+.pr__head {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 46ch);
+  grid-template-areas: 'count title lead';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: var(--s-5);
+  padding-block-start: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.pr__count {
+  grid-area: count;
+  /* Lands on the title's cap line rather than on its line box. */
+  padding-block-start: 0.65rem;
+  color: var(--ink-2);
+}
+
+.pr .pr__title {
+  grid-area: title;
+  max-inline-size: 14ch;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.pr__lead {
+  grid-area: lead;
+  max-inline-size: 46ch;
+  padding-block-start: 0.55rem;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Blocks — a ruled header, then a register
+   --------------------------------------------------------------------------- */
+
+.pr__block {
+  margin-block-start: clamp(2.75rem, 6vw, 4.5rem);
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+/* The first chapter opens the body of the page, so its rule is ink. */
+.pr__block:first-of-type {
+  border-block-start-color: var(--ink);
+}
+
+.pr__block-head {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  align-items: baseline;
+  padding-block: var(--s-3) clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+/* A label is an annotation, not a second title: mono, regular and quiet. The
+   `.pr` prefix keeps it ahead of the base `h2` whatever order the stylesheets
+   load in. */
+.pr .pr__block-label {
+  margin: 0;
+  font-weight: var(--w-regular);
+  line-height: 1.5;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.pr .pr__block-lead {
+  max-inline-size: 52ch;
+  margin: 0;
+  font-size: var(--step-0);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Rows — one link, four readings and the off-sheet mark
+   --------------------------------------------------------------------------- */
+
+.pr__list {
+  margin: 0;
+  padding: 0;
+}
+
+.pr__item {
+  min-inline-size: 0;
+}
+
+/* The whole line is the target. The border is the entry: a register has no
+   cards, only rules. */
+.pr__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--pr-cols);
+  column-gap: var(--pr-gap);
+  align-items: baseline;
+  padding-block: 0.95rem;
+  color: var(--ink);
+  text-decoration: none;
+  border-block-end: var(--hair) solid var(--contour);
+  /* A rule darkening is a colour change, not a movement: it survives reduced
+     motion, and every pointer gets it. */
+  transition: border-block-end-color var(--t-fast) var(--ease-out);
+}
+
+/* Every cell shrinks rather than widening the field. */
+.pr__row > * {
+  min-inline-size: 0;
+}
+
+/* The year is a coordinate: printed whole, never broken at its hyphens. */
+.pr__year {
+  grid-column: 1 / span 2;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+/* The kind is the margin annotation beside the year, not a tag. */
+.pr__kind {
+  grid-column: 3 / span 2;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+
+.pr__name {
+  grid-column: 5 / span 4;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  /* The body width at rest; the hover state lifts it six points. */
+  font-stretch: var(--width-body);
+  line-height: 1.12;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  /* A long name breaks inside its column instead of pushing the grid wider. */
+  overflow-wrap: break-word;
+}
+
+/* Two lines, never three: the register's rows keep one rhythm. */
+.pr__technique {
+  grid-column: 9 / span 3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: clip;
+  font-size: var(--step-0);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* The printed "continues off-sheet" mark: 14 × 1 at the end of the row. */
+.pr__ext {
+  grid-column: 12 / span 1;
+  justify-self: end;
+  align-self: center;
+  inline-size: 14px;
+  block-size: var(--hair);
+  background-color: var(--ink-3);
+  transition: background-color var(--t-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+/* The accounts. Same row, different reading order: the platform is the margin
+   note, the handle is the name, and the profile's own figures take the middle. */
+.pr__row--account .pr__plat {
+  grid-column: 1 / span 3;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+
+.pr__row--account .pr__handle {
+  grid-column: 4 / span 3;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.12;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.pr .pr__note {
+  grid-column: 7 / span 5;
+  margin: 0;
+  font-size: var(--step-0);
+  line-height: 1.45;
+  color: var(--ink-2);
+  overflow-wrap: break-word;
+}
+
+.pr__row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  /* The sheet has square corners; the base ring's 1px radius is not wanted. */
+  border-radius: 0;
+  border-block-end-color: var(--ink);
+}
+
+.pr__row:focus-visible .pr__ext {
+  background-color: var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pr__name,
+  .pr__row--account .pr__handle {
+    transition: font-stretch var(--t-base) var(--ease-out);
+  }
+
+  .pr__row:focus-visible .pr__name,
+  .pr__row--account:focus-visible .pr__handle {
+    font-stretch: 106%;
+  }
+}
+
+/* Hover is a response, so it is only declared for a device that can hover: a
+   tap leaves no sticky width lift behind. */
+@media (hover: hover) {
+  .pr__row:hover {
+    border-block-end-color: var(--ink);
+  }
+
+  .pr__row:hover .pr__ext {
+    background-color: var(--ink);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .pr__row:hover .pr__name,
+  .pr__row--account:hover .pr__handle {
+    font-stretch: 106%;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Instruments — label in the margin, one mono paragraph
+   ---------------------------------------------------------------------------
+   Four blocks, ruled like every other list on the sheet. The instruments are
+   joined with ` + `, never broken into chips: they are a reading, not a tag set.
+   --------------------------------------------------------------------------- */
+
+.pr__tools {
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.pr__tool {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  align-items: baseline;
+  padding-block: clamp(0.9rem, 1.8vw, 1.15rem);
+}
+
+.pr__tool:first-child {
+  padding-block-start: 0.9rem;
+}
+
+.pr__tool:last-child {
+  padding-block-end: 0;
+}
+
+.pr__tool + .pr__tool {
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.pr .pr__tool-label {
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: var(--w-regular);
+  line-height: 1.5;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.pr .pr__tool-items {
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.7;
+  color: var(--ink-2);
+  /* A long instrument name breaks inside the paragraph instead of widening the
+     field. */
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
+   The ask — the page's one dark break
+   ---------------------------------------------------------------------------
+   The negative gutter takes the band to the viewport edges; the padding brings
+   the field back. Every colour below is a token `.on-deep` re-points; the top
+   hairline is the deep theme's `--rule`, not a new line colour.
+   --------------------------------------------------------------------------- */
+
+.pr__ask {
+  position: relative;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+  padding-block: clamp(4rem, 8vw, 6.5rem);
+  border-block-start: var(--hair) solid var(--rule);
+}
+
+.pr__ask-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 34ch);
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: start;
+  max-inline-size: var(--field);
+  margin-inline: auto;
+}
+
+/* The band's one mark: a registration tick, the same length as the page's. */
+.pr__ask-mark {
+  grid-column: 1 / -1;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+  pointer-events: none;
+}
+
+/* A title, not a margin label: the display face at `--step-3`. */
+.pr .pr__ask-title {
+  grid-column: 1;
+  max-inline-size: 18ch;
+  margin: 0;
+  font-size: var(--step-3);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  line-height: 1.06;
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+  text-wrap: balance;
+}
+
+/* 34ch: a statement on an ink page, not a column of prose. */
+.pr .pr__ask-text {
+  grid-column: 2;
+  max-inline-size: 34ch;
+  margin: 0;
+  font-size: var(--step-1);
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.pr__ask-links {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: clamp(1.25rem, 3vw, 2.25rem);
+  row-gap: var(--s-2);
+  align-self: end;
+}
+
+/* The sheet's link register on ink: display type, a hairline underline, the
+   accent only in answer. */
+.pr .pr__ask-link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.3;
+  letter-spacing: -0.008em;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.pr .pr__ask-link:hover,
+.pr .pr__ask-link:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   The phone (≤900px)
+   ---------------------------------------------------------------------------
+   No twelve-column table: year and kind on one mono line with the tick at its
+   end, the name under at --step-2, the technique under at --step-0. The block
+   is still the link, with a 44px floor under the thumb.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .pr {
+    padding-block-start: calc(var(--nav-h-compact) + clamp(2rem, 7vw, 3rem));
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .pr__head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'count'
+      'title'
+      'lead';
+    row-gap: var(--s-3);
+  }
+
+  .pr__count,
+  .pr__lead {
+    padding-block-start: 0;
+  }
+
+  .pr .pr__title {
+    max-inline-size: 100%;
+  }
+
+  .pr__block-head {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-2);
+  }
+
+  .pr__row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'year kind ext'
+      'name name name'
+      'technique technique technique';
+    column-gap: var(--s-4);
+    row-gap: var(--s-2);
+    min-block-size: 44px;
+    padding-block: 0.9rem;
+  }
+
+  .pr__year {
+    grid-area: year;
+  }
+
+  .pr__kind {
+    grid-area: kind;
+  }
+
+  .pr__ext {
+    grid-area: ext;
+    align-self: center;
+  }
+
+  .pr__name {
+    grid-area: name;
+  }
+
+  /* The technique is the only description on the narrow sheet, so it is
+     printed in full: the two-line clamp is a table constraint, not editorial. */
+  .pr__technique {
+    grid-area: technique;
+    display: block;
+    -webkit-line-clamp: none;
+    line-clamp: none;
+    overflow: visible;
+  }
+
+  .pr__row--account {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'plat ext'
+      'handle handle'
+      'note note';
+  }
+
+  .pr__row--account .pr__plat,
+  .pr__row--account .pr__handle,
+  .pr .pr__note {
+    grid-column: auto;
+  }
+
+  .pr__row--account .pr__plat {
+    grid-area: plat;
+  }
+
+  .pr__row--account .pr__handle {
+    grid-area: handle;
+  }
+
+  .pr .pr__note {
+    grid-area: note;
+  }
+
+  .pr__tool {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.2rem;
+  }
+
+  .pr__ask-inner {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-4);
+  }
+
+  .pr .pr__ask-title,
+  .pr .pr__ask-text,
+  .pr__ask-links {
+    grid-column: 1;
+  }
+
+  .pr .pr__ask-text {
+    max-inline-size: 100%;
+  }
+}

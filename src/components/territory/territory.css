@@ -492,6 +492,37 @@ text {
 }
 
 /* ---------------------------------------------------------------------------
+   The dive — the printed matter goes, the drawing stays
+   ---------------------------------------------------------------------------
+   The scene writes `data-dive="deep"` on the section once the camera is inside
+   the fabric plan. Everything that is a caption of the drawing dissolves with
+   it: the chapter's title block, the plate's controls and reading line, the
+   legend and the note. The register below is not part of this — it is the
+   inventory the reader has not read yet, and the dive is not allowed to take
+   content off the sheet. Opacity only: no box changes size, so the dive cannot
+   move `#operator` or change the document's height.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .tty__head,
+  .tty__plate-head,
+  .tty__readout,
+  .tty__legend,
+  .tty__plate-note {
+    transition: opacity var(--t-slow) var(--ease-out);
+  }
+}
+
+.tty[data-dive='deep'] .tty__head,
+.tty[data-dive='deep'] .tty__plate-head,
+.tty[data-dive='deep'] .tty__readout,
+.tty[data-dive='deep'] .tty__legend,
+.tty[data-dive='deep'] .tty__plate-note {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
    Register — the same inventory, as a ledger
    --------------------------------------------------------------------------- */
 

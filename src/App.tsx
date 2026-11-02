@@ -11,6 +11,7 @@ import InstrumentChrome from './components/chrome/InstrumentChrome'
 import PointerHud from './components/chrome/PointerHud'
 import AboutPage from './components/about/AboutPage'
 import NotesPage from './components/notes/NotesPage'
+import PracticePage from './components/practice/PracticePage'
 import NotFound from './components/site/NotFound'
 import Reprint from './components/site/Reprint'
 import ProjectFile from './components/project/ProjectFile'
@@ -27,7 +28,7 @@ import { sound } from './lib/sound'
 
 /** The chrome controls that answer with a relay tick. */
 const CUE_SELECTOR =
-  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a, .reg a, .file a, .nt a, .ab a'
+  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a, .reg a, .file a, .nt a, .pr a, .ab a'
 const NO_CUE = '.sound-toggle, [data-no-cue]'
 
 /**
@@ -58,9 +59,11 @@ export default function App() {
       ? 'work'
       : route.path === '/notes'
         ? 'notes'
-        : route.path === '/about'
-          ? 'about'
-          : 'notFound'
+        : route.path === '/practice'
+          ? 'practice'
+          : route.path === '/about'
+            ? 'about'
+            : 'notFound'
 
   // One refresh point for the whole page: webfonts land after first layout, and
   // every pinned or measured trigger has to be re-read once they do.
@@ -174,6 +177,8 @@ export default function App() {
         <Register />
       ) : route.path === '/notes' ? (
         <NotesPage />
+      ) : route.path === '/practice' ? (
+        <PracticePage />
       ) : route.path === '/about' ? (
         <AboutPage />
       ) : route.params.slug ? (

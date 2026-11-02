@@ -2,6 +2,7 @@ import { blogUrl } from '../../content/contact'
 import { notes, notesCopy, notesKindLabel } from '../../content/notes'
 import type { Note } from '../../content/notes'
 import { useLang } from '../../lib/i18n'
+import { Link } from '../../lib/router'
 import Ghost from '../type/Ghost'
 import './notes-page.css'
 
@@ -142,6 +143,15 @@ export default function NotesPage() {
               {copy.allLabel}
             </a>
             <span className="nt__all-note mono">{copy.allNote}</span>
+          </p>
+
+          {/* The writing has a second half: the record of what was actually
+              solved. One line, in the same register, not a sixth route in the
+              bar. */}
+          <p className="nt__all">
+            <Link to="/practice" className="nt__all-link">
+              {copy.practiceCta}
+            </Link>
           </p>
         </footer>
       </div>
