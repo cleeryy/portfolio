@@ -71,6 +71,7 @@ export type AboutPageCopy = {
   recordLead: string
   domainsLabel: string
   domainsLead: string
+  practiceCta: string
   honestyTitle: string
   honesty: string
   contactCta: string
@@ -85,6 +86,7 @@ export const aboutPage: Bi<AboutPageCopy> = {
     recordLead: 'Dated, oldest first. School, work, and the lab.',
     domainsLabel: 'practice',
     domainsLead: 'Five domains, each with an honest qualifier and one thing to point at.',
+    practiceCta: 'The offensive record',
     honestyTitle: 'What is not here',
     honesty:
       'No certifications, no platform ranks, no user counts, no testimonials. Not because they were left out of the design — because they do not exist. If a number appears on this site, it comes from the thing it describes.',
@@ -98,6 +100,7 @@ export const aboutPage: Bi<AboutPageCopy> = {
     recordLead: fr('Daté, du plus ancien au plus récent. L’école, le travail, et le labo.'),
     domainsLabel: 'pratique',
     domainsLead: fr('Cinq domaines, chacun avec une mention honnête et une chose à montrer.'),
+    practiceCta: 'Le registre offensif',
     honestyTitle: 'Ce qui n’est pas là',
     honesty: fr('Pas de certification, pas de classement de plateforme, pas de nombre d’utilisateurs, pas de témoignage. Non pas parce qu’ils ont été retirés du design — parce qu’ils n’existent pas. Si un chiffre apparaît sur ce site, il vient de la chose qu’il décrit.'),
     contactCta: 'M’écrire',

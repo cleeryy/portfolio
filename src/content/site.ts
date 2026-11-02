@@ -19,12 +19,13 @@ export const navItems: { id: string; label: Bi; href: string; kind: 'route' | 'a
 /** Home section ids, in reading order. The instrument chrome counts these. */
 export const homeSections = ['cover', 'work', 'territory', 'flight', 'operator', 'contact']
 
-export type RouteKey = 'cover' | 'work' | 'notes' | 'about' | 'notFound'
+export type RouteKey = 'cover' | 'work' | 'notes' | 'practice' | 'about' | 'notFound'
 
 export const titles: Record<RouteKey, Bi> = {
   cover: { en: 'cleeryy — infrastructure & security', fr: fr('cleeryy — infrastructure & sécurité') },
   work: { en: 'cleeryy — the register', fr: 'cleeryy — le registre' },
   notes: { en: 'cleeryy — field notes', fr: fr('cleeryy — notes de terrain') },
+  practice: { en: 'cleeryy — practice', fr: 'cleeryy — pratique' },
   about: { en: 'cleeryy — about', fr: 'cleeryy — à propos' },
   notFound: { en: 'cleeryy — no such plate', fr: 'cleeryy — planche introuvable' },
 }
@@ -41,6 +42,10 @@ export const descriptions: Record<RouteKey, Bi> = {
   notes: {
     en: 'Posts and writeups: Proxmox, SSH, Docker, and the CTF challenges I worked through.',
     fr: fr('Articles et writeups\u00a0: Proxmox, SSH, Docker, et les challenges CTF que j’ai traversés.'),
+  },
+  practice: {
+    en: 'Eight writeups and one CTF: the offensive record, the public accounts, and the instruments installed in the lab.',
+    fr: fr('Huit writeups et un CTF\u00a0: le versant offensif, les comptes publics et les instruments installés dans le labo.'),
   },
   about: {
     en: 'The record: school, work, the lab — and what is deliberately missing from this site.',

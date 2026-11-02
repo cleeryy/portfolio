@@ -303,6 +303,17 @@
   color: var(--ink-2);
 }
 
+/* The one way out of the practice chapter: a text link in the sheet's register,
+   set after the last discipline and ruled off it by the same space the blocks
+   use. No plate, no button. */
+.ab__practice-foot {
+  margin: clamp(1.5rem, 3vw, 2.25rem) 0 0;
+}
+
+.ab .ab__practice-foot .ab__cta {
+  font-size: var(--step-1);
+}
+
 /* ---------------------------------------------------------------------------
    Honesty — the page's one dark break
    ---------------------------------------------------------------------------

@@ -308,6 +308,11 @@
   row-gap: var(--s-1);
 }
 
+/* The second line of the foot — the record — sits one beat under the first. */
+.nt__all + .nt__all {
+  margin-block-start: var(--s-1);
+}
+
 /* The sheet's link register: a hairline underline, crimson only in answer. */
 .nt .nt__all-link {
   display: inline-flex;

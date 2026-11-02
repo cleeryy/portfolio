@@ -97,6 +97,14 @@ export default function AboutPage() {
               </article>
             ))}
           </div>
+
+          {/* The proof the chapter points at: the offensive record is a page of
+              its own, and this is the one way there from the honesty block. */}
+          <p className="ab__practice-foot">
+            <Link to="/practice" className="ab__cta">
+              {copy.practiceCta}
+            </Link>
+          </p>
         </section>
       </div>
 

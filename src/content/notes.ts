@@ -150,6 +150,7 @@ export type NotesCopy = {
   countLabel: string
   allLabel: string
   allNote: string
+  practiceCta: string
   yearLabel: string
   emptyYear: string
 }
@@ -161,6 +162,7 @@ export const notesCopy: Bi<NotesCopy> = {
     countLabel: 'entries',
     allLabel: 'Read everything',
     allNote: 'blog.cleeryy.cloud',
+    practiceCta: 'The offensive record',
     yearLabel: 'year',
     emptyYear: 'Nothing published this year.',
   },
@@ -170,6 +172,7 @@ export const notesCopy: Bi<NotesCopy> = {
     countLabel: 'entrées',
     allLabel: 'Tout lire',
     allNote: 'blog.cleeryy.cloud',
+    practiceCta: 'Le registre offensif',
     yearLabel: 'année',
     emptyYear: fr('Rien de publié cette année.'),
   },
