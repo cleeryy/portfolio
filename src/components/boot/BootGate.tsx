@@ -15,19 +15,20 @@ import './boot.css'
    progress hairline grows along it. Then the plate lifts as a transform wipe,
    bottom edge first, revealing the page already composed underneath.
 
-   What the three signals are — and nothing else:
+   What the two signals are — and nothing else:
 
    1. **the bundle** — this effect runs only once the main bundle has executed
       and React has committed, so it resolves immediately. It still counts: the
-      scale starts at 1/3 because the sheet really does have something to draw.
+      scale starts at 1/2 because the sheet really does have something to draw.
    2. **the type** — `document.fonts.ready`.
-   3. **the first WebGL frame** — the hero marks `data-scene="live"` (or
-      `poster`) once its plot has actually rendered. Read from the DOM rather
-      than from a prop, because the hero owns that state.
 
    No percentage, no file names, no counting to an invented target: the hairline
    only ever moves to the fraction of signals that have resolved, plus a creep
    that stops short of the next tick.
+
+   The plate no longer waits on a WebGL plot: the cover is type and a drawn
+   section, so there is no frame to await and no attribute to observe. Two
+   signals, both real.
 
    Timing: release starts at `RELEASE_MIN` at the earliest (so the plate does not
    flash) and at `RELEASE_CEILING` at the latest, whatever has not resolved. The
@@ -37,7 +38,7 @@ import './boot.css'
    It is never rendered when it cannot be honest about itself:
    - `prefers-reduced-motion` → no plate at all, content immediate;
    - a same-session return → no plate at all (not a faster one);
-   - a deep link (`/#about`) → no plate, the reader asked for a place, not a
+   - a deep link (`/#territory`) → no plate, the reader asked for a place, not a
      title card.
    ========================================================================== */
 
@@ -49,9 +50,9 @@ const RELEASE_MIN = 0.78
 const RELEASE_CEILING = 0.92
 const WIPE = 0.38
 
-const TOTAL_SIGNALS = 3
+const TOTAL_SIGNALS = 2
 
-type SignalKey = 'app' | 'fonts' | 'plot'
+type SignalKey = 'app' | 'fonts'
 type BootStatus = 'idle' | 'drawing' | 'ready'
 
 const STATUS_COPY: Record<Exclude<BootStatus, 'idle'>, Bi> = {
@@ -104,7 +105,6 @@ export default function BootGate() {
     if (!graticule || !figure || !handleEl || !ruleLine || !fill || !caption) return
 
     const t0 = performance.now()
-    const cleanups: (() => void)[] = []
     // A stable non-null reference for the callbacks created below: they run
     // after this effect has returned, and TypeScript cannot carry the guard in.
     const plateEl: HTMLDivElement = plate
@@ -112,7 +112,7 @@ export default function BootGate() {
     let released = false
     let timer: gsap.core.Tween | null = null
 
-    const done: Record<SignalKey, boolean> = { app: false, fonts: false, plot: false }
+    const done: Record<SignalKey, boolean> = { app: false, fonts: false }
     let left = TOTAL_SIGNALS
 
     const ctx = gsap.context(() => {
@@ -212,21 +212,6 @@ export default function BootGate() {
     /* 2. The type. */
     document.fonts.ready.then(() => settle('fonts'))
 
-    /* 3. The first frame of the plot. */
-    const hero = document.querySelector<HTMLElement>('.hero')
-    const plotReady = () =>
-      hero?.dataset.scene === 'live' || hero?.dataset.scene === 'poster'
-
-    if (!hero || plotReady()) {
-      settle('plot')
-    } else {
-      const observer = new MutationObserver(() => {
-        if (plotReady()) settle('plot')
-      })
-      observer.observe(hero, { attributes: true, attributeFilter: ['data-scene'] })
-      cleanups.push(() => observer.disconnect())
-    }
-
     /* The ceiling. Whatever is still missing, the plate leaves. */
     scheduleAt(RELEASE_CEILING)
 
@@ -234,7 +219,6 @@ export default function BootGate() {
       cancelled = true
       timer?.kill()
       ctx.revert()
-      for (const dispose of cleanups) dispose()
     }
   }, [])
 
