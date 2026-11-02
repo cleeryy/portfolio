@@ -341,10 +341,12 @@
   }
 
   /* The handle is the measure on a phone: at the fluid step it stopped ~100px
-     short of the right margin at 390px. 27vw fills it, capped at 8rem so a
-     tablet keeps the type at its own size; the tracking is unchanged. */
+     short of the right margin at 390px. 25.6vw fills the measure and keeps the
+     right side bearing: at 27vw the last `y` sat flush against the margin and
+     read as clipped. Capped at 8rem so a tablet keeps its own size; tracking
+     unchanged. */
   .cover__handle {
-    font-size: min(27vw, 8rem);
+    font-size: min(25.6vw, 8rem);
   }
 
   .cover__inner {
