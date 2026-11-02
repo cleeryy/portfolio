@@ -3,20 +3,23 @@ import Cover from '../components/cover/Cover'
 import Flight from '../components/flight/Flight'
 import Operator from '../components/operator/Operator'
 import Territory from '../components/territory/Territory'
+import WorkTraverse from '../components/work/WorkTraverse'
 
 /**
- * The home sheet: cover → territory → passage → operator → contact.
+ * The home sheet: cover → selected work → territory → passage → operator →
+ * contact.
  *
  * `<main id="top">` lives here, not in App: each page owns its own main, and a
- * section id belongs to the section component that renders it (`cover`,
- * `territory`, `flight`, `operator`, `contact`). `#work` is the pinned
- * horizontal traverse and arrives in Phase B, between the cover and the map.
+ * section id belongs to the section component that renders it (`cover`, `work`,
+ * `territory`, `flight`, `operator`, `contact`). The work traverse sits between
+ * the cover and the map: it is the first thing the cover's primary CTA reaches,
+ * and it hands the reader to the territory still on the sheet.
  */
 export default function Home() {
   return (
     <main id="top">
       <Cover />
-      {/* #work — the horizontal traverse arrives in Phase B */}
+      <WorkTraverse />
       <Territory />
       <Flight />
       <Operator />

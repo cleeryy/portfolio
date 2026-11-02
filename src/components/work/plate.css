@@ -1,0 +1,262 @@
+/* ============================================================================
+   plate.css — one project on the traverse
+   ----------------------------------------------------------------------------
+   A ruled entry, not a card. Three bands: a reference row (`W.01` left, the
+   domain right), the body (name and claim against the seal), and the foot
+   (instruments, status, the way into the file). Every band is separated by a
+   hairline and nothing is boxed, filled, rounded or shadowed.
+
+   The name is the plate's largest type and its only hover gesture: a hairline
+   under the word, drawn from the left with a transform. It is crimson because
+   it is a response to the pointer, not a mark left on the sheet — at rest the
+   rule is scaled to zero and costs no colour.
+
+   Composition: the body is a two-column grid — text first, seal second — so the
+   seal hangs at the top-right of the record and the claim keeps a readable
+   measure under the name. On a phone the seal steps down to 64px and the claim
+   takes the full width; the foot wraps rather than pushing the plate wider than
+   the screen.
+   ========================================================================== */
+
+.plate {
+  display: grid;
+  gap: 0;
+  min-inline-size: 0;
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------------------
+   Reference row
+   ---------------------------------------------------------------------------
+   The rule is the band's own border, not a child span: a border is printed even
+   if every script fails, and this row is a measurement, not a drawing.
+   --------------------------------------------------------------------------- */
+
+.plate__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-4);
+  padding-block: var(--s-2) var(--s-3);
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.plate__ref {
+  color: var(--ink-3);
+}
+
+.plate__domain {
+  color: var(--ink-2);
+  text-align: end;
+}
+
+/* ---------------------------------------------------------------------------
+   Body — name, claim, seal
+   --------------------------------------------------------------------------- */
+
+/* Two columns, three areas. The seal spans both text rows, so the name and the
+   claim keep the full reading column and the seal hangs beside them — auto
+   placement would otherwise drop the claim into the seal's column. */
+.plate__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name  seal'
+    'claim seal';
+  column-gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: start;
+  padding-block: clamp(1.25rem, 2.6vh, 2rem);
+}
+
+.plate__name {
+  grid-area: name;
+  position: relative;
+  display: inline-block;
+  /* Shrink-wraps the word so the hairline below is the width of the name, not
+     of the column. */
+  justify-self: start;
+  max-inline-size: 100%;
+  padding-block-end: 0.06em;
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: var(--step-5);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-plate);
+  line-height: 0.98;
+  letter-spacing: var(--tracking-plate);
+  text-wrap: balance;
+  /* A long slug must break rather than widen the plate. */
+  overflow-wrap: anywhere;
+}
+
+/* The response, not a mark: one hairline, scaled from the left. `transform`
+   only — no colour transition, no layout, nothing to reflow while it draws. */
+.plate__name::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--hair);
+  background-color: var(--mark);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--t-base) var(--ease-out);
+  pointer-events: none;
+}
+
+.plate__name:hover::after,
+.plate__name:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.plate__name:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+/* The seal sits in the body's second column, at the top-right of the record:
+   a cartouche, not an illustration beside the text. */
+.plate__seal {
+  grid-area: seal;
+  justify-self: end;
+  align-self: start;
+  inline-size: 96px;
+  block-size: 96px;
+  flex: none;
+}
+
+.plate__claim {
+  grid-area: claim;
+  margin: var(--s-3) 0 0;
+  max-inline-size: 32ch;
+  font-size: var(--step-2);
+  line-height: 1.3;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* The closing plate ends the selection in one sentence: it is the
+   chapter's end, set at title scale, and it carries no seal — the absence is
+   the signal that it is not a project. */
+.plate__claim--close {
+  margin-block-start: 0;
+  max-inline-size: 20ch;
+  font-size: var(--step-4);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Foot — instruments, state, the way in
+   --------------------------------------------------------------------------- */
+
+.plate__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  padding-block: var(--s-3) 0;
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.plate__stack {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+.plate__status {
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* A text link in the sheet's register: the hairline is drawn by `--roll-rule`
+   when the label rolls, and by `text-decoration` when it stays plain (narrow
+   sheet, coarse pointer, reduced motion). 44px of target for a thumb. */
+.plate__open {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--ink);
+  text-decoration: none;
+  --roll-rule: var(--contour);
+}
+
+.plate__open[data-roll='plain'] {
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.34em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.plate__open:hover,
+.plate__open:focus-visible {
+  --roll-rule: var(--mark);
+}
+
+.plate__open[data-roll='plain']:hover,
+.plate__open[data-roll='plain']:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   The closing plate
+   ---------------------------------------------------------------------------
+   Light, like the rest of the sheet: the dark belongs to the passage below, and
+   a second ink band here would promise a chapter break the page is not making.
+   Its top rule is the only difference — ink, so the traverse visibly closes.
+   --------------------------------------------------------------------------- */
+
+.plate--close .plate__top {
+  border-block-start-color: var(--ink);
+}
+
+/* No name and no seal: the closing plate is one statement, not a record with a
+   hole where the title goes. */
+.plate--close .plate__body {
+  display: block;
+}
+
+/* ---------------------------------------------------------------------------
+   The phone (≤900px)
+   ---------------------------------------------------------------------------
+   The seal steps down, the claim takes the width, and the foot wraps. Nothing
+   may overflow at 320px: every column is `minmax(0, …)` and every long string
+   is allowed to break.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .plate__body {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--s-4);
+  }
+
+  .plate__seal {
+    inline-size: 64px;
+    block-size: 64px;
+  }
+
+  .plate__name {
+    font-size: clamp(2.25rem, 9vw, 3.5rem);
+  }
+
+  .plate__claim {
+    max-inline-size: 100%;
+    font-size: var(--step-1);
+  }
+
+  /* The closing plate keeps a title's scale on a phone: it is the chapter's
+     end, not a footnote under the last project. */
+  .plate__claim--close {
+    max-inline-size: 20ch;
+    font-size: var(--step-3);
+  }
+
+  .plate__foot {
+    gap: var(--s-2) var(--s-3);
+  }
+}

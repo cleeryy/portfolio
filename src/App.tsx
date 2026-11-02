@@ -19,7 +19,8 @@ import { setMeta } from './lib/seo'
 import { sound } from './lib/sound'
 
 /** The chrome controls that answer with a relay tick. */
-const CUE_SELECTOR = '.nav a, .nav button, .cover a, .cover button, .op a, .op button, .ct a, .ct button, .clp a, .nf a'
+const CUE_SELECTOR =
+  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a'
 const NO_CUE = '.sound-toggle, [data-no-cue]'
 
 /**
