@@ -82,6 +82,32 @@ const TIER_EL = 0.7
 const CAM_FOV = 26
 const TAN_HALF_FOV = Math.tan((CAM_FOV * Math.PI) / 360)
 
+/* --------------------------------------------------------------------------
+   The dive
+   --------------------------------------------------------------------------
+   The last twelfth of the drawing's pass is a fall, not a fade: the camera
+   leaves the overview and drops into the fabric plan, between the two nodes,
+   while the field of view opens and the stack grows. The drawing does not stop
+   existing when the section does — the same geometry, stretched on Z, becomes
+   the corridor the passage continues into.
+
+   These are the numbers the scene is built on; the DOM dissolve happens at
+   `DIVE_FADE`, and `DIVE_STRETCH` multiplies the links' Z only, so the plans
+   and the marks keep their reading while the traffic elongates past the lens.
+   -------------------------------------------------------------------------- */
+const DIVE_START = 0.88
+const DIVE_SPAN = 1 - DIVE_START
+/** The landing point, in stack space: inside the fabric plan, between pve1/pve3. */
+const DIVE_X = 0
+const DIVE_Y = 0.4
+const DIVE_Z = 2.2
+const DIVE_FOV = 68
+const DIVE_SCALE = 1.35
+const DIVE_STRETCH = 1.2
+const DIVE_FADE = 0.8
+/** Chases per second: the fall follows the scroll, the eye arrives after it. */
+const DIVE_EASE = 9
+
 /**
  * The frame. A drawing that stops short of the measure reads as pushed into a
  * corner, one that touches it reads as a mistake — so the marks are held inside
@@ -171,6 +197,7 @@ const EDGE_VERT = /* glsl */ `
 
   uniform float uReveal;
   uniform float uTrace;
+  uniform float uStretch;
 
   varying float vAlpha;
   varying float vDash;
@@ -196,6 +223,11 @@ const EDGE_VERT = /* glsl */ `
     // node it hangs from once the mark is traced.
     vec3 end = aTie > 0.5 ? mix(peg, aTo, lit) : aTo;
     vec3 p = mix(position, end, t);
+
+    // The dive: the links keep their plan coordinates and stretch away from the
+    // middle of the stack on Z, so the drawing becomes a corridor without a
+    // second geometry. 1 at rest — the survey as drawn.
+    p.z *= uStretch;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 
@@ -572,6 +604,8 @@ export default function TerritoryScene({
       uMark: { value: new Vector3(MARK[0], MARK[1], MARK[2]) },
       uContour: { value: new Vector3(CONTOUR[0], CONTOUR[1], CONTOUR[2]) },
       uOpacity: { value: 0.44 },
+      /** 1 at rest; the links' Z multiplier during the dive. */
+      uStretch: { value: 1 },
     }
 
     const shared = { uniforms, transparent: true, depthTest: false, depthWrite: false }
@@ -755,7 +789,8 @@ export default function TerritoryScene({
       extent.maxY = -Infinity
       for (let step = 0; step < TURN_STEPS; step++) {
         stack.rotation.y = TURN_START + (step / (TURN_STEPS - 1)) * TURN_SWEEP
-        stack.scale.y = 1
+        // The fit is the framed drawing, never the dive's grown state.
+        stack.scale.set(1, 1, 1)
         stack.updateMatrixWorld(true)
         placeCamera(dist, BASE_AZ, el, lookY, lookX)
         for (let i = from; i < to; i++) {
@@ -806,11 +841,19 @@ export default function TerritoryScene({
       turn: 0.5,
       /** Eased turn, so a wheel tick never latches the drawing at an angle. */
       spin: 0.5,
+      /** Where the last twelfth of the pass puts the camera, 0..1. */
+      diveTarget: 0,
+      /** Eased dive, so a fast wheel does not teleport the camera. */
+      dive: 0,
+      /** Whether the section's DOM is dissolved (the cross is written once). */
+      deep: false,
       first: true,
       focus: null as string | null,
       /** Eased 0..1 of how much of the sheet is traced. */
       trace: 0,
       ink: -1,
+      /** Last label opacity written, so the dive writes only on a change. */
+      labelAlpha: -1,
       clientX: 0,
       clientY: 0,
       /** Pointer position inside the canvas, straight from the event. */
@@ -826,6 +869,27 @@ export default function TerritoryScene({
     }
 
     let tickerOn = false
+
+    /* The section, for the DOM dissolve. The canvas lives inside `.tty`; the
+       attribute is the one channel from the frame loop to the stylesheet, and it
+       is removed by the teardown so a lost context cannot leave the words at
+       zero. */
+    const section = host.closest<HTMLElement>('.tty')
+
+    const setDeep = (deep: boolean) => {
+      if (!section || state.deep === deep) return
+      state.deep = deep
+      if (deep) section.setAttribute('data-dive', 'deep')
+      else section.removeAttribute('data-dive')
+    }
+
+    /** The dive's target, from the last twelfth of the turn's own progress. */
+    const aimDive = (progress: number) => {
+      const raw = Math.min(1, Math.max(0, (progress - DIVE_START) / DIVE_SPAN))
+      // Smoothstep: the fall leaves and lands at rest, never at a wheel tick's
+      // full speed.
+      state.diveTarget = raw * raw * (3 - 2 * raw)
+    }
 
     /* ---- focus ----------------------------------------------------------- */
 
@@ -1092,10 +1156,26 @@ export default function TerritoryScene({
       state.spin = state.first
         ? state.turn
         : state.spin + (state.turn - state.spin) * (reduced ? 1 : Math.min(1, dt * TURN_EASE))
+
+      // The fall. One item of state, eased on the same ticker: the scroll only
+      // sets its target, so a wheel flick is followed by a camera instead of a
+      // cut. Under reduced motion the target is never written and the dive
+      // stays at its final (rest) state.
+      state.dive = state.first
+        ? state.diveTarget
+        : state.dive + (state.diveTarget - state.dive) * (reduced ? 1 : Math.min(1, dt * DIVE_EASE))
+      const dive = state.dive
+
       stack.rotation.y = TURN_START + state.spin * TURN_SWEEP
-      stack.scale.y = state.sep
+      // The stack grows as the camera enters it, so the near plans and the
+      // stretched links pass the lens instead of receding from it.
+      const grow = 1 + (DIVE_SCALE - 1) * dive
+      stack.scale.set(grow, state.sep * grow, grow)
       stack.updateMatrixWorld(true)
       state.first = false
+
+      // The links' own Z multiplier: one uniform, no geometry upload.
+      uniforms.uStretch.value = 1 + DIVE_STRETCH * dive
 
       // The trace: one eased scalar decides how much of the sheet is lit and
       // how far the ties of the traced walk reach. Uniform only — no buffer
@@ -1122,10 +1202,34 @@ export default function TerritoryScene({
       const lift = reduced ? 0 : (state.scroll - 1) * 0.09
       placeCamera(cam.dist, cam.az + drift, Math.max(0.06, cam.el + lift), cam.lookY, cam.lookX)
 
+      // The dive, composed on top of the settled framing: the camera leaves the
+      // overview and lands inside the fabric plan. The point is transformed by
+      // the stack's own matrix, so the fall follows the drawing as it turns and
+      // separates. `scratch` is the projection scratch — no allocation here.
+      if (dive > 0) {
+        scratch.set(DIVE_X, DIVE_Y, DIVE_Z).applyMatrix4(stack.matrixWorld)
+        camera.position.lerp(scratch, dive)
+        camera.lookAt(lookTarget)
+      }
+
+      // The lens opens with the fall and closes when the reader scrolls back
+      // out. Written only when it moves: a projection matrix rebuild per frame
+      // is cheap, per inert frame it is not.
+      const fov = CAM_FOV + (DIVE_FOV - CAM_FOV) * dive
+      if (Math.abs(camera.fov - fov) > 0.01) {
+        camera.fov = fov
+        camera.updateProjectionMatrix()
+      }
+      if (dive > 0) camera.updateMatrixWorld()
+
       project()
 
+      // Past halfway the drawing has no readable marks to point at: the lens is
+      // inside the stack, so the hit test would answer for a projection nobody
+      // can see. Dropping it also clears the trace, which is what lets the
+      // labels dissolve without a lit chain stranded on screen.
       let hovered: string | null = null
-      if (state.inside && !state.dragging) hovered = hitTest()
+      if (state.inside && !state.dragging && dive < 0.5) hovered = hitTest()
       if (hovered !== state.focus) {
         state.focus = hovered
         applyFocus(hovered)
@@ -1136,13 +1240,22 @@ export default function TerritoryScene({
       }
 
       // The names arrive with the ink, not before it: a label on a mark that
-      // has not been drawn yet reads as a wireframe with floating text.
+      // has not been drawn yet reads as a wireframe with floating text. They
+      // leave with the dive: a label projected from a falling camera is noise
+      // over the drawing, so the field dissolves as the camera passes it.
       const raw = reduced ? 1 : Math.min(1, Math.max(0, (state.reveal - 0.5) / 0.28))
       const ink = Math.round(raw * 40) / 40
-      if (ink !== state.ink) {
-        state.ink = ink
-        labelHost.style.opacity = ink.toFixed(3)
+      if (ink !== state.ink) state.ink = ink
+      const labelAlpha = Math.round(ink * (1 - dive) * 40) / 40
+      if (labelAlpha !== state.labelAlpha) {
+        state.labelAlpha = labelAlpha
+        labelHost.style.opacity = labelAlpha.toFixed(3)
       }
+
+      // The section's prose dissolves once the camera is inside the drawing.
+      // The register below is not part of this: it is the inventory the reader
+      // has not read yet, and blanking it would remove content from the page.
+      setDeep(dive > DIVE_FADE)
 
       drawLabels()
       renderer.render(scene, camera)
@@ -1368,6 +1481,10 @@ export default function TerritoryScene({
         gsap.ticker.remove(tick)
         tickerOn = false
       }
+      // The SVG plate returns at full strength: a dissolved section over a
+      // poster would be a chapter with no words.
+      setDeep(false)
+      labelHost.style.removeProperty('opacity')
       latest.current.onUnavailable()
     }
 
@@ -1389,7 +1506,8 @@ export default function TerritoryScene({
     // transit. A 576px plate in a 900px viewport is only wholly on screen for
     // 324px of scroll; tied to the whole transit, the sweep would spend most of
     // its travel off screen and arrive as a surprise. This range is the plate's
-    // own reading window, so the drift is spread across it.
+    // own reading window, so the drift is spread across it. Its last twelfth is
+    // the dive: the turn is the section's pass, and the fall is its end.
     const turnTrigger = reduced
       ? null
       : ScrollTrigger.create({
@@ -1398,10 +1516,14 @@ export default function TerritoryScene({
           end: 'center 28%',
           onUpdate: (self) => {
             state.turn = self.progress
+            aimDive(self.progress)
           },
         })
 
-    if (turnTrigger) state.turn = turnTrigger.progress
+    if (turnTrigger) {
+      state.turn = turnTrigger.progress
+      aimDive(turnTrigger.progress)
+    }
 
     canvas.addEventListener('pointermove', onPointerMove, { passive: true })
     canvas.addEventListener('pointerdown', onPointerDown)
@@ -1452,6 +1574,8 @@ export default function TerritoryScene({
         gsap.ticker.remove(tick)
         tickerOn = false
       }
+
+      setDeep(false)
 
       observer.disconnect()
       resizeObserver.disconnect()
