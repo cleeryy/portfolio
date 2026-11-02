@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <title>cleeryy — security operator</title>
+    <title>cleeryy — infrastructure &amp; security</title>
     <meta
       name="description"
-      content="cleeryy is a French security operator. He runs his own homelab end to end — Proxmox cluster, OPNsense edge, WireGuard bastion, reverse proxy, backups — and trains on CTF ranges."
+      content="Cléry A-Ferradou, Toulouse. Two Proxmox nodes, eight network segments, forty-five services — and twenty projects, documented one file at a time."
     />
 
     <meta name="theme-color" content="#e7e9e2" />
@@ -25,10 +25,10 @@
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="cleeryy" />
-    <meta property="og:title" content="cleeryy — security operator" />
+    <meta property="og:title" content="cleeryy — infrastructure &amp; security" />
     <meta
       property="og:description"
-      content="A network he actually operates: hypervisor cluster, edge firewall, tunnel, reverse proxy, backups. And the ranges where he practises on everyone else's."
+      content="A network he actually operates: two Proxmox nodes, eight segments, forty-five services, a backup he restores on purpose. And twenty projects, one file each."
     />
     <meta property="og:locale" content="en_GB" />
     <meta property="og:locale:alternate" content="fr_FR" />
@@ -40,19 +40,115 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="The cleeryy hero: a large handle over a plotted network survey on a pale sheet."
+      content="The cleeryy cover: the handle set in heavy type on a pale sheet, over a faint contour field, with four measured bands at the foot."
     />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://cleeryy.com/og.jpg" />
-    <meta name="twitter:title" content="cleeryy — security operator" />
+    <meta name="twitter:title" content="cleeryy — infrastructure &amp; security" />
     <meta
       name="twitter:description"
-      content="A network he actually operates, and the ranges where he practises on everyone else's."
+      content="A network he actually operates, and twenty projects documented one file at a time."
     />
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- The sheet is drawn with JavaScript. This is the printed fallback: the
+         cover, the four readings and the three addresses, in the same ink, with
+         no font request and no script. It is also what a crawler that ignores
+         the app will read. -->
+    <noscript>
+      <div
+        style="
+          min-height: 100dvh;
+          box-sizing: border-box;
+          padding: clamp(20px, 5vw, 64px);
+          background: #e7e9e2;
+          color: #131c19;
+          font-family: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        "
+      >
+        <p
+          style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 clamp(24px, 6vw, 56px);
+            font: 400 11px/1.2 'Spline Sans Mono', ui-monospace, Menlo, monospace;
+            color: #3f4c47;
+          "
+        >
+          <span style="display: inline-block; width: 6px; height: 6px; background: #bf1f34"></span>
+          Toulouse, FR — infrastructure &amp; security
+        </p>
+
+        <h1
+          style="
+            margin: 0 0 clamp(16px, 3vw, 28px);
+            font-size: clamp(52px, 15vw, 168px);
+            font-weight: 600;
+            line-height: 0.92;
+            letter-spacing: -0.045em;
+          "
+        >
+          cleeryy
+        </h1>
+
+        <p
+          style="
+            margin: 0 0 clamp(16px, 3vw, 24px);
+            max-width: 22ch;
+            font-size: clamp(22px, 3.4vw, 34px);
+            line-height: 1.14;
+            letter-spacing: -0.028em;
+          "
+        >
+          I run the network I learn on.
+        </p>
+
+        <p style="margin: 0 0 clamp(24px, 5vw, 40px); max-width: 54ch; font-size: 18px; line-height: 1.55; color: #3f4c47">
+          Two Proxmox nodes, eight network segments, forty-five services, and a backup I restore on
+          purpose. Third year at ESGI Toulouse, three afternoons a week in a company's IT department,
+          the rest in the lab.
+        </p>
+
+        <dl
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px 24px;
+            margin: 0 0 clamp(24px, 5vw, 40px);
+            padding: 20px 0;
+            border-top: 1px solid #b2bcb1;
+            border-bottom: 1px solid #b2bcb1;
+            font: 400 11px/1.3 'Spline Sans Mono', ui-monospace, Menlo, monospace;
+            color: #55625d;
+          "
+        >
+          <div><dt style="color: #55625d">nodes</dt><dd style="margin: 4px 0 0; font-size: 20px; color: #131c19">2</dd></div>
+          <div><dt style="color: #55625d">guests</dt><dd style="margin: 4px 0 0; font-size: 20px; color: #131c19">52</dd></div>
+          <div><dt style="color: #55625d">services</dt><dd style="margin: 4px 0 0; font-size: 20px; color: #131c19">45</dd></div>
+          <div><dt style="color: #55625d">routes</dt><dd style="margin: 4px 0 0; font-size: 20px; color: #131c19">66</dd></div>
+        </dl>
+
+        <p style="margin: 0 0 clamp(16px, 4vw, 28px); max-width: 60ch; font-size: 16px; line-height: 1.6">
+          <a href="mailto:clery.arqueferradou@gmail.com" style="color: #bf1f34">clery.arqueferradou@gmail.com</a>
+          &nbsp;·&nbsp;
+          <a href="https://github.com/cleeryy" style="color: #131c19">github.com/cleeryy</a>
+          &nbsp;·&nbsp;
+          <a href="https://blog.cleeryy.cloud" style="color: #131c19">blog.cleeryy.cloud</a>
+        </p>
+
+        <p style="margin: 0; max-width: 62ch; font-size: 14px; line-height: 1.6; color: #55625d">
+          En français&nbsp;: je m'appelle Cléry, je suis en troisième année à l'ESGI Toulouse, et
+          j'exploite le réseau sur lequel j'apprends — deux nœuds Proxmox, huit segments, quarante-cinq
+          services, une sauvegarde que je restaure exprès. Le reste du site (vingt projets, les
+          writeups, le territoire) est dessiné avec JavaScript.
+        </p>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

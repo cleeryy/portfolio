@@ -236,6 +236,9 @@ confirmation, not a new proposal:
 
 ## 8. Scope of this pass
 
+> Paths in this section are the ones of the pass that built them (v1). The current tree
+> is `ARCHITECTURE.md`; the files moved in v7, the roles did not.
+
 **Built here**
 
 | File | Role |
@@ -491,3 +494,61 @@ supposed to refuse.
 6 home plates · 5 nav items · 20 project files · 4 domains · 16 notes · 24 URLs in
 `sitemap.xml` · 4 sound rooms · 1 canvas above the fold (none) · 2 canvases in the whole
 site (territory, passage).
+
+---
+
+## 11. The acceptance bar, applied (v7)
+
+This pass runs the site against `build-awwwards-quality-sites` — the installed skill the
+project was briefed with — as an **acceptance bar, never a claim**. Nothing on this site
+says "award"; nothing is borrowed from a reference.
+
+### The direction, in the skill's own terms
+
+| Field | Decision |
+| --- | --- |
+| Visual thesis | A printed survey sheet, imperfectly registered: pale land tint, drafting ink, one crimson control mark, letterpress vocabulary instead of "cyber" costume |
+| Hero focal asset | **None.** The cover is the handle, the claim, four readings and a drawn section — geometry the browser draws, not a stock photograph of a network |
+| Type hierarchy | Archivo (variable width 75–115, weight 300–700) for everything read; Spline Sans Mono for measurements only; six fluid steps |
+| Colour | Six surfaces and inks, one accent (`#BF1F34`), no gradient, no shadow, no glass |
+| Section sequence | cover → selected work → territory → passage → operator → contact |
+| Motion narrative | plate ruled (boot) → type printed, plate pulls into register → one pinned traverse → schema turns, then dives → descent into ink → still chapter → the ask |
+| Smooth scroll | Lenis, only engine, connected to ScrollTrigger, destroyed on teardown |
+| Three.js | **Two scenes, each with one job**: the territory (spatial reading of a real network) and the passage (a depth transition between chapters). No ornamental canvas |
+| Asset provenance | No photograph, no generated person, no logo wall, no icon library. Every mark is a hairline, a dot lattice, or a glyph drawn by the shader; the project seals are generated from the slug (FNV-1a + self-avoiding walk) |
+| Build box | `code` (CT 119) — opencode `orchestrator` writes the code, Hermes writes the copy and holds the bar |
+
+### Validation performed
+
+- `pnpm lint` 0 error · `pnpm build` exit 0 · `pnpm typecheck` exit 0.
+- Seven routes (`/`, `/work`, `/work/:slug`, `/practice`, `/notes`, `/about`, 404) and
+  all twenty project files render with the expected `h1`, title and description.
+- 390 / 768 / 1440: `scrollWidth ≤ innerWidth + 1` everywhere; no clipped type.
+- Console clean on every route and across repeated navigations.
+- Keyboard: thirty focus stops, visible ring on each, tab order follows reading order,
+  the mobile panel closes on Escape and traps nothing.
+- `prefers-reduced-motion: reduce`: no boot plate, no pin, no traverse translate, no
+  loupe, no reprint, no dive, no hover lift — final states only, and the ghost plate is
+  frozen at its 1 px misregistration.
+- **No JavaScript**: a `<noscript>` sheet carries the claim, the four readings and the
+  three addresses in the same ink, with no font request. The rest of the site is a
+  client-rendered application, and that is stated below rather than hidden.
+- One smooth-scroll engine, one pointer rAF, two WebGL contexts maximum, both paused
+  offscreen and on `visibilitychange`, DPR capped at 2.
+
+### Deliberate deviations, and why
+
+- **No photography, no avatar.** The skill asks for photographs "for every avatar"; the
+  operator is not the subject of this site, the network is, and there is no avatar to
+  illustrate. A portrait would be a costume.
+- **No generated imagery.** The concept *is* a drawing. A generated hero image would be
+  a second, weaker language competing with the schema.
+- **No icon set.** Four interface symbols exist; three are drawn as rules, and the
+  language switch is type.
+- **A 380 ms route transition.** Longer than a cut, but it *covers* the swap instead of
+  fading through it, and the new content is committed at 80 ms, so nothing is delayed
+  beyond the press stroke.
+- **A client-rendered site with a static fallback.** No SSG: the fallback is the sheet
+  in `<noscript>`, not a prerendered page. If search visibility ever matters more than
+  the app, prerendering the five documents is the next step — it is a build change, not
+  a design one.
