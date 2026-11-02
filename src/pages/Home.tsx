@@ -1,9 +1,9 @@
-import Contact from '../components/contact/Contact'
-import Cover from '../components/cover/Cover'
-import Flight from '../components/flight/Flight'
-import Operator from '../components/operator/Operator'
-import Territory from '../components/territory/Territory'
-import WorkTraverse from '../components/work/WorkTraverse'
+import Contact from '../sections/contact/Contact'
+import Cover from '../sections/cover/Cover'
+import Flight from '../sections/flight/Flight'
+import Operator from '../sections/operator/Operator'
+import Territory from '../sections/territory/Territory'
+import SelectedWork from '../sections/work/SelectedWork'
 
 /**
  * The home sheet: cover → selected work → territory → passage → operator →
@@ -19,7 +19,7 @@ export default function Home() {
   return (
     <main id="top">
       <Cover />
-      <WorkTraverse />
+      <SelectedWork />
       <Territory />
       <Flight />
       <Operator />

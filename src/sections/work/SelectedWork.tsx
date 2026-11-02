@@ -9,12 +9,12 @@ import { getLenis } from '../../lib/scroll'
 import { RolloverLabel } from '../../ui/Rollover'
 import SplitText from '../../ui/SplitText'
 import Plate from './Plate'
-import './work-traverse.css'
+import './selected-work.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
 /* ============================================================================
-   WorkTraverse — selected work, one line or one column
+   SelectedWork — selected work, one line or one column
    ----------------------------------------------------------------------------
    Six plates: the five `featured` projects in register order, then a closing
    plate that says how many there are and hands over to `/work`. The section is
@@ -96,7 +96,7 @@ function useWide(): boolean {
 
 type Mode = 'h' | 'v'
 
-export default function WorkTraverse() {
+export default function SelectedWork() {
   const { pick } = useLang()
   const copy = pick(workCopy)
   const backLabel = pick(fileCopy).backLabel
