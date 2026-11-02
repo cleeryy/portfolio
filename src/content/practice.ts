@@ -116,6 +116,48 @@ export const ranges: RangeEntry[] = [
   },
 ]
 
+export type Platform = {
+  platform: string
+  handle: string
+  href: string
+  note: Bi
+}
+
+/**
+ * The public accounts, as they exist today. The numbers are the ones the profile
+ * prints on its own page — nothing is estimated, and no rank is claimed for a
+ * platform where none is displayed.
+ */
+export const platforms: Platform[] = [
+  {
+    platform: 'TryHackMe',
+    handle: 'cleeryy',
+    href: 'https://tryhackme.com/p/cleeryy',
+    note: {
+      en: 'Top 3% ranking · 63-day best streak · 538 events this year',
+      fr: fr('Top 3\u00a0% au classement · 63 jours de série · 538 événements cette année'),
+    },
+  },
+  {
+    platform: 'TryHackMe',
+    handle: 'cleeryyy',
+    href: 'https://tryhackme.com/p/cleeryyy',
+    note: {
+      en: 'The 2023 account — top 7% · 25-day streak',
+      fr: fr('Le compte de 2023 — top 7\u00a0% · 25 jours de série'),
+    },
+  },
+  {
+    platform: 'Hack The Box Academy',
+    handle: 'CPTS',
+    href: 'https://academy.hackthebox.com/',
+    note: {
+      en: 'Preparing the CPTS — the modules are in progress, the exam is not passed',
+      fr: fr('Préparation de la CPTS — les modules sont en cours, l’examen n’est pas passé'),
+    },
+  },
+]
+
 export type ToolBlock = { label: Bi; items: string[] }
 
 export const tools: ToolBlock[] = [
@@ -143,6 +185,8 @@ export type PracticePageCopy = {
   countLabel: string
   rangesLabel: string
   rangesLead: string
+  platformsLabel: string
+  platformsLead: string
   toolsLabel: string
   toolsLead: string
   askTitle: string
@@ -158,6 +202,8 @@ export const practiceCopy: Bi<PracticePageCopy> = {
     countLabel: 'entries',
     rangesLabel: 'ranges',
     rangesLead: 'Each line is a challenge I actually solved, documented the week it was solved. No score, no rank — the writeup is the proof.',
+    platformsLabel: 'accounts',
+    platformsLead: 'The public profiles, with the reading they print themselves.',
     toolsLabel: 'instruments',
     toolsLead: 'What is installed in the lab. Not a list of things I have read about.',
     askTitle: 'What I am looking for',
@@ -171,6 +217,8 @@ export const practiceCopy: Bi<PracticePageCopy> = {
     countLabel: 'entrées',
     rangesLabel: 'terrains',
     rangesLead: fr('Chaque ligne est un challenge que j’ai réellement résolu, documenté la semaine où il l’a été. Aucun score, aucun rang — le writeup est la preuve.'),
+    platformsLabel: 'comptes',
+    platformsLead: fr('Les profils publics, avec la lecture qu’ils affichent eux-mêmes.'),
     toolsLabel: 'instruments',
     toolsLead: fr('Ce qui est installé dans le labo. Pas une liste de choses lues quelque part.'),
     askTitle: fr('Ce que je cherche'),
