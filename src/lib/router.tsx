@@ -92,6 +92,50 @@ function afterPaint(callback: () => void): void {
   })
 }
 
+/* A hash destination can move after it was first reached: the home traverse
+   inserts its pin spacer on the first ScrollTrigger refresh, and every section
+   below it shifts by the spacer's height. `alignHash` is therefore called back
+   by the shell after each refresh, for a short window after the navigation —
+   never indefinitely, and never once the reader has taken over the scroll. */
+let hashSettleUntil = 0
+let hashSettleY = 0
+
+/**
+ * Re-align the current hash after a late layout change.
+ *
+ * Returns silently unless a hash navigation happened in the last three seconds
+ * and the reader has not scrolled since the last alignment. The tolerance is a
+ * few pixels: a target already under the bar must not be moved again.
+ */
+export function alignHash(): void {
+  if (performance.now() > hashSettleUntil) return
+  if (window.location.hash.length < 2) return
+  if (Math.abs(window.scrollY - hashSettleY) > 8) {
+    hashSettleUntil = 0
+    return
+  }
+
+  let id: string
+  try {
+    id = decodeURIComponent(window.location.hash.slice(1))
+  } catch {
+    id = window.location.hash.slice(1)
+  }
+
+  const target = document.getElementById(id)
+  if (!target) return
+
+  // The sheet's sections carry `scroll-margin-block-start: var(--nav-h)`, so a
+  // settled target sits under the bar rather than at y 0.
+  if (Math.abs(target.getBoundingClientRect().top) <= 120) {
+    hashSettleUntil = 0
+    return
+  }
+
+  jumpTo(target)
+  hashSettleY = window.scrollY
+}
+
 export function navigate(to: string): void {
   let url: URL
   try {
@@ -124,19 +168,38 @@ export function navigate(to: string): void {
   document.dispatchEvent(new CustomEvent(NAVIGATE_EVENT))
 
   if (hash === '') {
+    hashSettleUntil = 0
     jumpTo(0)
     return
   }
+
+  // The destination may be moved by a pin spacer created on the first refresh.
+  hashSettleUntil = performance.now() + 3000
+  hashSettleY = window.scrollY
 
   // A cross-page hash link starts on a fresh page, so its top is the honest
   // position while the home sections mount. A same-page hash has no reason to
   // pass through the top first.
   if (!samePath) jumpTo(0)
 
-  afterPaint(() => {
+  const settle = () => {
     const target = document.getElementById(hash)
-    if (target) jumpTo(target)
-    else jumpTo(0)
+    if (!target) return
+    jumpTo(target)
+    hashSettleY = window.scrollY
+  }
+
+  afterPaint(() => {
+    if (!document.getElementById(hash)) {
+      jumpTo(0)
+      return
+    }
+    settle()
+    // A pinned section inserts its spacer on the first ScrollTrigger refresh,
+    // which can run after this frame — the traverse's ~10k spacer moves every
+    // target below it. By the next painted frame the sheet's geometry is final,
+    // so the anchor is measured once more instead of landing short.
+    requestAnimationFrame(settle)
   })
 }
 

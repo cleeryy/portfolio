@@ -126,6 +126,7 @@ export default function Contact() {
                     className="ct__link"
                     href={sourceUrl}
                     text={sourceLabel}
+                    rel="noreferrer"
                     onClick={() => sound.click()}
                   />
                 </dd>
@@ -141,6 +142,7 @@ export default function Contact() {
                     className="ct__link"
                     href={blogUrl}
                     text={blogLabel}
+                    rel="noreferrer"
                     onClick={() => sound.click()}
                   />
                 </dd>

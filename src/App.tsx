@@ -9,6 +9,8 @@ import Grain from './components/ui/Grain'
 import ScrollProgress from './components/ui/ScrollProgress'
 import InstrumentChrome from './components/chrome/InstrumentChrome'
 import PointerHud from './components/chrome/PointerHud'
+import AboutPage from './components/about/AboutPage'
+import NotesPage from './components/notes/NotesPage'
 import NotFound from './components/site/NotFound'
 import RouteRule from './components/site/RouteRule'
 import ProjectFile from './components/project/ProjectFile'
@@ -19,13 +21,13 @@ import { descriptions, titles } from './content/site'
 import type { RouteKey } from './content/site'
 import { useLang } from './lib/i18n'
 import { initMotionSystem } from './lib/reveal'
-import { useRoute } from './lib/router'
+import { alignHash, useRoute } from './lib/router'
 import { setMeta } from './lib/seo'
 import { sound } from './lib/sound'
 
 /** The chrome controls that answer with a relay tick. */
 const CUE_SELECTOR =
-  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a, .reg a, .file a'
+  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a, .reg a, .file a, .nt a, .ab a'
 const NO_CUE = '.sound-toggle, [data-no-cue]'
 
 /**
@@ -63,6 +65,27 @@ export default function App() {
   // One refresh point for the whole page: webfonts land after first layout, and
   // every pinned or measured trigger has to be re-read once they do.
   useEffect(() => initMotionSystem(), [])
+
+  // A pinned section inserts its spacer while ScrollTrigger refreshes, which
+  // moves every target below it. The router aligns the hash on arrival and
+  // again on the next frame; this settles the anchors that moved on a later
+  // refresh (fonts, pin distance), for a short window after the navigation.
+  useEffect(() => {
+    let timer = 0
+    const onRefresh = () => {
+      window.clearTimeout(timer)
+      // After the refresh, not inside it: ScrollTrigger restores the scroll
+      // position as it finishes, which would swallow a jump made in the
+      // refresh callback itself.
+      timer = window.setTimeout(() => alignHash(), 200)
+    }
+
+    ScrollTrigger.addEventListener('refresh', onRefresh)
+    return () => {
+      window.clearTimeout(timer)
+      ScrollTrigger.removeEventListener('refresh', onRefresh)
+    }
+  }, [])
 
   // Metadata follows the plate. `pick` changes identity with the language, so a
   // language switch rewrites the title as well as the page.
@@ -148,6 +171,10 @@ export default function App() {
         <Home />
       ) : route.path === '/work' ? (
         <Register />
+      ) : route.path === '/notes' ? (
+        <NotesPage />
+      ) : route.path === '/about' ? (
+        <AboutPage />
       ) : route.params.slug ? (
         <ProjectFile slug={route.params.slug} />
       ) : (

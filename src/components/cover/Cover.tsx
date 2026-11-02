@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { useLang } from '../../lib/i18n'
-import { navigate } from '../../lib/router'
+import { Link, navigate } from '../../lib/router'
 import { MOTION, prefersReducedMotion } from '../../lib/reveal'
 import { handle, hero } from '../../content/hero'
 import MagneticButton from '../ui/MagneticButton'
@@ -112,17 +112,9 @@ export default function Cover() {
               {copy.primaryCta}
             </MagneticButton>
 
-            <a
-              className="cover__secondary"
-              href="#territory"
-              data-hud="#territory"
-              onClick={(event) => {
-                event.preventDefault()
-                navigate('#territory')
-              }}
-            >
+            <Link className="cover__secondary" to="#territory" data-hud="#territory">
               {copy.secondaryCta}
-            </a>
+            </Link>
           </div>
 
           {/* The collar: an instrument reading, not a scoreboard. Placed last in
