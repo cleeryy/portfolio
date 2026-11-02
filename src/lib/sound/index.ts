@@ -1,6 +1,6 @@
-import { Foundry, MASTER_LEVEL, clamp, clamp01, holdAt } from './sound/graph'
-import { RoomBank, roomOf, type RoomId } from './sound/rooms'
-import { CueBank, type CueStamp, type NodeTier } from './sound/cues'
+import { Foundry, MASTER_LEVEL, clamp, clamp01, holdAt } from './graph'
+import { RoomBank, roomOf, type RoomId } from './rooms'
+import { CueBank, type CueStamp, type NodeTier } from './cues'
 
 /**
  * Sound layer — entirely synthesized with the Web Audio API.
