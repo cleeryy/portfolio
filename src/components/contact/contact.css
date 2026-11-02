@@ -1,10 +1,12 @@
 /* ============================================================================
    contact.css — the closing page and the colophon
    ----------------------------------------------------------------------------
-   One question, one line of invitation, one address. The address is a ledger:
-   its key sits in the same margin column every other section uses, the address
-   itself sits on the reading column in display type and carries the sheet's
-   link language (a hairline underline that turns to the survey mark).
+   The section is named by what it asks for: the margin column carries `the
+   request` and its coordinate, the reading column the ask and one invitation,
+   then a ledger of three addresses. The keys sit in the same margin column
+   every other section uses; the mail sits on the reading column in display
+   type, and all three carry the sheet's link language (a hairline underline
+   that turns to the survey mark).
 
    The footer is the colophon of a printed sheet: the credit line, a scale bar,
    a way back to the top, and the section reference. No logo wall, no social
@@ -36,27 +38,30 @@
   display: grid;
   grid-template-columns: var(--rail) minmax(0, 1fr);
   grid-template-areas:
-    'ref title'
-    'ref invite';
+    'margin title'
+    'margin invite';
   column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
   row-gap: var(--s-5);
   align-items: start;
 }
 
-.ct__ref {
-  grid-area: ref;
+/* The margin label, and the section's printed coordinate under it. The rail is
+   the same column the ledger keys use, so the page is annotated on one edge. */
+.ct__margin {
+  grid-area: margin;
   padding-block-start: 0.85rem;
   font-size: var(--step--2);
+  line-height: 1.3;
   color: var(--text-quiet);
 }
 
 .ct__title {
   grid-area: title;
-  max-width: 26ch;
+  max-width: 20ch;
   margin: 0;
-  font-size: var(--step-4);
+  font-size: clamp(var(--step-4), 1.9vw + 1.75rem, var(--step-5));
   font-weight: var(--w-semi);
-  line-height: 1.04;
+  line-height: 1.02;
   letter-spacing: var(--tracking-display);
   color: var(--ink);
 }
@@ -80,14 +85,15 @@
   border-top: var(--hair) solid var(--ink);
 }
 
-/* The one red mark: a registration square pinned to the rule, at the sheet's
-   left edge — the same device as the hero collar and the territory plate. */
+/* The one red mark: a registration square pinned to the rule, at the ledger's
+   own left edge — which is the label column's edge, not the page gutter. The
+   six is the same mark the location point and the station mark use. */
 .ct__registration {
   position: absolute;
   inset-block-start: 0;
   inset-inline-start: 0;
-  inline-size: 7px;
-  block-size: 7px;
+  inline-size: 6px;
+  block-size: 6px;
   background-color: var(--mark);
   transform: translateY(-50%);
 }
@@ -119,23 +125,25 @@
   min-width: 0;
 }
 
-/* The primary action of the whole sheet. Sized to be found from across the
-   room, underlined like every other link on the page, and a real `mailto:` —
-   if the script dies, the address still opens a mail client. */
+/* The primary action of the whole sheet. Set at subhead size — the address is
+   an address, not a poster — underlined at rest like every other link on the
+   page, and a real `mailto:`: if the script dies, it still opens a mail client.
+   The rest rule is an ink, not a contour: a 1px contour on the ground is a
+   watermark, and these three values have to read as the links they are. */
 .ct__mail {
   display: inline-block;
   padding-block: 0.15rem;
   font-family: var(--font-display);
-  font-size: clamp(1.125rem, 0.95rem + 1.35vw, 2.125rem);
+  font-size: var(--step-2);
   font-weight: var(--w-medium);
   font-stretch: var(--width-heading);
-  line-height: 1.15;
+  line-height: 1.2;
   letter-spacing: -0.012em;
   color: var(--ink);
   overflow-wrap: anywhere;
   text-decoration: underline;
   text-decoration-thickness: var(--hair);
-  text-decoration-color: var(--contour);
+  text-decoration-color: var(--text-quiet);
   text-underline-offset: 0.28em;
   transition:
     text-decoration-color var(--t-fast) var(--ease-out),
@@ -148,7 +156,7 @@
   text-decoration-thickness: 2px;
 }
 
-/* The second address is a measurement, not a second call to action. */
+/* The two external addresses are measurements, not a second call to action. */
 .ct__link {
   display: inline-block;
   padding-block: 0.35rem;
@@ -160,12 +168,13 @@
   overflow-wrap: anywhere;
   text-decoration: underline;
   text-decoration-thickness: var(--hair);
-  text-decoration-color: var(--contour);
+  text-decoration-color: var(--text-quiet);
   text-underline-offset: 0.28em;
   transition: text-decoration-color var(--t-fast) var(--ease-out);
   /* The rolled label paints the hairline itself (see rollover.css): a
-     text-decoration would be cut by each character's mask. */
-  --roll-rule: var(--contour);
+     text-decoration would be cut by each character's mask. Same ink as the
+     decoration, so the two registers read as one link at rest. */
+  --roll-rule: var(--text-quiet);
 }
 
 .ct__link:hover,
@@ -298,18 +307,18 @@
   .ct__head {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      'ref'
+      'margin'
       'title'
       'invite';
     row-gap: var(--s-4);
   }
 
-  .ct__ref {
+  .ct__margin {
     padding-block-start: 0;
   }
 
   .ct__title {
-    max-width: 18ch;
+    font-size: var(--step-4);
   }
 
   .ct__invite {
@@ -335,15 +344,6 @@
 
   .clp__top {
     justify-self: start;
-  }
-}
-
-@media (max-width: 900px) {
-  /* The compact instrument is fixed at the foot of the page (chrome.css). The
-     colophon gives it the strip it prints in, so the sheet's last line and its
-     last reading never sit on top of each other. */
-  .clp {
-    padding-block-end: max(3.5rem, calc(env(safe-area-inset-bottom, 0px) + 3.25rem));
   }
 }
 

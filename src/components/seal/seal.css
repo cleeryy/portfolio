@@ -1,0 +1,43 @@
+/* ============================================================================
+   seal.css — the survey mark
+   ----------------------------------------------------------------------------
+   A station plot on a survey sheet: contour lattice, ink trace, one crimson
+   mark. Not a logo, not a QR code — it is read as a printed instrument mark,
+   so it carries no shadow, no gradient and no animation.
+
+   Colour is entirely tokens (`--contour`, `--ink`, `--mark`), which is what
+   lets the same seal sit on paper and on the ink chapter without a variant.
+
+   It scales with the `size` prop: the viewBox stays 96, the circles scale with
+   it, but the frame and the registration cross keep a true 1px hairline at any
+   size because both carry `vector-effect: non-scaling-stroke` in the markup.
+   ========================================================================== */
+
+.seal {
+  display: block;
+  overflow: visible;
+}
+
+.seal__frame {
+  fill: none;
+  stroke: var(--contour);
+  stroke-width: 1;
+}
+
+.seal__dot {
+  fill: var(--contour);
+}
+
+.seal__dot--ink {
+  fill: var(--ink);
+}
+
+.seal__dot--mark {
+  fill: var(--mark);
+}
+
+.seal__cross {
+  fill: none;
+  stroke: var(--contour);
+  stroke-width: 1;
+}

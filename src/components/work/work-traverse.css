@@ -1,0 +1,307 @@
+/* ============================================================================
+   work-traverse.css — selected work
+   ----------------------------------------------------------------------------
+   Two compositions of the same six plates. The default is a column: full-width
+   plates, one after another, no clipping and no instrument foot. Above 901px,
+   on a fine pointer, with motion allowed, the same list becomes a traverse: a
+   86vw window onto a 62vw-per-plate strip that travels right to left while the
+   inner plate is pinned.
+
+   `data-mode` is written by the component from one media query that already
+   includes `prefers-reduced-motion: no-preference`. The horizontal rules below
+   are additionally wrapped in that same query, and a reduce belt restates the
+   column: a preference that flips while the page is live cannot leave a pinned,
+   clipped, translated list behind.
+
+   Nothing is a card. Rules are hairlines, the only accent is the 1px progress
+   rule, and the mask fade is the single gradient on the sheet — it is a window,
+   not a decoration.
+   ========================================================================== */
+
+.wt {
+  position: relative;
+  /* The column ends on air: the next chapter rules itself, and a plate flush
+     against that rule would read as a table row. In the traverse the bottom
+     padding moves into the pinned plate, which is a full screen. */
+  padding-block: clamp(4rem, 9vw, 8rem) clamp(4rem, 8vw, 7rem);
+  padding-inline: var(--gutter);
+  border-block-start: var(--hair) solid var(--contour);
+  /* The fixed bar must not cover the title when `/#work` is followed. */
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* The rig's registration tick. Ink, not crimson: this chapter spends its one
+   accent on the progress rule. */
+.wt .wt__mark {
+  background-color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Head — reference rail, title, lead
+   ---------------------------------------------------------------------------
+   The same three-column opening as every other chapter: the reference in the
+   annotation rail, the title on the reading column, the lead in the right half.
+   Below 900px it is one column, read ref → title → lead.
+   --------------------------------------------------------------------------- */
+
+.wt__head {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 40ch);
+  grid-template-areas: 'ref title lead';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: var(--s-5);
+  max-inline-size: 72rem;
+  margin-inline: auto;
+}
+
+.wt__ref {
+  grid-area: ref;
+  padding-block-start: 0.7rem;
+  color: var(--ink-3);
+}
+
+.wt__title {
+  grid-area: title;
+  max-inline-size: 14ch;
+  margin: 0;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.wt__lead {
+  grid-area: lead;
+  max-inline-size: 40ch;
+  margin: 0;
+  padding-block-start: 0.6rem;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   The column — the default, and every width below 901px
+   --------------------------------------------------------------------------- */
+
+.wt__pin {
+  display: block;
+  padding-block-start: clamp(2rem, 5vw, 3.5rem);
+}
+
+.wt__inner {
+  inline-size: 100%;
+  max-inline-size: 72rem;
+  margin-inline: auto;
+}
+
+.wt__strip {
+  position: relative;
+  overflow: visible;
+}
+
+.wt__list {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  gap: var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* In the column, each plate owns its own top rule; no vertical rule between
+   items, because there is no column edge to hang one on. */
+.wt__item {
+  min-inline-size: 0;
+  inline-size: 100%;
+  padding: var(--s-5) 0;
+}
+
+/* The counter and the progress rule are the traverse's instrument. A column has
+   no travel to measure, so the foot is not printed at all. */
+.wt__foot {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   The traverse — wide sheet, fine pointer, motion allowed
+   ---------------------------------------------------------------------------
+   Wrapped in the motion query as a belt: even if `data-mode` were stale, none
+   of these rules can apply to a reader who asked for reduced motion.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .wt[data-mode='h'] {
+    /* The bottom padding moves into the pinned plate. */
+    padding-block-end: 0;
+  }
+
+  .wt[data-mode='h'] .wt__pin {
+    display: flex;
+    align-items: center;
+    min-block-size: 100svh;
+    padding-block: calc(var(--nav-h) + var(--s-4)) var(--s-5);
+  }
+
+  /* 86vw of window for 62vw plates: exactly a 24vw peek of the next one. */
+  .wt[data-mode='h'] .wt__inner {
+    inline-size: 100%;
+    max-inline-size: min(calc(100vw - 2 * var(--gutter)), 86vw);
+    margin-inline: auto;
+  }
+
+  /* The window. `clip` rather than `hidden`: no scrollbar, no scroll container,
+     and no way for a stray key press to scroll the strip behind the pin. */
+  .wt[data-mode='h'] .wt__strip {
+    overflow: clip;
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 24px,
+      #000 calc(100% - 24px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 24px,
+      #000 calc(100% - 24px),
+      transparent 100%
+    );
+  }
+
+  .wt[data-mode='h'] .wt__list {
+    flex-direction: row;
+    inline-size: max-content;
+    gap: 0;
+    will-change: transform;
+  }
+
+  .wt[data-mode='h'] .wt__item {
+    flex: 0 0 62vw;
+    inline-size: auto;
+    min-block-size: 24rem;
+    padding: var(--s-5) var(--s-5) var(--s-4);
+  }
+
+  .wt[data-mode='h'] .wt__item + .wt__item {
+    border-inline-start: var(--hair) solid var(--contour);
+  }
+
+  /* The instrument foot: the reading, then the rule it measures. The rule is
+     the section's closing hairline, so it spans the window; the crimson fill is
+     the traverse's own progress, not a second rule. */
+  .wt[data-mode='h'] .wt__foot {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-2);
+    margin-block-start: var(--s-4);
+  }
+}
+
+.wt__count {
+  align-self: flex-start;
+  color: var(--ink-2);
+}
+
+.wt__bar {
+  position: relative;
+  inline-size: 100%;
+  block-size: 1px;
+  background-color: var(--contour);
+}
+
+/* Written by the same scrub as the strip, so the rule is the traverse's
+   progress rather than a second animation. */
+.wt__bar-fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-color: var(--mark);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* ---------------------------------------------------------------------------
+   The phone (≤900px)
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .wt {
+    padding-block-start: clamp(3.5rem, 9vw, 6rem);
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .wt__head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'ref'
+      'title'
+      'lead';
+    row-gap: var(--s-3);
+  }
+
+  .wt__ref {
+    padding-block-start: 0;
+  }
+
+  .wt__lead {
+    padding-block-start: 0;
+  }
+
+  .wt__pin {
+    padding-block-start: clamp(1.75rem, 5vw, 2.5rem);
+  }
+
+  .wt__item {
+    padding: var(--s-4) 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The belt — reduced motion
+   ---------------------------------------------------------------------------
+   The media query above already gates every horizontal rule, so this block is a
+   restatement, not the mechanism: if the attribute ever went stale, the list
+   would still be a column, unclipped and without an instrument.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .wt[data-mode='h'] .wt__pin {
+    display: block;
+    min-block-size: 0;
+    padding-block: clamp(2rem, 5vw, 3.5rem) 0;
+  }
+
+  .wt[data-mode='h'] .wt__inner {
+    max-inline-size: 72rem;
+  }
+
+  .wt[data-mode='h'] .wt__strip {
+    overflow: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .wt[data-mode='h'] .wt__list {
+    flex-direction: column;
+    inline-size: 100%;
+    gap: var(--s-5);
+    will-change: auto;
+  }
+
+  .wt[data-mode='h'] .wt__item {
+    flex: none;
+    inline-size: 100%;
+    min-block-size: 0;
+    padding: var(--s-5) 0;
+    border-inline-start: 0;
+  }
+
+  .wt[data-mode='h'] .wt__foot {
+    display: none;
+  }
+}

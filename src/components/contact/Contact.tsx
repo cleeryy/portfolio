@@ -40,11 +40,16 @@ function MailAddress() {
 /**
  * The closing page: the request, one line of invitation, three addresses.
  *
+ * The margin column carries the section's own label (`the request`) and its
+ * coordinate, the way every other chapter is annotated. The ask is display
+ * type on a short measure; the invitation is one paragraph. Then the ledger:
+ * the mail first, because writing is the only thing this page asks for, then
+ * the two places that prove the rest — the code and the writing.
+ *
  * No form, no availability badge, no newsletter — a `mailto:` that works with
- * the script switched off, then the two pages that prove the rest: the code and
- * the writeups. The address is the primary action and it is set in display type,
- * not in a plate: a plate would make a link look like a control, and this is a
- * letter.
+ * the script switched off. The address is set in the sheet's link language
+ * (hairline underline, crimson on hover and focus), never in a plate: a plate
+ * would make a link look like a control, and this is a letter.
  *
  * This component renders two things: the `#contact` section and the page's
  * colophon (`<footer>`), so `<Contact />` belongs last inside `<main>`. The
@@ -69,9 +74,12 @@ export default function Contact() {
 
         <div className="ct__inner">
           <header className="ct__head">
-            <p className="ct__ref mono" aria-hidden="true">
-              <span>#contact</span>
-              <span className="rig-coord" data-rig-coord="" />
+            {/* The margin label replaces the `#contact` reference the other
+                chapters print: this section is named by what it asks for, and
+                the coordinate counts under it. */}
+            <p className="ct__margin mono">
+              <span>{copy.margin}</span>
+              <span className="rig-coord" data-rig-coord="" aria-hidden="true" />
             </p>
 
             <SplitText
@@ -87,7 +95,7 @@ export default function Contact() {
             </p>
           </header>
 
-          {/* An address ledger: the key in the margin, the address on the reading
+          {/* The ledger: the key in the margin, the address on the reading
               column, one rule over the block. The registration square on that
               rule is the section's single survey mark. */}
           <div className="ct__address">
@@ -118,13 +126,15 @@ export default function Contact() {
                     className="ct__link"
                     href={sourceUrl}
                     text={sourceLabel}
+                    rel="noreferrer"
                     onClick={() => sound.click()}
                   />
                 </dd>
               </div>
 
-              {/* The third address is the record: the writeups the training
-                  chapter points at. It is a link, never a badge. */}
+              {/* The third address is the writing: the notes live off the
+                  sheet, and this is where they are read. A link, never a
+                  badge. */}
               <div className="ct__row">
                 <dt className="mono">{copy.blogKey}</dt>
                 <dd>
@@ -132,6 +142,7 @@ export default function Contact() {
                     className="ct__link"
                     href={blogUrl}
                     text={blogLabel}
+                    rel="noreferrer"
                     onClick={() => sound.click()}
                   />
                 </dd>

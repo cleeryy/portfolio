@@ -1,0 +1,20 @@
+/* ============================================================================
+   route-rule.css — the plate change
+   ----------------------------------------------------------------------------
+   One hairline under the fixed bar, parked at zero width. The component draws it
+   with transforms; this file only owns where it sits and what it is made of.
+   Nothing is painted when it is at rest, and it never takes a pointer.
+   ========================================================================== */
+
+.route-rule {
+  position: fixed;
+  inset-block-start: var(--nav-h);
+  inset-inline: 0;
+  z-index: calc(var(--z-nav) - 1);
+  display: block;
+  block-size: var(--hair);
+  background-color: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+}

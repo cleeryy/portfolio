@@ -383,3 +383,111 @@ same material. The light sheet is unchanged.
   between plates, a brush on every plate change, tier-pitched node cues in the territory, the air
   bed's band following the passage's depth, and the room tone's cutoff following scroll velocity.
   Still off by default, still gesture-gated, still zero audio files.
+
+---
+
+## 10. V5 — the sheet gets a body of work
+
+**This section supersedes the page structure of §3, the section sequence of §4, the
+hero of §5.1, and the "built here" table of §8.** §1 (thesis), §2 (tokens), §6 (sound)
+and §7 (provenance) still hold word for word. The sheet did not change; what is printed
+on it did.
+
+### What was wrong
+
+V1–V4 were a survey of the lab with a CV in the margin. Eleven chapters, and five of
+them — `relief`, `ascii`, `interlude`, `request`, `ranges` — carried no payload a reader
+could use. The work itself was six one-line entries under `services`. A recruiter could
+admire the drawing and still not know what had been built. The owner's verdict was
+exact: the form was right, the content was not a portfolio.
+
+### What the pass keeps, because it is the identity
+
+- **The territory schema** (`#territory`) — the one interactive 3D drawing, unchanged:
+  two chassis, every other mark a guest, the request walking edge → fabric → services.
+- **The passage** (`#flight`) — the camera descent through the plate labels, the same
+  instanced field, the same Bayer dissolve into ink. It is now the door to the operator
+  chapter instead of the training one.
+- **The horizontal traverse** — moved from `#ranges` to `#work`, same grammar: one pin,
+  one timeline, a progress rule, a mono plate counter, no scroll hijack.
+- **The ground alternation** — light sheet, the passage turning `--deep` inside its own
+  track, the operator chapter on ink, contact returning to the sheet.
+- Tokens, the two families, the graticule, the grain, the boot plate, the instrument
+  chrome, the survey reticle, the four sound rooms. None of it was touched.
+
+### What it drops
+
+The hero survey plot (the first interactive schema — it was a second territory drawn at
+a smaller size, competing with the real one 1 200 px below and unreadable at rest);
+`#relief`, `#ascii`, `#interlude`, `#request`; `#ranges` as a chapter (its evidence is the
+writeups, which now have `/notes`); `#path` and `#skills` as chapters (folded into
+`#operator` and `/about`); `#services` as one-liners (it became the register).
+
+### The reading order
+
+```
+/          cover → selected work → territory → passage → operator → contact   (6 plates)
+/work      the register — 20 projects in 4 domains, one row each
+/work/:slug  one file per project
+/notes     the writing — 16 posts and writeups, linked to the blog
+/about     the record, five domains of practice, and what is not here
+*          a 404 that is not a dead end
+```
+
+Nav is five items (`Work · Territory · Notes · About · Contact`) plus the language
+switch and the sound plate. Two are anchors on the home sheet, three are routes; every
+anchor works from any route.
+
+### The cover is type, not a diagram
+
+The four bands at the foot of the cover — edge, fabric, services, backup — are a
+*section*, the drawing an architect prints when a plan is not enough: four hairlines,
+one reading each (`one door`, `2 nodes`, `45 documented`, `restored 09/2026`). It is
+DOM, so it cannot fail, cannot blank on a lost WebGL context, and costs no frame. The
+handle rises out of its mask, the claim prints word by word, the rules draw left to
+right; then nothing moves. The first 3D moment on the site is now the territory, which
+is the one that earns it.
+
+Removing the canvas also removed the hero's `data-scene="live"` handshake: the boot
+plate now releases on the bundle plus `document.fonts.ready`, still capped at 0.92 s.
+
+### The traverse, the register, the file
+
+- **`#work`** — six plates: the five featured projects in register order plus a closing
+  plate that states the count and hands over to `/work`. 62 vw plate, 24 vw peek, one
+  ScrollTrigger with `scrub`, the pin on an inner element so `#work` keeps the position
+  the document gave it. Under 900 px, on a coarse pointer, or under reduced motion it is
+  a vertical stack at every width — the same six records, no pin, no translate.
+- **`/work`** — the register, grouped by domain (infrastructure, security, software,
+  experiments). One row per project: name, claim, stack, status, year; the row is the
+  link. The foot note says what "private" means, because half of what he runs is behind
+  SSO and a dead link would be a lie.
+- **`/work/:slug`** — the file: claim, what it is, what he did (three verbs), the meta
+  rail (state, year, access, stack), the links that actually resolve, and previous/next
+  in register order. Unknown slug renders the missing-file copy, not a blank page.
+- **The seal** — a 7 × 7 station lattice with a self-avoiding ink trace of 14–18
+  stations and exactly one crimson mark, seeded by FNV-1a over the slug. Same slug, same
+  mark, on the traverse and on the file: the project's own coordinate, not a logo.
+
+### Routing
+
+A 60-line history router (`src/lib/router.tsx`): `pushState`, `popstate`, real `<a href>`
+so middle-click and copy-link keep working, one 220 ms rule wipe between plates, scroll
+to top on navigation, hash targets resolved after mount. No router dependency — the site
+has five static routes and nginx already falls back to `index.html`.
+
+### Copy doctrine, tightened
+
+Every string lives in `src/content/*.ts` as a `{ en, fr }` pair; French is written, not
+translated (`fr()` sets the non-breaking spaces once, at authoring time). Facts only: no
+certification, no platform rank, no user count, no employer, no diploma claimed, no
+availability date. The one ask the owner states himself — an alternance in a SOC or on
+the offensive side — is the only request on the sheet. The class-delegate line was
+removed on his instruction: it was the exact "LinkedIn suceur" register the design is
+supposed to refuse.
+
+### Counts
+
+6 home plates · 5 nav items · 20 project files · 4 domains · 16 notes · 24 URLs in
+`sitemap.xml` · 4 sound rooms · 1 canvas above the fold (none) · 2 canvases in the whole
+site (territory, passage).

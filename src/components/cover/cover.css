@@ -1,0 +1,447 @@
+/* ============================================================================
+   cover.css — the title sheet
+   ----------------------------------------------------------------------------
+   A printed plate, not a landing page. The sheet is titled at plate scale, the
+   claim and the note are set in one reading column, and the collar is printed in
+   the right margin: four readings, label above value, starting on the handle's
+   cap line. The only drawing is the section at the foot — four bands, one
+   hairline each, the reading at the right edge, its caption in the margin.
+
+   Nothing is drawn behind the type (the atmosphere is the ground), nothing is
+   boxed, nothing is rounded, nothing casts. Hairlines are `--hair`; the only
+   colour is the survey crimson, on the location mark, the primary plate and the
+   transient registration tick on a pointed-at band.
+
+   Composition: one field (`--field`, 72rem), the head at the top, the section
+   drawing on the bottom rule. Above 900px the collar shares the handle's line;
+   below, the whole cover stacks and the readings become a 2×2 block.
+   ========================================================================== */
+
+.cover {
+  /* The fixed bar, plus the air the handle needs under it. Bottom is zero: the
+     drawing's closing rule is the last pixel of the section. */
+  --cover-top: calc(var(--nav-h) + clamp(1.25rem, 3.6vh, 2.75rem));
+
+  position: relative;
+  display: flex;
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding: var(--cover-top) var(--gutter) 0;
+}
+
+.cover__inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  /* The head keeps the top of the sheet, the drawing takes the bottom rule —
+     whatever the viewport height, the two never drift into each other. */
+  justify-content: space-between;
+  gap: clamp(1.5rem, 3.5vh, 2.75rem);
+  inline-size: 100%;
+  max-inline-size: var(--field);
+  margin-inline: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Head — location, handle, claim, note, actions, collar
+   --------------------------------------------------------------------------- */
+
+.cover__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(7.5rem, 12vw, 12rem);
+  grid-template-areas:
+    'kicker kicker'
+    'handle .'
+    'claim  .'
+    'note   .'
+    'actions .';
+  align-content: start;
+  column-gap: clamp(2rem, 5vw, 4.5rem);
+  row-gap: 0;
+  min-width: 0;
+}
+
+.cover__kicker {
+  grid-area: kicker;
+  display: flex;
+  /* The mark belongs to the first line, even when the location wraps on a
+     narrow sheet — it is a point on the title line, not a bullet in a list. */
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: 0 0 clamp(0.75rem, 2vh, 1.25rem);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-2);
+}
+
+/* One of the sheet's few crimson marks: the location point on the title line. */
+.cover__kicker-mark {
+  display: block;
+  flex: none;
+  inline-size: 6px;
+  block-size: 6px;
+  /* Centres the 6px point on the first line's cap. */
+  margin-block-start: 0.3em;
+  background-color: var(--mark);
+}
+
+.cover__handle {
+  grid-area: handle;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-6);
+  font-weight: var(--w-semi);
+  /* The width axis, not a fabricated stretch: this is the plate position. */
+  font-stretch: var(--width-plate);
+  line-height: 0.94;
+  letter-spacing: var(--tracking-plate);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* The claim is the sentence the cover is for; it is not a heading. */
+.cover__claim {
+  grid-area: claim;
+  max-inline-size: 26ch;
+  margin: clamp(1rem, 2.2vh, 1.75rem) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: var(--w-regular);
+  line-height: 1.18;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.cover__note {
+  grid-area: note;
+  max-inline-size: 54ch;
+  margin: clamp(0.875rem, 1.8vh, 1.25rem) 0 0;
+  font-size: var(--step-1);
+  line-height: var(--leading-body);
+  color: var(--ink-2);
+}
+
+.cover__actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4) var(--s-6);
+  margin-block-start: clamp(1.25rem, 2.5vh, 1.75rem);
+}
+
+/* The secondary is a marked measurement, not a second button. */
+.cover__secondary {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink);
+  text-decoration-line: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.34em;
+  text-decoration-color: var(--contour);
+}
+
+.cover__secondary:hover,
+.cover__secondary:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Collar — four readings in the right margin
+   ---------------------------------------------------------------------------
+   The first label starts on the handle's cap line, not on its line box: at
+   `line-height: 0.94` the glyph tops sit `0.077em` below the box top, and the
+   label's own leading accounts for `0.018em`, so `0.06em` puts the printed cap
+   of "nodes" on the printed cap of the handle. The readings are the same
+   instrument voice as the section's values — mono, no prose — and they are not
+   a scoreboard: the label is quiet, the reading is ink.
+   --------------------------------------------------------------------------- */
+
+.cover__collar {
+  grid-column: 2;
+  grid-row: 2 / 6;
+  align-self: start;
+  display: grid;
+  gap: var(--s-4);
+  margin: calc(var(--step-6) * 0.06) 0 0;
+}
+
+.cover__reading {
+  display: grid;
+  justify-items: end;
+  gap: 0.15rem;
+  min-width: 0;
+  text-align: end;
+}
+
+.cover__reading dt {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.cover__reading dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--step-1);
+  font-weight: var(--w-medium);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------
+   The section drawing
+   ---------------------------------------------------------------------------
+   Four bands on one line each: ref · name · detail · value. A real 1px span at
+   the top of every band is the rule (a border cannot be drawn from the left);
+   the first one is ink, the three between the bands are contour, and the figure's
+   closing rule is ink — a framed plate. The value sits at the right edge of the
+   field, in mono, so a column of readings can be compared down the page.
+   --------------------------------------------------------------------------- */
+
+.cover__figure {
+  flex: none;
+  margin: 0;
+  border-block-end: var(--hair) solid var(--ink);
+}
+
+.cover__bands {
+  margin: 0;
+  padding: 0;
+}
+
+.cover__band {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem 10rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: clamp(1rem, 2.5vw, 2rem);
+  padding-block: clamp(0.55rem, 1.3vh, 0.85rem);
+}
+
+.cover__band-rule {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: var(--hair);
+  background-color: var(--contour);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.cover__band:first-child .cover__band-rule {
+  background-color: var(--ink);
+}
+
+/* The registration mark, not a button: 2px of crimson laid on the band's rule
+   under the pointer. `:hover` only — there is no state to keep, so nothing is
+   focusable and nothing is remembered. */
+.cover__band::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--t-base) var(--ease-out);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .cover__band:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+.cover__band-ref {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+.cover__band-name {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  line-height: 1.06;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.cover__band-detail {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1.4;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.cover__band-value {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.cover__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-5);
+  padding-block: var(--s-3) var(--s-4);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1.3;
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.cover__caption-label {
+  color: var(--ink-2);
+}
+
+.cover__caption-note {
+  text-align: end;
+}
+
+/* ---------------------------------------------------------------------------
+   The phone — the same sheet, stacked (≤900px)
+   ---------------------------------------------------------------------------
+   Order is fixed: kicker, handle, claim, note, actions, the four readings as a
+   2×2 block, then the drawing. The readings keep the label-above-value form;
+   only their arrangement changes.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .cover {
+    --cover-top: calc(var(--nav-h) + var(--s-5) + env(safe-area-inset-top, 0px));
+  }
+
+  /* The handle is the measure on a phone: at the fluid step it stopped ~100px
+     short of the right margin at 390px. 25.6vw fills the measure and keeps the
+     right side bearing: at 27vw the last `y` sat flush against the margin and
+     read as clipped. Capped at 8rem so a tablet keeps its own size; tracking
+     unchanged. */
+  .cover__handle {
+    font-size: min(25.6vw, 8rem);
+  }
+
+  .cover__inner {
+    gap: clamp(2rem, 5vh, 3rem);
+  }
+
+  .cover__head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'kicker'
+      'handle'
+      'claim'
+      'note'
+      'actions'
+      'collar';
+    column-gap: 0;
+  }
+
+  .cover__collar {
+    grid-area: collar;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-4) var(--s-5);
+    margin-block-start: var(--s-5);
+    padding-block-start: var(--s-4);
+    border-block-start: var(--hair) solid var(--contour);
+  }
+
+  /* The stacked collar is read left to right, not against the right margin. */
+  .cover__reading {
+    justify-items: start;
+    text-align: start;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The narrow phone (≤640px)
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .cover {
+    --cover-top: calc(var(--nav-h) + var(--s-4) + env(safe-area-inset-top, 0px));
+  }
+
+  .cover__claim {
+    margin-block-start: var(--s-4);
+  }
+
+  .cover__note {
+    margin-block-start: var(--s-3);
+    font-size: var(--step-0);
+  }
+
+  .cover__actions {
+    gap: var(--s-3) var(--s-5);
+    margin-block-start: var(--s-5);
+  }
+
+  .cover__collar {
+    gap: var(--s-3) var(--s-4);
+  }
+
+  /* A band keeps its one line, but the detail drops under the name rather than
+     squeezing into a 30px column: ref · name · value, then the instruments. */
+  .cover__band {
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      'ref name value'
+      '. detail detail';
+    row-gap: var(--s-1);
+    padding-block: var(--s-3);
+  }
+
+  .cover__band-ref {
+    grid-area: ref;
+  }
+
+  .cover__band-name {
+    grid-area: name;
+  }
+
+  .cover__band-detail {
+    grid-area: detail;
+    overflow-wrap: anywhere;
+  }
+
+  .cover__band-value {
+    grid-area: value;
+  }
+
+  .cover__caption {
+    justify-content: flex-start;
+    gap: var(--s-1);
+  }
+
+  .cover__caption-note {
+    text-align: start;
+  }
+}

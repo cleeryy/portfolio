@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local Playwright MCP artefacts
+.playwright-mcp/
+
+# Local scratch prompts (never part of the site)
+.prompt-*.txt

@@ -195,7 +195,7 @@ export function territoryTrace(id: string): string[] {
  * appear anywhere in this file.
  */
 export const territorySummary = {
-  exposedPublicHosts: 39,
+  exposedPublicHosts: 38,
   internalHosts: 28,
   source: {
     en: 'counted from the reverse-proxy config, 30 October 2026',

@@ -1,0 +1,415 @@
+/* ============================================================================
+   register.css — the register
+   ----------------------------------------------------------------------------
+   One field, four ruled groups, one row per project. The page is a printed
+   register: a title block opening on the sheet's ink rule and its 76 × 2
+   registration tick, a domain header over each group, then a table of records
+   whose every line is a link into the file.
+
+   **One track for the header and the rows.** `--reg-cols` and `--reg-gap` are
+   declared once and used by both the group header and the row, so the domain
+   label, its note and the count sit over the name, the claim and the year
+   instead of drifting onto a second grid.
+
+   **The entry is its hairline, not a box.** Nothing is filled, rounded or
+   shadowed; the row is a bottom rule and five readings above it.
+
+   **The response is transform-only.** On hover the rule darkens (a colour, not
+   a movement), the name lifts 6% on the width axis and a 6px survey square
+   slides in from the gutter. The square is absolute and scaled from zero, so
+   nothing reflows and nothing is reserved. Both movements are declared inside
+   `prefers-reduced-motion: no-preference`: under reduce the row still darkens
+   and still takes the focus ring, but nothing travels.
+
+   **The phone is a three-line block**, not a squeezed table: name and year, the
+   claim under, instruments and state on one mono line. The registration square
+   is not printed below 900px — there is no gutter beside the field for it to
+   slide into, and the darkened rule is answer enough.
+   ========================================================================== */
+
+.reg {
+  /* The page's one track and one gap. Both the group header and the row use
+     them, which is what makes the columns line up across a whole group. */
+  --reg-cols: repeat(12, minmax(0, 1fr));
+  --reg-gap: clamp(1rem, 2vw, 2rem);
+
+  padding-block: calc(var(--nav-h) + clamp(2rem, 6vw, 4rem)) clamp(4rem, 9vw, 7rem);
+  padding-inline: var(--gutter);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* ---------------------------------------------------------------------------
+   The field and its opening rule
+   ---------------------------------------------------------------------------
+   The rule spans the whole measure; the words keep their reading measures. This
+   is a title block, so the rule is real estate, not decoration.
+   --------------------------------------------------------------------------- */
+
+.reg__field {
+  position: relative;
+  max-inline-size: var(--field);
+  margin-inline: auto;
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+/* The sheet's registration tick: 76 × 2, laid on the rule, at its left end. */
+.reg__mark {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--hair));
+  inset-inline-start: 0;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Head — reading rail, title, lead
+   ---------------------------------------------------------------------------
+   The same three-column opening as the #work chapter: the measurement in the
+   annotation rail, the title on the reading column, the lead in the right half.
+   Below 900px it is one column, read count → title → lead.
+   --------------------------------------------------------------------------- */
+
+.reg__head {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 44ch);
+  grid-template-areas: 'count title lead';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: var(--s-5);
+  padding-block-start: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.reg__count {
+  grid-area: count;
+  /* Lands on the title's cap line rather than on its line box. */
+  padding-block-start: 0.65rem;
+  color: var(--ink-2);
+}
+
+.reg__title {
+  grid-area: title;
+  max-inline-size: 14ch;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.reg__lead {
+  grid-area: lead;
+  max-inline-size: 44ch;
+  padding-block-start: 0.55rem;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Groups
+   --------------------------------------------------------------------------- */
+
+.reg__groups {
+  display: grid;
+  gap: clamp(3rem, 6vw, 5rem);
+  margin-block-start: clamp(2.25rem, 5vw, 4rem);
+}
+
+.reg__group {
+  min-inline-size: 0;
+}
+
+/* Label over the name column, note over the claim, count in the year column:
+   the three readings share the rows' tracks and their baseline. Column 11 is
+   left as air between the note and the count. */
+.reg__group-head {
+  display: grid;
+  grid-template-columns: var(--reg-cols);
+  column-gap: var(--reg-gap);
+  align-items: baseline;
+  padding-block: var(--s-3) var(--s-2);
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.reg__group-label {
+  grid-column: 1 / span 5;
+  font-size: var(--step-2);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.reg__group-note {
+  grid-column: 6 / span 5;
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+.reg__group-count {
+  grid-column: 12 / span 1;
+  text-align: end;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Rows — one link, five readings
+   --------------------------------------------------------------------------- */
+
+.reg__list {
+  margin: 0;
+  padding: 0;
+}
+
+.reg__item {
+  min-inline-size: 0;
+}
+
+/* The whole line is the target. The border is the entry: a register has no
+   cards, only rules. */
+.reg__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--reg-cols);
+  column-gap: var(--reg-gap);
+  align-items: baseline;
+  padding-block: 0.9rem;
+  color: var(--ink);
+  text-decoration: none;
+  border-block-end: var(--hair) solid var(--contour);
+  transition: border-block-end-color var(--t-fast) var(--ease-out);
+}
+
+/* Every cell shrinks rather than widening the field. */
+.reg__row > * {
+  min-inline-size: 0;
+}
+
+.reg__name {
+  grid-column: 1 / span 3;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  /* The body width at rest; the hover state lifts it six points. */
+  font-stretch: var(--width-body);
+  line-height: 1.12;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  /* A long slug breaks inside its column instead of pushing the grid wider. */
+  overflow-wrap: anywhere;
+  transition: font-stretch var(--t-base) var(--ease-out);
+}
+
+/* Two lines, never three: the register's rows keep one rhythm. */
+.reg__claim {
+  grid-column: 4 / span 4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: clip;
+  font-size: var(--step-0);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.reg__stack {
+  grid-column: 8 / span 2;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+.reg__status {
+  grid-column: 10 / span 2;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.reg__year {
+  grid-column: 12 / span 1;
+  text-align: end;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+   The response — rule, width, registration square
+   ---------------------------------------------------------------------------
+   The square sits 16px into the gutter, centred on the row, and slides from
+   -10px while scaling up. Position, origin and size are fixed, so the whole
+   gesture is a composited transform: nothing is reserved and nothing reflows.
+   --------------------------------------------------------------------------- */
+
+.reg__row::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: calc(-1 * var(--s-4));
+  inline-size: 6px;
+  block-size: 6px;
+  background-color: var(--mark);
+  transform: translate(-10px, -50%) scale(0);
+  transform-origin: left center;
+  transition: transform var(--t-base) var(--ease-out);
+  pointer-events: none;
+}
+
+/* A rule darkening is a colour change, not a movement: it survives reduced
+   motion, and every pointer gets it. */
+.reg__row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  /* The sheet has square corners; the base ring's 1px radius is not wanted. */
+  border-radius: var(--r-0);
+  border-block-end-color: var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reg__row:focus-visible .reg__name {
+    font-stretch: 106%;
+  }
+
+  .reg__row:focus-visible::before {
+    transform: translate(0, -50%) scale(1);
+  }
+}
+
+/* Hover is a response, so it is only declared for a device that can hover: a
+   tap leaves no sticky width lift behind. */
+@media (hover: hover) {
+  .reg__row:hover {
+    border-block-end-color: var(--ink);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .reg__row:hover .reg__name {
+    font-stretch: 106%;
+  }
+
+  .reg__row:hover::before {
+    transform: translate(0, -50%) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Foot — the closing rule and the colophon
+   --------------------------------------------------------------------------- */
+
+.reg__foot {
+  margin-block-start: clamp(2.5rem, 5vw, 4rem);
+  padding-block-start: var(--s-4);
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+.reg__note {
+  max-inline-size: 60ch;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+   The phone (≤900px)
+   ---------------------------------------------------------------------------
+   No twelve-column table: the record becomes a three-line block — name and
+   year, the claim, then instruments and state on one mono line. The whole block
+   is still the link, with a 44px floor under the thumb.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .reg {
+    padding-block-start: calc(var(--nav-h-compact) + clamp(2rem, 7vw, 3rem));
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .reg__head {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'count'
+      'title'
+      'lead';
+    row-gap: var(--s-3);
+  }
+
+  .reg__count,
+  .reg__lead {
+    padding-block-start: 0;
+  }
+
+  /* The label takes the full measure, then note and count share the second
+     line: three readings, no column squeezed into 60px. */
+  .reg__group-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'label label'
+      'note  count';
+    column-gap: var(--s-4);
+    row-gap: var(--s-1);
+  }
+
+  .reg__group-label {
+    grid-area: label;
+  }
+
+  .reg__group-note {
+    grid-area: note;
+  }
+
+  .reg__group-count {
+    grid-area: count;
+  }
+
+  .reg__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name  year'
+      'claim claim'
+      'stack status';
+    column-gap: var(--s-4);
+    row-gap: var(--s-2);
+    min-block-size: 44px;
+    padding-block: 0.9rem;
+  }
+
+  .reg__name {
+    grid-area: name;
+  }
+
+  /* The claim is the only description on the narrow sheet, so it is printed in
+     full: the two-line clamp is a table constraint, not an editorial one. */
+  .reg__claim {
+    grid-area: claim;
+    display: block;
+    -webkit-line-clamp: none;
+    line-clamp: none;
+    overflow: visible;
+  }
+
+  /* One mono line, cut with an ellipsis: the full list of instruments is on the
+     file, and the row's third line must stay one line so the state beside it
+     never drifts onto a second reading. */
+  .reg__stack {
+    grid-area: stack;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+  }
+
+  .reg__status {
+    grid-area: status;
+  }
+
+  .reg__year {
+    grid-area: year;
+  }
+
+  /* The square slides into a gutter the phone does not have. */
+  .reg__row::before {
+    display: none;
+  }
+}

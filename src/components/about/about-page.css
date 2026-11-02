@@ -1,0 +1,473 @@
+/* ============================================================================
+   about-page.css — the record, without the costume
+   ----------------------------------------------------------------------------
+   One field, three ruled chapters. The page is the sheet's own document: the
+   ink rule and its 76 × 2 registration tick open it exactly as the register and
+   the project file do, the title block keeps the reading measures, and each
+   chapter is a top hairline with its label in the margin.
+
+   **The record's spine.** The chronology is an ordered list whose year lives in
+   a fixed mono margin. The spine is the list's `::before`: absolutely
+   positioned, 1px `--contour`, `inset-block: 0`, and `inset-inline-start` at the
+   year column's width — the edge of the margin. Because it is the list's own
+   pseudo-element it stops at the first and last entry without a second rule,
+   and because the first and last entries lose their outer padding it lands on
+   the first year's cap line and the last note's baseline. The year is
+   right-aligned and padded away from the line, so the rule reads as the log's
+   margin, not as a column border.
+
+   **The practice blocks.** A label and its qualifier share a baseline; the
+   qualifier is the page's only tag-like device, a small hairline plate with
+   crimson text, and it is allowed because it measures the practice (`in
+   production`, `in a lab`) rather than decorating it. Instruments are one mono
+   paragraph joined with ` + ` — never a row of chips — and the proof keeps the
+   52ch measure. Blocks are separated by the same `--contour` hairline as every
+   other ruled list on the sheet.
+
+   **The one dark break.** `honesty` carries `on-deep` and bleeds to the viewport
+   edges with the negative gutter; its content is the field again. Every colour
+   in the band comes from the tokens `.on-deep` re-points (`--text`, `--rule`),
+   so there is no second dark surface and no invented ink. The band's top
+   hairline is `--rule`, which is the deep theme's rule token.
+
+   **The page ends light.** The contact CTA sits below the band on the ground,
+   in the sheet's text-link register: display type, a hairline `--contour`
+   underline, crimson only in answer. On the phone the link takes the 44px
+   thumb floor.
+
+   Nothing here paints a surface, adds a radius, a shadow or a new colour. The
+   background belongs to the app (Atmosphere, SheetGrid, Grain).
+   ========================================================================== */
+
+.ab {
+  /* The year margin and the gutter between every two columns on the page. The
+     record's spine, the block label column and the record's content all share
+     them, so the chapter label sits over the years and the lead over the
+     reading. */
+  --ab-year: clamp(4.25rem, 8vw, 5.5rem);
+  --ab-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+
+  padding-block: calc(var(--nav-h) + clamp(1.75rem, 4vw, 3rem)) clamp(4rem, 9vw, 7rem);
+  padding-inline: var(--gutter);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* The field and its opening rule. The rule spans the measure; the words keep
+   their reading measures. */
+.ab__inner {
+  position: relative;
+  max-inline-size: var(--field);
+  margin-inline: auto;
+  padding-block-end: clamp(2.5rem, 6vw, 4.5rem);
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+/* The sheet's registration tick: 76 × 2, laid on the rule, at its left end. */
+.ab__mark {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--hair));
+  inset-inline-start: 0;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Head — title and lead, no count
+   ---------------------------------------------------------------------------
+   The register's opening without its measurement: the title on the left, the
+   lead in the right half, both starting on the rule. Below 900px it is one
+   column, title then lead.
+   --------------------------------------------------------------------------- */
+
+.ab__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 50ch);
+  column-gap: var(--ab-gap);
+  align-items: start;
+  padding-block: clamp(1.5rem, 3vw, 2.25rem) clamp(2.5rem, 5.5vw, 4rem);
+}
+
+.ab__title {
+  max-inline-size: 16ch;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.ab__lead {
+  max-inline-size: 50ch;
+  padding-block-start: 0.55rem;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Chapters — a top hairline and a margin label
+   ---------------------------------------------------------------------------
+   The first chapter's rule is ink (it opens the body of the page); the next is
+   contour, like every ruled list on the sheet. The label keeps the year column
+   and the lead keeps the reading column, so the two readings sit over what they
+   name.
+   --------------------------------------------------------------------------- */
+
+.ab__block {
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.ab__block:first-of-type {
+  border-block-start-color: var(--ink);
+}
+
+/* Air between two chapters: the rule is the separation, the margin keeps the
+   last line of one chapter off the next chapter's rule. */
+.ab__block + .ab__block {
+  margin-block-start: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.ab__block-head {
+  display: grid;
+  grid-template-columns: var(--ab-year) minmax(0, 1fr);
+  column-gap: var(--ab-gap);
+  align-items: baseline;
+  padding-block: var(--s-3) clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+/* A label is an annotation, not a second title: mono, regular and quiet. The
+   `.ab` prefix keeps this ahead of the base `h2` and `.mono` whatever order the
+   stylesheets load in. */
+.ab .ab__block-label {
+  line-height: 1.5;
+  font-weight: var(--w-regular);
+  letter-spacing: var(--tracking-mono);
+  color: var(--ink-3);
+}
+
+.ab .ab__block-lead {
+  max-inline-size: 50ch;
+  font-size: var(--step-0);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Record — year in the margin, spine at its edge
+   --------------------------------------------------------------------------- */
+
+.ab__record {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The spine. It spans the list's block axis exactly: the first and last
+   entries drop their outer padding, so the line starts on the first year and
+   stops at the last entry rather than floating in the chapter's air. */
+.ab__record::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--ab-year);
+  inline-size: var(--hair);
+  background-color: var(--contour);
+  pointer-events: none;
+}
+
+.ab__entry {
+  display: grid;
+  grid-template-columns: var(--ab-year) minmax(0, 1fr);
+  column-gap: var(--ab-gap);
+  align-items: baseline;
+  padding-block: clamp(0.9rem, 1.7vw, 1.1rem);
+}
+
+.ab__entry:first-child {
+  padding-block-start: 0;
+}
+
+.ab__entry:last-child {
+  padding-block-end: 0;
+}
+
+/* Right-aligned against the spine, with the padding that keeps the numerals
+   off the line. */
+.ab .ab__year {
+  min-inline-size: 0;
+  padding-inline-end: 0.9rem;
+  text-align: end;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+
+.ab__entry-body {
+  min-inline-size: 0;
+}
+
+.ab .ab__entry-label {
+  max-inline-size: 100%;
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-heading);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.ab .ab__entry-note {
+  max-inline-size: 54ch;
+  margin-block-start: 0.35rem;
+  font-size: var(--step-0);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Practice — five domains, one measurement each
+   ---------------------------------------------------------------------------
+   The label and the qualifier sit on one baseline; the plate is square, a
+   hairline, and small — the way a survey key annotates a symbol. Instruments
+   are one paragraph, never a chip row, and the proof takes the shorter measure.
+   --------------------------------------------------------------------------- */
+
+.ab__discipline {
+  padding-block: clamp(1.35rem, 2.8vw, 2rem);
+}
+
+.ab__discipline:first-child {
+  padding-block-start: 0;
+}
+
+.ab__discipline:last-child {
+  padding-block-end: 0;
+}
+
+/* The rule between two practices is the sheet's, and the first block sits
+   directly under the chapter's own header. */
+.ab__discipline + .ab__discipline {
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+.ab__discipline-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.85rem;
+  row-gap: 0.4rem;
+}
+
+.ab .ab__discipline-label {
+  max-inline-size: 100%;
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-heading);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+/* The page's only tag-like device, and it is a measurement: a square hairline
+   plate with crimson text, aligned on the label's baseline. */
+.ab .ab__qualifier {
+  display: inline-block;
+  padding: 0.15em 0.45em;
+  border: var(--hair) solid var(--contour);
+  font-size: var(--step--2);
+  line-height: 1.4;
+  color: var(--mark);
+  white-space: nowrap;
+}
+
+.ab .ab__instruments {
+  margin-block-start: 0.55rem;
+  font-size: var(--step--2);
+  line-height: 1.7;
+  color: var(--ink-3);
+  /* A long instrument name breaks inside the paragraph instead of widening the
+     field; the line stays one reading, not a set of chips. */
+  overflow-wrap: anywhere;
+}
+
+.ab .ab__proof {
+  max-inline-size: 52ch;
+  margin-block-start: 0.5rem;
+  font-size: var(--step-0);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Honesty — the page's one dark break
+   ---------------------------------------------------------------------------
+   The negative gutter takes the band to the viewport edges; the padding brings
+   the field back, and the inner column is the same 72rem measure as the rest of
+   the sheet. Every colour below is a token `.on-deep` re-points; the top
+   hairline is the deep theme's `--rule`, not a new line colour.
+   --------------------------------------------------------------------------- */
+
+.ab__honesty {
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+  padding-block: clamp(4rem, 8vw, 6.5rem);
+  border-block-start: var(--hair) solid var(--rule);
+}
+
+.ab__honesty-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 34ch);
+  column-gap: var(--ab-gap);
+  align-items: start;
+  max-inline-size: var(--field);
+  margin-inline: auto;
+}
+
+/* A title, not a margin label: it leaves the mono annotation register and takes
+   the sheet's display face at `--step-3`. */
+.ab .ab__honesty-title {
+  max-inline-size: 18ch;
+  font-size: var(--step-3);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  line-height: 1.06;
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+  text-wrap: balance;
+}
+
+/* The band's one paragraph keeps the short measure: an ink page is read slower,
+   and 34ch is a statement, not a column of prose. */
+.ab .ab__honesty-text {
+  max-inline-size: 34ch;
+  padding-block-start: 0.3rem;
+  font-size: var(--step-1);
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.ab__block-head--honesty {
+  grid-template-columns: minmax(0, 1fr);
+  padding-block: 0 clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+/* ---------------------------------------------------------------------------
+   Foot — back on the sheet, one destination
+   ---------------------------------------------------------------------------
+   The ink rule above the CTA closes the document. The link is display type with
+   the sheet's hairline underline; crimson is the pointer's answer, not a mark.
+   --------------------------------------------------------------------------- */
+
+.ab__foot {
+  max-inline-size: var(--field);
+  margin-inline: auto;
+  margin-block-start: clamp(2.5rem, 6vw, 4.5rem);
+  padding-block-start: clamp(1.25rem, 3vw, 2rem);
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+.ab__foot-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: clamp(1.25rem, 3vw, 2.25rem);
+  row-gap: var(--s-2);
+}
+
+.ab .ab__cta {
+  display: inline-block;
+  padding-block: 0.15rem;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-heading);
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.ab .ab__cta:hover,
+.ab .ab__cta:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+.ab .ab__contact-note {
+  max-inline-size: 40ch;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+   The phone (≤900px)
+   ---------------------------------------------------------------------------
+   One column for the head, the chapter headers and the band. The record's year
+   moves above its label and the spine moves to the far left of the list, where
+   it still marks the chronology without squeezing the year into a 68px column.
+   The CTA takes the 44px thumb floor.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .ab {
+    padding-block-start: calc(var(--nav-h-compact) + clamp(2rem, 7vw, 3rem));
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .ab__head,
+  .ab__block-head {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-3);
+  }
+
+  .ab__lead {
+    padding-block-start: 0;
+  }
+
+  /* The record: one column per entry, year over label. The spine is still the
+     list's pseudo-element, now at the list's left edge; the entries' padding is
+     the gutter between the line and the reading. */
+  .ab__record::before {
+    inset-inline-start: 0;
+  }
+
+  .ab__entry {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.15rem;
+    padding-inline-start: var(--s-4);
+  }
+
+  .ab .ab__year {
+    padding-inline-end: 0;
+    text-align: start;
+  }
+
+  .ab__honesty-inner {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-4);
+  }
+
+  /* The band's row gap separates the title from its paragraph; the header's own
+     bottom padding would print the gap twice. */
+  .ab__block-head--honesty {
+    padding-block-end: 0;
+  }
+
+  .ab .ab__honesty-text {
+    padding-block-start: 0;
+  }
+
+  .ab .ab__cta {
+    /* A thumb needs the target, not the label. */
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 44px;
+  }
+}
