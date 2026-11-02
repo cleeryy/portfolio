@@ -65,7 +65,7 @@ export const handle = 'cleeryy'
  */
 export const gridReference = '10.1.20.x'
 
-export const hero: Bi<HeroCopy> = {
+export const cover: Bi<HeroCopy> = {
   en: {
     kicker: 'Toulouse, FR — infrastructure & security',
     claim: 'I run the network I learn on.',

@@ -3,7 +3,7 @@ import { gsap } from 'gsap'
 import type { Bi } from '../lib/i18n'
 import { useLang } from '../lib/i18n'
 import { sound } from '../lib/sound'
-import { handle } from '../content/hero'
+import { handle } from '../content/cover'
 import { announceSheetReady } from './handoff'
 import './boot.css'
 

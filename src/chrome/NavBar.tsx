@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../lib/i18n'
 import { Link, useRoute } from '../lib/router'
-import { handle } from '../content/hero'
+import { handle } from '../content/cover'
 import { homeSections, navItems } from '../content/site'
 import { observeCurrentSection } from '../lib/currentSection'
 import { RolloverLabel } from '../ui/Rollover'

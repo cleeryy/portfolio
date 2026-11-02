@@ -3,7 +3,7 @@ import { gsap } from 'gsap'
 import { useLang } from '../../lib/i18n'
 import { Link, navigate } from '../../lib/router'
 import { MOTION, prefersReducedMotion } from '../../lib/reveal'
-import { handle, hero } from '../../content/hero'
+import { handle, cover } from '../../content/cover'
 import MagneticButton from '../../ui/MagneticButton'
 import SplitText from '../../ui/SplitText'
 import Ghost from '../../ui/Ghost'
@@ -30,7 +30,7 @@ import './cover.css'
 
 export default function Cover() {
   const { pick } = useLang()
-  const copy = pick(hero)
+  const copy = pick(cover)
   const rootRef = useRef<HTMLElement | null>(null)
 
   useLayoutEffect(() => {
