@@ -4,10 +4,10 @@ import type { Note } from '../../content/notes'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
 import Ghost from '../../ui/Ghost'
-import './notes-page.css'
+import './notes.css'
 
 /* ============================================================================
-   NotesPage — the writing, read as a ruled register
+   Notes — the writing, read as a ruled register
    ----------------------------------------------------------------------------
    A document page, not a chapter: one field on the sheet, opened by the ink
    rule and its 76 × 2 registration tick, then a header and a stack of years.
@@ -66,7 +66,7 @@ function groupByYear(entries: readonly Note[]): NoteYear[] {
    computed once at load instead of on every language switch. */
 const noteYears = groupByYear(notes)
 
-export default function NotesPage() {
+export default function Notes() {
   const { pick } = useLang()
   const copy = pick(notesCopy)
 

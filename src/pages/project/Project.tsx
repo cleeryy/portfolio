@@ -6,7 +6,7 @@ import Ghost from '../../ui/Ghost'
 import './project.css'
 
 /* ============================================================================
-   ProjectFile — one entry of the register, opened
+   Project — one entry of the register, opened
    ----------------------------------------------------------------------------
    The register's leaf. A project is read in three moves: a title block (the
    reference, the name, the claim, and the project's seal as a cartouche), a
@@ -40,7 +40,7 @@ type ProjectFileProps = { slug: string }
 /** Two digits: a file reference is a coordinate, not a count. */
 const pad2 = (value: number) => String(value).padStart(2, '0')
 
-export default function ProjectFile({ slug }: ProjectFileProps) {
+export default function Project({ slug }: ProjectFileProps) {
   const { pick } = useLang()
   const copy = pick(fileCopy)
   const project = projectBySlug(slug)

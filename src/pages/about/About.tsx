@@ -2,10 +2,10 @@ import { aboutPage, practice, record } from '../../content/about'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
 import Ghost from '../../ui/Ghost'
-import './about-page.css'
+import './about.css'
 
 /* ============================================================================
-   AboutPage — the record, without the costume
+   About — the record, without the costume
    ----------------------------------------------------------------------------
    The long version of the operator chapter, printed as a document: one field
    opened by the sheet's ink rule and its 76 × 2 registration tick, a title
@@ -32,7 +32,7 @@ import './about-page.css'
    unmount has nothing to release and a deep link prints the same sheet.
    ========================================================================== */
 
-export default function AboutPage() {
+export default function About() {
   const { pick } = useLang()
   const copy = pick(aboutPage)
 

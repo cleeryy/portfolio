@@ -1,9 +1,9 @@
-import Contact from '../sections/contact/Contact'
-import Cover from '../sections/cover/Cover'
-import Flight from '../sections/flight/Flight'
-import Operator from '../sections/operator/Operator'
-import Territory from '../sections/territory/Territory'
-import SelectedWork from '../sections/work/SelectedWork'
+import Contact from '../../sections/contact/Contact'
+import Cover from '../../sections/cover/Cover'
+import Flight from '../../sections/flight/Flight'
+import Operator from '../../sections/operator/Operator'
+import Territory from '../../sections/territory/Territory'
+import SelectedWork from '../../sections/work/SelectedWork'
 
 /**
  * The home sheet: cover → selected work → territory → passage → operator →

@@ -2,10 +2,10 @@ import { domains, projects, projectsByDomain, workCopy } from '../../content/wor
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
 import Ghost from '../../ui/Ghost'
-import './register.css'
+import './work.css'
 
 /* ============================================================================
-   Register — the register: every project, read as a ruled table
+   Work — the register: every project, read as a ruled table
    ----------------------------------------------------------------------------
    A document page, not a chapter. One field on the sheet, opened by the ink rule
    and its 76 × 2 registration tick, then four domains and one row per project.
@@ -45,7 +45,7 @@ function stackLine(stack: readonly string[]): string {
   return stack.length > 3 ? `${head} …` : head
 }
 
-export default function Register() {
+export default function Work() {
   const { pick } = useLang()
   const copy = pick(workCopy)
 

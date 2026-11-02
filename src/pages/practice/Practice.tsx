@@ -3,10 +3,10 @@ import { platforms, practiceCopy, ranges, tools } from '../../content/practice'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
 import Ghost from '../../ui/Ghost'
-import './practice-page.css'
+import './practice.css'
 
 /* ============================================================================
-   PracticePage — the offensive record
+   Practice — the offensive record
    ----------------------------------------------------------------------------
    A document page, in the same grammar as `/work` and `/notes`: one field opened
    by the sheet's ink rule and its 76 × 2 registration tick, a title block, then
@@ -32,7 +32,7 @@ import './practice-page.css'
    The page is static: no trigger, no observer, no RAF to release.
    ========================================================================== */
 
-export default function PracticePage() {
+export default function Practice() {
   const { pick } = useLang()
   const copy = pick(practiceCopy)
 
