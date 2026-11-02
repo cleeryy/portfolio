@@ -1,0 +1,117 @@
+/* ============================================================================
+   not-found.css — a sheet with a missing plate
+   ----------------------------------------------------------------------------
+   The same survey sheet with one plate cut out of it. A thin rule across the
+   field, its registration tick, a margin label, the title, one line, two ways
+   back — and then the empty ground the missing plate would have stood on.
+
+   Nothing here is a panel or a centred "error card": the block sits on the
+   sheet's field like a title block that has lost its drawing, and it keeps the
+   page to about 60vh so the reader sees the whole answer at once.
+
+   The only crimson on the page is the 76 × 2 tick on the rule, the same mark
+   the chapters carry. Everything else is ink on the sheet.
+   ========================================================================== */
+
+.nf {
+  min-block-size: max(60svh, 24rem);
+  padding-block: calc(var(--nav-h) + clamp(2rem, 6vw, 4rem)) clamp(3rem, 8vw, 6rem);
+  padding-inline: var(--gutter);
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* The field: the rule spans the whole measure, the words keep the reading
+   measure. A 404 is a title block, so the rule is real estate, not decoration. */
+.nf__inner {
+  position: relative;
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+.nf__mark {
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline-start: 0;
+  inline-size: 76px;
+  block-size: 2px;
+  background-color: var(--mark);
+}
+
+.nf__head {
+  max-width: 44rem;
+  padding-block-start: clamp(1.25rem, 3vw, 2rem);
+}
+
+.nf__margin {
+  margin: 0 0 clamp(0.9rem, 2.5vw, 1.6rem);
+  color: var(--text-quiet);
+}
+
+.nf__title {
+  max-width: 16ch;
+  margin: 0;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.04;
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+}
+
+.nf__lead {
+  max-width: 46ch;
+  margin: clamp(0.9rem, 2vw, 1.35rem) 0 0;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+.nf__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-3) clamp(1.5rem, 4vw, 3rem);
+  margin: clamp(1.75rem, 4vw, 2.75rem) 0 0;
+}
+
+/* The sheet's text-link register: the hairline is drawn by `--roll-rule` when
+   the label splits into characters, and by `text-decoration` when it stays
+   plain (narrow sheet, coarse pointer, reduced motion). */
+.nf__link {
+  display: inline-block;
+  padding-block: 0.3rem;
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.3;
+  letter-spacing: -0.008em;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-decoration-color: var(--contour);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+  --roll-rule: var(--contour);
+}
+
+.nf__link:hover,
+.nf__link:focus-visible {
+  text-decoration-color: var(--mark);
+  --roll-rule: var(--mark);
+}
+
+@media (max-width: 900px) {
+  .nf {
+    padding-block-start: calc(var(--nav-h-compact) + clamp(2rem, 7vw, 3rem));
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .nf__link {
+    /* A thumb needs the target, not the label. */
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 44px;
+  }
+}
