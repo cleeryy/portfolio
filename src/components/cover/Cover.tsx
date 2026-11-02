@@ -6,6 +6,7 @@ import { MOTION, prefersReducedMotion } from '../../lib/reveal'
 import { handle, hero } from '../../content/hero'
 import MagneticButton from '../ui/MagneticButton'
 import SplitText from '../ui/SplitText'
+import Ghost from '../type/Ghost'
 import './cover.css'
 
 /* ============================================================================
@@ -37,7 +38,8 @@ export default function Cover() {
     if (!root || prefersReducedMotion()) return
 
     const ctx = gsap.context(() => {
-      const handleUnits = gsap.utils.toArray<HTMLElement>('.cover__handle [data-split-unit]', root)
+      const handleEl = root.querySelector<HTMLElement>('.cover__handle')
+      const handleInk = root.querySelector<HTMLElement>('.cover__handle [data-ghost-ink]')
       const claimUnits = gsap.utils.toArray<HTMLElement>('.cover__claim [data-split-unit]', root)
       const note = root.querySelector<HTMLElement>('.cover__note')
       const rules = gsap.utils.toArray<HTMLElement>('.cover__band-rule', root)
@@ -45,13 +47,24 @@ export default function Cover() {
       const tl = gsap.timeline({ defaults: { ease: MOTION.ease } })
 
       // The handle rises out of its own line box first: the sheet is titled
-      // before anything is said on it.
-      tl.fromTo(
-        handleUnits,
-        { yPercent: MOTION.travel },
-        { yPercent: 0, duration: MOTION.duration, stagger: MOTION.stagger },
-        0,
-      )
+      // before anything is said on it. The crimson plate is deferred while the
+      // ink is still inside the mask, then fades in once the word has landed —
+      // a second impression pulled after the first, never during it.
+      if (handleInk && handleEl) {
+        tl.fromTo(
+          handleInk,
+          { yPercent: MOTION.travel },
+          {
+            yPercent: 0,
+            duration: MOTION.duration,
+            ease: MOTION.ease,
+            onComplete: () => {
+              handleEl.dataset.ghost = 'ready'
+            },
+          },
+          0,
+        )
+      }
 
       // The claim prints word by word, on the same curve and the same stagger.
       tl.fromTo(
@@ -95,7 +108,7 @@ export default function Cover() {
             {copy.kicker}
           </p>
 
-          <SplitText as="h1" id="cover-title" className="cover__handle" text={handle} />
+          <Ghost as="h1" id="cover-title" className="cover__handle" text={handle} mask />
 
           <SplitText as="p" className="cover__claim" text={copy.claim} />
 
@@ -115,6 +128,15 @@ export default function Cover() {
             <Link className="cover__secondary" to="#territory" data-hud="#territory">
               {copy.secondaryCta}
             </Link>
+
+            {/* The one line a recruiter reads, in the action row after the two
+                CTAs. It is a reading, not a third button: mono, one crimson
+                square, separated by a hairline. On a phone the stylesheet gives
+                it the row to itself. */}
+            <p className="cover__ask">
+              <span className="cover__ask-mark" aria-hidden="true" />
+              {copy.ask}
+            </p>
           </div>
 
           {/* The collar: an instrument reading, not a scoreboard. Placed last in

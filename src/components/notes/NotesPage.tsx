@@ -2,6 +2,7 @@ import { blogUrl } from '../../content/contact'
 import { notes, notesCopy, notesKindLabel } from '../../content/notes'
 import type { Note } from '../../content/notes'
 import { useLang } from '../../lib/i18n'
+import Ghost from '../type/Ghost'
 import './notes-page.css'
 
 /* ============================================================================
@@ -80,9 +81,7 @@ export default function NotesPage() {
           {/* The measurement of the page, computed from the array: a printed
               count that could not disagree with the list below it. */}
           <p className="nt__count mono">{`${notes.length} ${copy.countLabel}`}</p>
-          <h1 className="nt__title" id="nt-title">
-            {copy.title}
-          </h1>
+          <Ghost as="h1" className="nt__title" id="nt-title" text={copy.title} />
           <p className="nt__lead">{copy.lead}</p>
         </header>
 

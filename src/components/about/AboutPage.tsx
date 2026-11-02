@@ -1,6 +1,7 @@
 import { aboutPage, practice, record } from '../../content/about'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
+import Ghost from '../type/Ghost'
 import './about-page.css'
 
 /* ============================================================================
@@ -45,9 +46,7 @@ export default function AboutPage() {
         <span className="ab__mark" aria-hidden="true" />
 
         <header className="ab__head">
-          <h1 className="ab__title" id="ab-title">
-            {copy.title}
-          </h1>
+          <Ghost as="h1" className="ab__title" id="ab-title" text={copy.title} />
           <p className="ab__lead">{copy.lead}</p>
         </header>
 

@@ -5,11 +5,13 @@ import {
   OrthographicCamera,
   Scene,
   ShaderMaterial,
+  Vector2,
   Vector3,
   WebGLRenderer,
 } from 'three'
 import { gsap } from 'gsap'
 import { sound } from '../../lib/sound'
+import { getPointer } from '../../lib/pointer'
 import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
 
 /* ============================================================================
@@ -20,11 +22,11 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
 
    - one renderer, one fullscreen triangle, one program, one draw call;
    - `gsap.ticker` only, so the whole site shares one RAF;
-   - no per-frame allocation: three uniform writes and one render;
+   - no per-frame allocation: six uniform writes and one render;
    - DPR capped at 1.5, halved on high-DPI screens and further reduced by a
      fixed pixel ladder, because this is texture, not detail;
-   - while the lens is open the sheet is drawn at 30 Hz, not 60: the drift is
-     the only thing moving, and nobody can see a hairline move at 30;
+   - while the sheet is at rest it is drawn at 30 Hz, not 60: the drift is the
+     only thing moving, and nobody can see a hairline move at 30;
    - the opaque dark chapter covers the viewport, so the render is skipped
      while it does — nobody pays for pixels nobody sees;
    - hidden tab → ticker removed; `webglcontextlost` → stop, and the page is
@@ -44,6 +46,13 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
    break into dots. It is the sheet being dragged under the lamp, and it costs one
    uniform, one multiply and two smoothsteps in the existing program. No second
    context, no second program, no allocation: the value is a scalar in `state`.
+
+   In V6 the pointer adds **the loupe** (`uLens`, `uLensR`, `uLensOn`, `uMark`):
+   the screen's cell grows again, the contour prints a hair out of register, and
+   the glass edge lays one ring of the survey mark. `getPointer()` is a
+   synchronous read from the one shared pointer module — no second listener, no
+   second RAF — and the positions are damped here with the same 0.18 constant.
+   Under reduced motion the loop never starts, so the aperture stays at zero.
    ========================================================================== */
 
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
@@ -51,6 +60,17 @@ const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 /** Raw sRGB, matching --ink (#131c19) exactly — written straight to the
     framebuffer, so three's colour management never enters the path. */
 const INK: [number, number, number] = [0x13 / 255, 0x1c / 255, 0x19 / 255]
+
+/** Raw sRGB, matching --mark (#bf1f34): the ring the loupe lays on the plate. */
+const MARK: [number, number, number] = [0xbf / 255, 0x1f / 255, 0x34 / 255]
+
+/** Radius of the loupe, in UV. The brief's 0.085: about 76 px on a 900 px
+    viewport, small enough to read as a magnifier and not as a vignette. */
+const LENS_RADIUS = 0.085
+
+/** The same 0.18 per-frame damping the pointer module uses, as a time constant
+    so the glide survives a dropped frame: 1 − exp(−dt · 11.9) ≈ 0.18 at 60 Hz. */
+const LENS_DAMP = 11.9
 
 /** Peak ink alpha. 5.6% of the ink over the ground — the contrast budget in
     DESIGN.md, with room for 8-bit rounding at the top of the printed ladder.
@@ -115,6 +135,8 @@ export type AtmosphereHandle = {
 
 export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
   const reduced = window.matchMedia(REDUCED_QUERY).matches
+  // A finger has no hover and no loupe: the scene is the same, the glass is not.
+  const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
   let renderer: WebGLRenderer
   try {
@@ -154,6 +176,10 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     uCoarse: { value: 0 },
     uBudget: { value: INK_BUDGET },
     uInk: { value: new Vector3(INK[0], INK[1], INK[2]) },
+    uLens: { value: new Vector2(0.5, 0.5) },
+    uLensR: { value: LENS_RADIUS },
+    uLensOn: { value: 0 },
+    uMark: { value: new Vector3(MARK[0], MARK[1], MARK[2]) },
   }
 
   const material = new ShaderMaterial({
@@ -222,6 +248,11 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     frame: 0,
     parity: 0,
     running: false,
+    // The loupe, in UV space. Initialised to the centre so the first open
+    // glides from the middle of the plate rather than from a corner.
+    lensX: 0.5,
+    lensY: 0.5,
+    lensOn: 0,
   }
 
   const clamp = (value: number, min: number, max: number) =>
@@ -240,6 +271,8 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     uniforms.uBend.value = state.bend
     uniforms.uCoarse.value = state.coarse
     uniforms.uPulse.value = state.pulse
+    uniforms.uLens.value.set(state.lensX, state.lensY)
+    uniforms.uLensOn.value = state.lensOn
     renderer.render(scene, camera)
   }
 
@@ -302,22 +335,67 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       state.pulse = 0
     }
 
+    /* The loupe. The pointer module owns the sample (one listener, no second
+       rAF); this loop owns the damping, because the atmosphere is already a
+       frame. Position and aperture share one time constant, so the glass
+       arrives as one object instead of a point chasing a fading circle.
+
+       On a coarse pointer there is no hover, so the aperture target is always
+       zero; under reduced motion this loop never starts at all. */
+    const pointer = getPointer()
+    const lensTargetX = width > 0 ? pointer.x / width : 0.5
+    const lensTargetY = height > 0 ? 1 - pointer.y / height : 0.5
+    const lensTarget = fine && pointer.inside ? 1 : 0
+
+    if (state.lensOn === 0 && lensTarget === 1) {
+      // Opening: start under the pointer. A loupe that slid in from the middle
+      // of the sheet would read as a wipe, not as glass.
+      state.lensX = lensTargetX
+      state.lensY = lensTargetY
+    }
+
+    const aperture = Math.min(1, dt * LENS_DAMP)
+    if (state.lensOn > 0 || lensTarget === 1) {
+      state.lensX += (lensTargetX - state.lensX) * aperture
+      state.lensY += (lensTargetY - state.lensY) * aperture
+    }
+    state.lensOn += (lensTarget - state.lensOn) * aperture
+    // ~95 % in 260 ms; the two ends are snapped so "shut" and "open" are
+    // exact states rather than a limit, and the idle test below can trust them.
+    if (state.lensOn < 0.002) state.lensOn = 0
+    else if (state.lensOn > 0.998) state.lensOn = 1
+
+    /* An open but stationary loupe is still a live reading — the field drifts
+       under the glass — but that drift is the only motion, so the 30 Hz idle is
+       enough. Moving the glass, opening it or closing it restores full rate. */
+    const lensSettled =
+      state.lensOn === 0 ||
+      (state.lensOn === 1 &&
+        Math.abs(lensTargetX - state.lensX) < 0.0004 &&
+        Math.abs(lensTargetY - state.lensY) < 0.0004)
+
     /* Ten times a second is enough to know whether the ink band owns the
        viewport; the check itself is a single rect read. */
     state.frame = (state.frame + 1) % 10
     if (state.frame === 0) state.covered = isCovered()
 
-    /* The drift does not need 60 Hz: while the lens is open, every second tick
-       is enough, and the sheet is a texture. As soon as it is thrown — or a
-       plate change spikes the lens — the full rate resumes, so the reaction
-       that the reader actually watches is never stepped.
+    /* The drift does not need 60 Hz: at rest every second tick is enough, and
+       the sheet is a texture. As soon as it is thrown — or a plate change
+       spikes the field, or the loupe moves — the full rate resumes, so the
+       reaction that the reader actually watches is never stepped.
 
        The coarse print is part of "moving", but it is never the reason the loop
        stays at full rate for long: it settles to zero in 355ms, while the lens
        is still easing back. It therefore adds no time to the full-rate window
        (the brief's cap is 600ms). */
     state.parity ^= 1
-    const still = Math.abs(state.bend) < 0.015 && state.coarse === 0 && state.pulse < 0.008
+    const still =
+      Math.abs(state.bend) < 0.015 &&
+      state.coarse === 0 &&
+      state.pulse < 0.008 &&
+      // A moving or easing loupe needs the full rate; a settled one is the
+      // sheet's own 30 Hz drift again.
+      lensSettled
     if (state.covered || (still && state.parity === 0)) return
 
     draw()

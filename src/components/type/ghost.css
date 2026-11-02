@@ -1,0 +1,114 @@
+/* ============================================================================
+   ghost.css — the misprint plate
+   ----------------------------------------------------------------------------
+   Two impressions of the same string. The ink copy is a normal block in the
+   heading's flow; the crimson plate is absolutely placed over the same content
+   box, behind the ink (z 0 vs 1), multiplied into the paper, and moved only by
+   `--reg-x` / `--reg-y`.
+
+   At rest both properties are `0px`, so the ink covers the plate exactly. The
+   stylesheet is the registered state even if the pointer module never runs: a
+   failed script leaves a clean heading, not a crimson one.
+   ========================================================================== */
+
+.ghost {
+  /* The registered state. The inline properties written by Ghost.tsx win while
+     the pointer is live; these are the truth at rest and with no script. */
+  --reg-x: 0px;
+  --reg-y: 0px;
+
+  position: relative;
+}
+
+/* The second impression may slip outside the line box, but never onto a
+   neighbouring word. The margin is the largest registered slip (4 px pointer
+   + 12.6 px scroll = 16.6 px) plus the glyph's own antialiasing. Declared only
+   where the clip margin exists: `overflow: clip` alone would clip at the border
+   box and cut the very misregistration the plate is for. */
+@supports (overflow-clip-margin: 1px) {
+  .ghost {
+    overflow: clip;
+    overflow-clip-margin: 20px;
+  }
+}
+
+/* The ink impression. It is above the plate in the same stacking context, so
+   the second impression can never cover the word that is read. */
+.ghost__ink {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+/* The cover's rise-from-mask intro needs a clipping box; document headings do
+   not, and their glyphs must not be clipped by a mask they never asked for. */
+.ghost__mask {
+  position: relative;
+  z-index: 1;
+  display: block;
+  overflow: clip;
+  overflow-clip-margin: 0.16em;
+  padding-block-end: 0.06em;
+  margin-block-end: -0.06em;
+}
+
+/* Same fallback as SplitText: plain clipping with more room under the
+   baseline for engines that cannot extend the clip margin. */
+@supports not (overflow-clip-margin: 1px) {
+  .ghost__mask {
+    overflow: hidden;
+    padding-block-end: 0.16em;
+    margin-block-end: -0.16em;
+  }
+}
+
+/* The crimson plate. Transform only: no layout, no filter, no shadow. */
+.ghost__plate {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 0;
+  display: block;
+  inline-size: 100%;
+  color: var(--mark);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transform: translate3d(var(--reg-x), var(--reg-y), 0);
+  will-change: transform;
+  /* The cover defers the plate until its ink copy lands; the fade is the last
+     hundred milliseconds of the intro, never a second movement. */
+  transition: opacity 120ms linear;
+}
+
+/* Deferred (an intro owns the ink copy) and released. */
+.ghost[data-ghost='wait'] .ghost__plate {
+  opacity: 0;
+}
+
+.ghost[data-ghost='ready'] .ghost__plate {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion — a printed misregistration, not a disappearing effect
+   ---------------------------------------------------------------------------
+   The plate is present, static, and one pixel out of register. One pixel on one
+   axis: a measurable offset, not a diagonal blur.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost {
+    --reg-x: 1px;
+    --reg-y: 0px;
+  }
+
+  .ghost__plate {
+    transition: none;
+  }
+
+  .ghost[data-ghost='wait'] .ghost__plate {
+    opacity: 1;
+  }
+}
