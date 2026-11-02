@@ -11,6 +11,7 @@ import { fr } from '../lib/typo'
 export const navItems: { id: string; label: Bi; href: string; kind: 'route' | 'anchor' }[] = [
   { id: 'work', label: { en: 'Work', fr: 'Projets' }, href: '/work', kind: 'route' },
   { id: 'territory', label: { en: 'Territory', fr: 'Territoire' }, href: '/#territory', kind: 'anchor' },
+  { id: 'practice', label: { en: 'Practice', fr: 'Pratique' }, href: '/practice', kind: 'route' },
   { id: 'notes', label: { en: 'Notes', fr: 'Notes' }, href: '/notes', kind: 'route' },
   { id: 'about', label: { en: 'About', fr: 'À propos' }, href: '/about', kind: 'route' },
   { id: 'contact', label: { en: 'Contact', fr: 'Contact' }, href: '/#contact', kind: 'anchor' },

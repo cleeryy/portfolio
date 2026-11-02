@@ -197,11 +197,11 @@ export type PracticePageCopy = {
 
 export const practiceCopy: Bi<PracticePageCopy> = {
   en: {
-    title: 'What I practise on.',
-    lead: 'Eight challenges written up, one CTF played, and a lab that keeps the tools installed. This is the offensive side of the sheet: what the exercise was, what it took, and where the writeup is.',
+    title: 'The offensive record.',
+    lead: 'Eight challenges solved and written up — one CTF, seven Hack The Box — with the method, the tool, and the dead ends. No score, no rank: the writeup is the proof.',
     countLabel: 'entries',
     rangesLabel: 'ranges',
-    rangesLead: 'Each line is a challenge I actually solved, documented the week it was solved. No score, no rank — the writeup is the proof.',
+    rangesLead: 'Each line is a challenge I solved, documented the week it was solved.',
     platformsLabel: 'accounts',
     platformsLead: 'The public profiles, with the reading they print themselves.',
     toolsLabel: 'instruments',
@@ -212,11 +212,11 @@ export const practiceCopy: Bi<PracticePageCopy> = {
     notesCta: 'All the writing',
   },
   fr: {
-    title: fr('Ce sur quoi je m’entraîne.'),
-    lead: fr('Huit challenges rédigés, un CTF joué, et un labo qui garde les outils installés. C’est le versant offensif de la feuille\u00a0: quel était l’exercice, ce qu’il fallait faire, et où lire le writeup.'),
+    title: fr('Le relevé offensif.'),
+    lead: fr('Huit challenges résolus et rédigés — un CTF, sept Hack The Box — avec la méthode, l’outil et les impasses. Aucun score, aucun rang\u00a0: le writeup est la preuve.'),
     countLabel: 'entrées',
     rangesLabel: 'terrains',
-    rangesLead: fr('Chaque ligne est un challenge que j’ai réellement résolu, documenté la semaine où il l’a été. Aucun score, aucun rang — le writeup est la preuve.'),
+    rangesLead: fr('Chaque ligne est un challenge que j’ai résolu, documenté la semaine où il l’a été.'),
     platformsLabel: 'comptes',
     platformsLead: fr('Les profils publics, avec la lecture qu’ils affichent eux-mêmes.'),
     toolsLabel: 'instruments',
