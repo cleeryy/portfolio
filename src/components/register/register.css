@@ -389,8 +389,15 @@
     overflow: visible;
   }
 
+  /* One mono line, cut with an ellipsis: the full list of instruments is on the
+     file, and the row's third line must stay one line so the state beside it
+     never drifts onto a second reading. */
   .reg__stack {
     grid-area: stack;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
   }
 
   .reg__status {
