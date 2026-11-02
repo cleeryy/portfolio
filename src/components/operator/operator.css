@@ -32,11 +32,22 @@
   /* `border-top`, not a child element: the rig draws this border where it is,
      and a failed script leaves it printed. */
   position: relative;
-  padding-block: clamp(4.5rem, 10vw, 9rem) clamp(4rem, 8vw, 7rem);
+  padding-block: clamp(3.5rem, 8vh, 6rem);
   padding-inline: var(--gutter);
   border-top: var(--hair) solid var(--deep-ink-2);
   /* The fixed bar must not cover the chapter when `/#operator` is followed. */
   scroll-margin-block-start: var(--nav-h);
+}
+
+/* The chapter is a band, not a page: 92vh of the sheet's height at minimum,
+   its composition centred in it. A wide viewport used to leave the reading in
+   the top half and an unruled void under it before contact. */
+@media (min-width: 901px) {
+  .op {
+    display: grid;
+    align-content: center;
+    min-block-size: 92vh;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -55,8 +66,7 @@
   grid-template-columns: var(--rail) minmax(0, 1fr) minmax(10rem, 17rem);
   grid-template-areas:
     'rail title facts'
-    'rail text  facts'
-    'rail more  facts';
+    'rail text  facts';
   align-items: start;
   column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
   row-gap: clamp(1.5rem, 2.6vw, 2.25rem);
@@ -109,6 +119,7 @@
 
 .op__text {
   grid-area: text;
+  align-self: last baseline;
   max-width: var(--measure);
 }
 
@@ -178,11 +189,19 @@
    motion).
    --------------------------------------------------------------------------- */
 
+/* The way out sits at the foot of the reading column: last-baseline aligned to
+   the paragraph it follows, and right-aligned to the ledger's own right edge,
+   so the empty right column under the facts is closed by the chapter's exit
+   rather than left as an unruled band. It spans the reading and ledger columns
+   because that is the margin it is printed into; the paragraph keeps its
+   measure, so the two never collide. */
 .op__more {
-  grid-area: more;
-  justify-self: start;
+  grid-column: 2 / 4;
+  grid-row: 2;
+  justify-self: end;
+  align-self: last baseline;
   display: inline-block;
-  padding-block: 0.3rem;
+  padding-block: 0;
   font-family: var(--font-display);
   font-size: var(--step-1);
   font-weight: var(--w-medium);
@@ -265,7 +284,15 @@
     margin-block-start: 0;
   }
 
+  .op__text {
+    align-self: auto;
+  }
+
   .op__more {
+    /* Back into its own row, at the reading column's left edge. */
+    grid-area: more;
+    justify-self: start;
+    align-self: auto;
     /* A thumb needs the target, not the label. */
     min-block-size: 44px;
     display: inline-flex;
