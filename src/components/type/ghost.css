@@ -82,6 +82,14 @@
   transition: opacity 120ms linear;
 }
 
+/* The plate is generated content, not a text node: one copy of the string lives
+   in the DOM. `pre` keeps any authored line break. */
+.ghost__plate::before {
+  content: attr(data-text);
+  display: block;
+  white-space: pre;
+}
+
 /* Deferred (an intro owns the ink copy) and released. */
 .ghost[data-ghost='wait'] .ghost__plate {
   opacity: 0;

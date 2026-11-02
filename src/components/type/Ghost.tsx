@@ -139,10 +139,11 @@ export default function Ghost({
         <span className="ghost__ink">{text}</span>
       )}
 
-      {/* Decoration: a second impression, not a second reading. */}
-      <span className="ghost__plate" aria-hidden="true">
-        {text}
-      </span>
+      {/* Decoration: a second impression, not a second reading. The string is
+          drawn as generated content from `data-text`, so the DOM holds ONE copy
+          of the text: `textContent`, the accessible name and a search engine all
+          read the ink, never the plate. */}
+      <span className="ghost__plate" aria-hidden="true" data-text={text} />
     </Tag>
   )
 }
