@@ -173,8 +173,10 @@
 
 .cover__reading {
   display: grid;
+  justify-items: end;
   gap: 0.15rem;
   min-width: 0;
+  text-align: end;
 }
 
 .cover__reading dt {
@@ -338,6 +340,13 @@
     --cover-top: calc(var(--nav-h) + var(--s-5) + env(safe-area-inset-top, 0px));
   }
 
+  /* The handle is the measure on a phone: at the fluid step it stopped ~100px
+     short of the right margin at 390px. 27vw fills it, capped at 8rem so a
+     tablet keeps the type at its own size; the tracking is unchanged. */
+  .cover__handle {
+    font-size: min(27vw, 8rem);
+  }
+
   .cover__inner {
     gap: clamp(2rem, 5vh, 3rem);
   }
@@ -361,6 +370,12 @@
     margin-block-start: var(--s-5);
     padding-block-start: var(--s-4);
     border-block-start: var(--hair) solid var(--contour);
+  }
+
+  /* The stacked collar is read left to right, not against the right margin. */
+  .cover__reading {
+    justify-items: start;
+    text-align: start;
   }
 }
 
