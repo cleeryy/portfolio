@@ -5,6 +5,7 @@ import { fileCopy, featured, projects, workCopy } from '../../content/work'
 import { useLang } from '../../lib/i18n'
 import { initSectionRig } from '../../lib/reveal'
 import { Link } from '../../lib/router'
+import { getLenis } from '../../lib/scroll'
 import { RolloverLabel } from '../ui/Rollover'
 import SplitText from '../ui/SplitText'
 import Plate from './Plate'
@@ -145,6 +146,8 @@ export default function WorkTraverse() {
       count.textContent = plateLabel(index)
     }
 
+    let revealFocused: ((event: FocusEvent) => void) | null = null
+
     const ctx = gsap.context(() => {
       const timeline = gsap.timeline({
         defaults: { ease: 'none' },
@@ -170,9 +173,36 @@ export default function WorkTraverse() {
 
       timeline.fromTo(list, { x: 0 }, { x: () => -travel(), duration: 1, ease: 'none' }, 0)
       timeline.fromTo(bar, { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'none' }, 0)
+
+      const trigger = timeline.scrollTrigger
+      if (!trigger) return
+
+      /* A keyboard reader can tab into a plate that is still to the right of
+         the window; the browser scrolls vertically, never the strip. Bring the
+         traverse to that plate — on the same progress the scrub owns, so the
+         counter and the rule follow — instead of leaving a focus ring on a
+         plate nobody can see. */
+      revealFocused = (event: FocusEvent) => {
+        const target = event.target
+        if (!(target instanceof HTMLElement) || !target.matches(':focus-visible')) return
+        const item = target.closest<HTMLElement>('.wt__item')
+        if (!item) return
+
+        const span = travel()
+        if (span <= 0) return
+
+        // 24px of mask clearance at the window's left edge.
+        const offset = Math.min(span, Math.max(0, item.offsetLeft - 24))
+        const y = trigger.start + (offset / span) * (trigger.end - trigger.start)
+        const lenis = getLenis()
+        if (lenis) lenis.scrollTo(y, { immediate: true })
+        else window.scrollTo(0, y)
+      }
+      list.addEventListener('focusin', revealFocused)
     }, root)
 
     return () => {
+      if (revealFocused) list.removeEventListener('focusin', revealFocused)
       /* Reverting the context kills the trigger, removes the spacer and takes
          every inline transform off the strip and the bar — which is what makes
          a StrictMode double-mount leave no residue. */
