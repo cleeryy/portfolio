@@ -38,9 +38,9 @@ export type ContactCopy = {
 export const contact: Bi<ContactCopy> = {
   en: {
     margin: 'the request',
-    title: 'Tell me what you are building.',
+    title: 'An alternance in a SOC, or on the offensive side.',
     invite:
-      'I answer email. A paragraph is enough: what the system is, what is broken, or what you want built. An internship, an apprenticeship, a machine that will not boot — same address.',
+      'That is what I am looking for. I also answer anything else: what the system is, what is broken, or what you want built. A paragraph is enough — I answer.',
     mailKey: 'mail',
     codeKey: 'code',
     blogKey: 'writing',
@@ -50,8 +50,8 @@ export const contact: Bi<ContactCopy> = {
   },
   fr: {
     margin: 'la demande',
-    title: fr('Dites-moi ce que vous construisez.'),
-    invite: fr('Je réponds aux courriels. Un paragraphe suffit\u00a0: ce qu’est le système, ce qui est cassé, ou ce que vous voulez construire. Un stage, une alternance, une machine qui ne démarre pas — même adresse.'),
+    title: fr('Une alternance en SOC, ou en sécurité offensive.'),
+    invite: fr('C’est ce que je cherche. Je réponds aussi pour le reste\u00a0: ce qu’est le système, ce qui est cassé, ou ce que vous voulez construire. Un paragraphe suffit — je réponds.'),
     mailKey: 'courriel',
     codeKey: 'code',
     blogKey: 'écrits',

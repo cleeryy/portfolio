@@ -153,8 +153,8 @@ export const record: RecordEntry[] = [
     year: '2026',
     label: { en: 'Bachelor 3, ESGI Toulouse', fr: 'Bachelor 3, ESGI Toulouse' },
     note: {
-      en: 'Programme “SRC”, 2026–2027. Class delegate at the teaching committees.',
-      fr: fr('Programme «\u00a0SRC\u00a0», 2026–2027. Délégué de classe aux comités pédagogiques.'),
+      en: 'Programme “SRC”, 2026–2027.',
+      fr: fr('Programme «\u00a0SRC\u00a0», 2026–2027.'),
     },
   },
 ]
@@ -169,6 +169,7 @@ export type Practice = {
 
 const PRODUCTION: Bi = { en: 'in production', fr: 'en production' }
 const LAB: Bi = { en: 'in a lab', fr: 'en labo' }
+const COURSE: Bi = { en: 'coursework', fr: 'en cours' }
 
 export const practice: Practice[] = [
   {
