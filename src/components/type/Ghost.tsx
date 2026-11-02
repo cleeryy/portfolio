@@ -27,6 +27,12 @@ import './ghost.css'
 const REG_X = 6
 const REG_Y = 4
 
+/* The plate never sits in perfect register: at rest it is one hair to the right
+   and a half below, which is what makes the misprint read at a glance instead of
+   only under the pointer. The pointer pushes it out from there. */
+const BASE_X = 1
+const BASE_Y = 0.6
+
 /** Scroll velocity is read in px/frame and capped before it reaches the plate. */
 const SCROLL_MAX = 14
 const SCROLL_GAIN = 0.9
@@ -87,15 +93,15 @@ export default function Ghost({
     state.lastX = pointer.x
     state.lastY = pointer.y
 
-    let targetX = 0
-    let targetY = 0
+    let targetX = BASE_X
+    let targetY = BASE_Y
 
     if (moved && pointer.inside) {
       const rect = root.getBoundingClientRect()
       const halfW = rect.width > 0 ? rect.width / 2 : 1
       const halfH = rect.height > 0 ? rect.height / 2 : 1
-      targetX = clamp((pointer.x - (rect.left + halfW)) / halfW, -1, 1) * REG_X
-      targetY = clamp((pointer.y - (rect.top + halfH)) / halfH, -1, 1) * REG_Y
+      targetX = BASE_X + clamp((pointer.x - (rect.left + halfW)) / halfW, -1, 1) * REG_X
+      targetY = BASE_Y + clamp((pointer.y - (rect.top + halfH)) / halfH, -1, 1) * REG_Y
     }
 
     /* The scroll component is already damped to ~90 ms by the pointer module;
@@ -104,15 +110,10 @@ export default function Ghost({
 
     state.x += (targetX - state.x) * DAMP
     state.y += (targetY - state.y) * DAMP
-    if (Math.abs(state.x) < REST) state.x = 0
-    if (Math.abs(state.y) < REST) state.y = 0
+    if (Math.abs(state.x - BASE_X) < REST) state.x = BASE_X
+    if (Math.abs(state.y - BASE_Y) < REST) state.y = BASE_Y
 
     const y = state.y + scroll
-    if (state.x === 0 && Math.abs(y) < REST) {
-      root.style.setProperty('--reg-x', '0px')
-      root.style.setProperty('--reg-y', '0px')
-      return
-    }
 
     root.style.setProperty('--reg-x', `${state.x.toFixed(2)}px`)
     root.style.setProperty('--reg-y', `${y.toFixed(2)}px`)

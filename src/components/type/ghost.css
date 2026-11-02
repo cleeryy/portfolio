@@ -80,6 +80,25 @@
   /* The cover defers the plate until its ink copy lands; the fade is the last
      hundred milliseconds of the intro, never a second movement. */
   transition: opacity 120ms linear;
+  /* The press pulls into register once per plate. `translate` is a separate
+     property from `transform`, so this entrance composes with the pointer's
+     `translate3d(--reg-x, --reg-y, 0)` instead of fighting it. */
+  animation: plate-register 760ms cubic-bezier(0.16, 1, 0.3, 1) 140ms both;
+}
+
+@keyframes plate-register {
+  from {
+    translate: 13px -6px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost__plate {
+    animation: none;
+  }
 }
 
 /* The plate is generated content, not a text node: one copy of the string lives
