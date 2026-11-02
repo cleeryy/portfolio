@@ -6,7 +6,7 @@
 
    - `.flt__plate` — the ink the chapter will be printed on. Opacity 0 on the
      sheet, 1 on the plate, written per frame from the same hand-off curve the
-     shader reads. It is the *same* `--deep` as `#ranges`, so the seam between
+     shader reads. It is the *same* `--deep` as `#operator`, so the seam between
      the two chapters has no colour to see.
    - the canvas (or the still) — the field. `pointer-events: none`: nothing in
      the drawing is a control, and the page must scroll through it.

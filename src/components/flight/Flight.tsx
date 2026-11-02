@@ -22,9 +22,9 @@ gsap.registerPlugin(ScrollTrigger)
    underneath is the same composition, printed once.
 
    Why the track is tall and the plate is sticky, and not a pin: a pin inserts
-   a spacer that moves `#ranges` and every section below it. A sticky plate adds
-   its own height and nothing else, so anchors keep landing on the sections they
-   name — `#ranges` after this, `#flight` itself at progress 0.
+   a spacer that moves `#operator` and every section below it. A sticky plate
+   adds its own height and nothing else, so anchors keep landing on the sections
+   they name — `#operator` after this, `#flight` itself at progress 0.
 
    **The cartouche is type, not a box.** A filled title block would be the only
    card on the site, and DESIGN.md §1 refuses one outright. So the copy is laid
@@ -49,10 +49,10 @@ const DEPTH_TEXT = Array.from(
 const INK_TEXT = Array.from({ length: 101 }, (_, i) => `ink ${String(i).padStart(3, '0')}`)
 
 /**
- * Reduced motion is read as an external store, the way `#ranges` reads its own
- * conditions: a session that turns it on stops the canvas at once, and a
- * session that turns it back off is allowed to build it again. No effect, no
- * state mirrored from a media query.
+ * Reduced motion is read as an external store, the way the width interactions
+ * read their own conditions: a session that turns it on stops the canvas at
+ * once, and a session that turns it back off is allowed to build it again. No
+ * effect, no state mirrored from a media query.
  */
 let reducedQuery: MediaQueryList | null = null
 
@@ -81,8 +81,8 @@ type CartoucheProps = {
 /**
  * The title block, drawn with the sheet's own instruments:
  *
- * - a crimson registration mark (76 × 2, the same length as `#ranges`' chapter
- *   mark and the hero collar's), because every section is registered;
+ * - a crimson registration mark (76 × 2, the same length as the chapter mark
+ *   and the hero collar's), because every section is registered;
  * - the `#flight` reference in mono at annotation scale;
  * - the heading at `--step-3`, the paragraph at `--step-0` on a 34ch measure;
  * - a ruled scale with three ticks, and the two readings hanging off it.

@@ -97,14 +97,14 @@ export const flightCopy: Bi<FlightCopy> = {
   en: {
     title: 'The passage',
     lead:
-      'The survey stops at its outermost mark. Below it the drawing becomes a depth: the names the plate held flat pass by at full size, one at a time. The sheet thins to the ink it was printed with.',
+      'The map above is flat. Here it becomes a depth: the names it holds — machines, guests, addresses, ground — pass at full size, one at a time, until the sheet turns to ink.',
     diagram:
       'A forward flight through the labels of this territory — machines, guests, addresses, training grounds — thinning into the ink plate the next chapter is printed on.',
   },
   fr: {
     title: 'Le passage',
     lead:
-      'L’arpentage s’arrête à sa marque la plus extérieure. En dessous, le dessin devient une profondeur\u00a0: les noms que la planche tenait à plat défilent à leur taille, un par un. La feuille s’amincit jusqu’à l’encre qui l’a imprimée.',
+      'La carte au-dessus est plate. Ici elle devient une profondeur\u00a0: les noms qu’elle retient — machines, invités, adresses, terrain — passent à leur taille, un par un, jusqu’à ce que la feuille vire à l’encre.',
     diagram:
       'Un vol vers l’avant à travers les noms de ce territoire — machines, invités, adresses, terrains d’entraînement — qui s’amincissent jusqu’à la plaque d’encre du chapitre suivant.',
   },
