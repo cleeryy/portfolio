@@ -1,5 +1,5 @@
 import { Foundry, MASTER_LEVEL, clamp, clamp01, holdAt } from './sound/graph'
-import { RoomBank, type RoomId } from './sound/rooms'
+import { RoomBank, roomOf, type RoomId } from './sound/rooms'
 import { CueBank, type CueStamp, type NodeTier } from './sound/cues'
 
 /**
@@ -17,11 +17,12 @@ import { CueBank, type CueStamp, type NodeTier } from './sound/cues'
  * | `paper`   | air, a slow breath, a fifth of hum                   | the sheet        |
  * | `machine` | fan, a 50 Hz transformer, an occasional relay        | `#territory`     |
  * | `air`     | moving air, its band opened by the flight's depth    | `#flight`        |
- * | `ink`     | sub-bass pressure, almost no highs                   | `#ranges`        |
+ * | `ink`     | sub-bass pressure, almost no highs                   | `#operator`      |
  *
  * Rooms crossfade over 0.6–0.9 s (see `sound/rooms.ts`) and are built lazily,
- * released when left. `arrive(sectionId)` is the whole integration: it maps the
- * section to its room and plays the arrival cue.
+ * released when left. `arrive(sectionId)` is the whole integration: the
+ * section→room table lives next to those rooms (`roomOf` in `sound/rooms.ts`),
+ * and this module only plays the arrival cue for ids that have a room.
  *
  * Rules this module enforces, and why:
  * - No AudioContext before a real user gesture, ever. Nothing autoplays. A
@@ -124,29 +125,6 @@ export type SoundState = {
   tone: number | null
   last: CueStamp | null
   levels: Partial<Record<RoomId, number>>
-}
-
-/* -------------------------------------------------------------------------- */
-/* the map                                                                    */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Which room a section is. One source of truth: the nav owns the ids, this owns
- * the places. Anything unknown (the hero has no id) is the sheet.
- */
-const ROOM_BY_SECTION: Record<string, RoomId> = {
-  path: 'paper',
-  skills: 'paper',
-  services: 'paper',
-  about: 'paper',
-  contact: 'paper',
-  territory: 'machine',
-  flight: 'air',
-  ranges: 'ink',
-}
-
-export function roomOf(sectionId: string): RoomId {
-  return ROOM_BY_SECTION[sectionId] ?? 'paper'
 }
 
 /* -------------------------------------------------------------------------- */
@@ -370,9 +348,15 @@ class SoundEngine {
    * ```ts
    * if (id !== current) sound.arrive(id)
    * ```
+   *
+   * An id with no room is not a place on this sheet: nothing crosses and no cue
+   * is played, so a page the sound layer was never taught about stays silent
+   * rather than being pulled into the paper room.
    */
   arrive = (sectionId: string): void => {
-    this.room(roomOf(sectionId))
+    const room = roomOf(sectionId)
+    if (!room) return
+    this.room(room)
     this.#play('open')
   }
 

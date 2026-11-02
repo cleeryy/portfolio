@@ -12,8 +12,8 @@ import { clamp01, holdAt, type Foundry } from './graph'
  * - **machine** — the rack. Fan noise in two bands, a transformer at 50 Hz with
  *   its beat and its harmonics, and a relay that closes every so often. The
  *   only room with events in it.
- * - **ink** — the dark chapter. Sub-bass pressure, a low rumble, almost no
- *   highs: the page has gone under and the room with it.
+ * - **ink** — the operator chapter, the dark one. Sub-bass pressure, a low
+ *   rumble, almost no highs: the page has gone under and the room with it.
  * - **air** — the passage. Moving air in a band that the flight's depth opens
  *   and closes; a gust that wanders; a hiss at the top.
  *
@@ -36,6 +36,30 @@ import { clamp01, holdAt, type Foundry } from './graph'
 export type RoomId = 'paper' | 'machine' | 'ink' | 'air'
 
 export const ROOM_IDS: readonly RoomId[] = ['paper', 'machine', 'ink', 'air']
+
+/**
+ * Which room a section is. One source of truth for the places: the pages own
+ * the ids, this owns the mapping. The six chapters of the home sheet are the
+ * whole table — three on paper, the territory in the rack, the passage in the
+ * air, the operator under the ink.
+ *
+ * An id that is not here has no room. Callers treat that as a no-op rather than
+ * a fallback: a page that is not a place on this sheet should not pull the
+ * reader into one.
+ */
+const ROOM_BY_SECTION: Record<string, RoomId> = {
+  cover: 'paper',
+  work: 'paper',
+  territory: 'machine',
+  flight: 'air',
+  operator: 'ink',
+  contact: 'paper',
+}
+
+/** The room a section belongs to, or `null` when the id is not a place here. */
+export function roomOf(sectionId: string): RoomId | null {
+  return ROOM_BY_SECTION[sectionId] ?? null
+}
 
 /**
  * Bus trim per room. `ink` sits highest because 38 Hz at the same amplitude is
