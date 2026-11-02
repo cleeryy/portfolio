@@ -85,14 +85,15 @@
   border-top: var(--hair) solid var(--ink);
 }
 
-/* The one red mark: a registration square pinned to the rule, at the sheet's
-   left edge — the same device as the hero collar and the territory plate. */
+/* The one red mark: a registration square pinned to the rule, at the ledger's
+   own left edge — which is the label column's edge, not the page gutter. The
+   six is the same mark the location point and the station mark use. */
 .ct__registration {
   position: absolute;
   inset-block-start: 0;
   inset-inline-start: 0;
-  inline-size: 7px;
-  block-size: 7px;
+  inline-size: 6px;
+  block-size: 6px;
   background-color: var(--mark);
   transform: translateY(-50%);
 }
@@ -125,8 +126,10 @@
 }
 
 /* The primary action of the whole sheet. Set at subhead size — the address is
-   an address, not a poster — underlined like every other link on the page, and
-   a real `mailto:`: if the script dies, it still opens a mail client. */
+   an address, not a poster — underlined at rest like every other link on the
+   page, and a real `mailto:`: if the script dies, it still opens a mail client.
+   The rest rule is an ink, not a contour: a 1px contour on the ground is a
+   watermark, and these three values have to read as the links they are. */
 .ct__mail {
   display: inline-block;
   padding-block: 0.15rem;
@@ -140,7 +143,7 @@
   overflow-wrap: anywhere;
   text-decoration: underline;
   text-decoration-thickness: var(--hair);
-  text-decoration-color: var(--contour);
+  text-decoration-color: var(--text-quiet);
   text-underline-offset: 0.28em;
   transition:
     text-decoration-color var(--t-fast) var(--ease-out),
@@ -165,12 +168,13 @@
   overflow-wrap: anywhere;
   text-decoration: underline;
   text-decoration-thickness: var(--hair);
-  text-decoration-color: var(--contour);
+  text-decoration-color: var(--text-quiet);
   text-underline-offset: 0.28em;
   transition: text-decoration-color var(--t-fast) var(--ease-out);
   /* The rolled label paints the hairline itself (see rollover.css): a
-     text-decoration would be cut by each character's mask. */
-  --roll-rule: var(--contour);
+     text-decoration would be cut by each character's mask. Same ink as the
+     decoration, so the two registers read as one link at rest. */
+  --roll-rule: var(--text-quiet);
 }
 
 .ct__link:hover,
@@ -340,15 +344,6 @@
 
   .clp__top {
     justify-self: start;
-  }
-}
-
-@media (max-width: 900px) {
-  /* The compact instrument is fixed at the foot of the page (chrome.css). The
-     colophon gives it the strip it prints in, so the sheet's last line and its
-     last reading never sit on top of each other. */
-  .clp {
-    padding-block-end: max(3.5rem, calc(env(safe-area-inset-bottom, 0px) + 3.25rem));
   }
 }
 
