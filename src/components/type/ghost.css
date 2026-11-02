@@ -83,11 +83,14 @@
 }
 
 /* The plate is generated content, not a text node: one copy of the string lives
-   in the DOM. `pre` keeps any authored line break. */
+   in the DOM. `pre-wrap` keeps an authored line break and wraps at the same
+   measure as the ink copy — a heading that wraps is the normal case on a
+   document page, and a single-line plate under a two-line ink read as a red
+   tail hanging past the wrap. */
 .ghost__plate::before {
   content: attr(data-text);
   display: block;
-  white-space: pre;
+  white-space: pre-wrap;
 }
 
 /* Deferred (an intro owns the ink copy) and released. */
