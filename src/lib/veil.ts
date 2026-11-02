@@ -2,7 +2,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 // The tile is the veil's half of the sheet's dither: same 8 × 8 matrix, same
 // module that generates it for the atmosphere's shader.
-import { BAYER_SIZE, bayerMaskTile } from '../components/atmosphere/bayer'
+import { BAYER_SIZE, bayerMaskTile } from '../chrome/bayer'
 import { sound } from './sound'
 
 /* ============================================================================

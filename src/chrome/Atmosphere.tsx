@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { initVeil } from '../../lib/veil'
+import { initVeil } from '../lib/veil'
 import { createAtmosphere } from './scene'
 import './atmosphere.css'
 

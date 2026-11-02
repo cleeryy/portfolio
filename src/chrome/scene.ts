@@ -10,8 +10,8 @@ import {
   WebGLRenderer,
 } from 'three'
 import { gsap } from 'gsap'
-import { sound } from '../../lib/sound'
-import { getPointer } from '../../lib/pointer'
+import { sound } from '../lib/sound'
+import { getPointer } from '../lib/pointer'
 import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
 
 /* ============================================================================

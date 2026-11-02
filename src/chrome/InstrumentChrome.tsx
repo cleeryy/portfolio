@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { homeSections } from '../../content/site'
-import { observeCurrentSection } from '../../lib/currentSection'
+import { homeSections } from '../content/site'
+import { observeCurrentSection } from '../lib/currentSection'
 import { setReading } from './reading'
 import './chrome.css'
 

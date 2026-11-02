@@ -370,7 +370,7 @@ html.lenis body {
    12. The printed field — one coordinate system
    --------------------------------------------------------------------------
    Every section is `padding-inline: var(--gutter)` around a centred 72rem
-   column, and the sheet's 12-column grid (components/grid) is the twelve-way
+   column, and the sheet's 12-column grid (chrome/SheetGrid) is the twelve-way
    subdivision of exactly that field. Both expressions are declared here, once,
    so a rule can never drift from the text it is drawn under: widen the field
    and the grid follows in the same frame.

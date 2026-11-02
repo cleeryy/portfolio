@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { bayerRanks } from '../atmosphere/bayer'
-import { prefersReducedMotion } from '../../lib/reveal'
-import { setReprintHandler } from '../../lib/reprint'
-import type { ReprintRun } from '../../lib/reprint'
+import { bayerRanks } from './bayer'
+import { prefersReducedMotion } from '../lib/reveal'
+import { setReprintHandler } from '../lib/reprint'
+import type { ReprintRun } from '../lib/reprint'
 import './reprint.css'
 
 /* ============================================================================
