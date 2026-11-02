@@ -169,7 +169,6 @@ export type Practice = {
 
 const PRODUCTION: Bi = { en: 'in production', fr: 'en production' }
 const LAB: Bi = { en: 'in a lab', fr: 'en labo' }
-const COURSE: Bi = { en: 'coursework', fr: 'en cours' }
 
 export const practice: Practice[] = [
   {
