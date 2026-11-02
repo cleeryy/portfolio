@@ -1,22 +1,22 @@
 import { useEffect } from 'react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import Atmosphere from './components/atmosphere/Atmosphere'
-import SheetGrid from './components/grid/SheetGrid'
-import BootGate from './components/boot/BootGate'
-import NavBar from './components/nav/NavBar'
-import Cursor from './components/ui/Cursor'
-import Grain from './components/ui/Grain'
-import ScrollProgress from './components/ui/ScrollProgress'
-import InstrumentChrome from './components/chrome/InstrumentChrome'
-import PointerHud from './components/chrome/PointerHud'
-import AboutPage from './components/about/AboutPage'
-import NotesPage from './components/notes/NotesPage'
-import PracticePage from './components/practice/PracticePage'
-import NotFound from './components/site/NotFound'
-import Reprint from './components/site/Reprint'
-import ProjectFile from './components/project/ProjectFile'
-import Register from './components/register/Register'
-import Home from './pages/Home'
+import Atmosphere from './chrome/Atmosphere'
+import SheetGrid from './chrome/SheetGrid'
+import BootGate from './chrome/BootGate'
+import NavBar from './chrome/NavBar'
+import Cursor from './ui/Cursor'
+import Grain from './ui/Grain'
+import ScrollProgress from './ui/ScrollProgress'
+import InstrumentChrome from './chrome/InstrumentChrome'
+import PointerHud from './chrome/PointerHud'
+import About from './pages/about/About'
+import Notes from './pages/notes/Notes'
+import Practice from './pages/practice/Practice'
+import NotFound from './pages/not-found/NotFound'
+import Reprint from './chrome/Reprint'
+import Project from './pages/project/Project'
+import Work from './pages/work/Work'
+import Home from './pages/home/Home'
 import { projectBySlug } from './content/work'
 import { descriptions, titles } from './content/site'
 import type { RouteKey } from './content/site'
@@ -174,15 +174,15 @@ export default function App() {
       {home ? (
         <Home />
       ) : route.path === '/work' ? (
-        <Register />
+        <Work />
       ) : route.path === '/notes' ? (
-        <NotesPage />
+        <Notes />
       ) : route.path === '/practice' ? (
-        <PracticePage />
+        <Practice />
       ) : route.path === '/about' ? (
-        <AboutPage />
+        <About />
       ) : route.params.slug ? (
-        <ProjectFile slug={route.params.slug} />
+        <Project slug={route.params.slug} />
       ) : (
         <NotFound />
       )}
