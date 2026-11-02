@@ -3,8 +3,8 @@ import { useLang } from '../../lib/i18n'
 import { initSectionRig } from '../../lib/reveal'
 import { Link } from '../../lib/router'
 import { operator } from '../../content/about'
-import SplitText from '../ui/SplitText'
-import { RolloverLabel } from '../ui/Rollover'
+import SplitText from '../../ui/SplitText'
+import { RolloverLabel } from '../../ui/Rollover'
 import './operator.css'
 
 /* ============================================================================

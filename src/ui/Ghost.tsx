@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { getScrollVelocity, usePointerFrame } from '../../lib/pointer'
+import { getScrollVelocity, usePointerFrame } from '../lib/pointer'
 import './ghost.css'
 
 /* ============================================================================

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
-import { sound } from '../../lib/sound'
-import { useLang } from '../../lib/i18n'
+import { sound } from '../lib/sound'
+import { useLang } from '../lib/i18n'
 import './sound.css'
 
 const getServerEnabled = () => false

@@ -1,8 +1,8 @@
 import { domains, fileCopy, projectBySlug, projects } from '../../content/work'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
-import ProjectSeal from '../seal/ProjectSeal'
-import Ghost from '../type/Ghost'
+import ProjectSeal from '../../ui/ProjectSeal'
+import Ghost from '../../ui/Ghost'
 import './project.css'
 
 /* ============================================================================

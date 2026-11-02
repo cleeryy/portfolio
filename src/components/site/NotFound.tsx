@@ -1,7 +1,7 @@
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
 import { notFound } from '../../content/site'
-import { RolloverLabel } from '../ui/Rollover'
+import { RolloverLabel } from '../../ui/Rollover'
 import './not-found.css'
 
 /* ============================================================================

@@ -19,7 +19,7 @@ import {
   type LegendKey,
   type TierId,
 } from '../../content/territory'
-import SplitText from '../ui/SplitText'
+import SplitText from '../../ui/SplitText'
 import TerritoryPlate from './TerritoryPlate'
 import TerritoryScene, { type TerritorySceneHandle } from './TerritoryScene'
 import TerritoryCompact, { type CompactHandle } from './TerritoryCompact'

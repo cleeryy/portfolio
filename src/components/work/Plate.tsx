@@ -1,8 +1,8 @@
 import { domains, workCopy, type Project } from '../../content/work'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
-import ProjectSeal from '../seal/ProjectSeal'
-import { RolloverLabel } from '../ui/Rollover'
+import ProjectSeal from '../../ui/ProjectSeal'
+import { RolloverLabel } from '../../ui/Rollover'
 import './plate.css'
 
 /* ============================================================================

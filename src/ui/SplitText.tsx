@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
-import { revealWords } from '../../lib/reveal'
+import { revealWords } from '../lib/reveal'
 import './ui.css'
 
 type SplitTag = 'h1' | 'h2' | 'h3' | 'p' | 'span'

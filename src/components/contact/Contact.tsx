@@ -10,8 +10,8 @@ import {
   sourceLabel,
   sourceUrl,
 } from '../../content/contact'
-import SplitText from '../ui/SplitText'
-import RolloverLink from '../ui/Rollover'
+import SplitText from '../../ui/SplitText'
+import RolloverLink from '../../ui/Rollover'
 import './contact.css'
 
 /**

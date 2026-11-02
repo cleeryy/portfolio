@@ -4,9 +4,9 @@ import { useLang } from '../../lib/i18n'
 import { Link, navigate } from '../../lib/router'
 import { MOTION, prefersReducedMotion } from '../../lib/reveal'
 import { handle, hero } from '../../content/hero'
-import MagneticButton from '../ui/MagneticButton'
-import SplitText from '../ui/SplitText'
-import Ghost from '../type/Ghost'
+import MagneticButton from '../../ui/MagneticButton'
+import SplitText from '../../ui/SplitText'
+import Ghost from '../../ui/Ghost'
 import './cover.css'
 
 /* ============================================================================
