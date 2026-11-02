@@ -45,6 +45,8 @@ export type HeroCopy = {
   figureNote: string
   /** Margin annotation next to the handle. */
   margin: string
+  /** The one line a recruiter reads: what he is asking for. */
+  ask: string
   scaleNote: string
   readouts: HeroReadout[]
   bands: HeroBand[]
@@ -73,6 +75,7 @@ export const hero: Bi<HeroCopy> = {
     figureLabel: 'cut through the stack',
     figureNote: 'the same territory, drawn flat',
     margin: 'cover sheet — 01',
+    ask: 'alternance — SOC or offensive, Toulouse',
     scaleNote: 'surveyed from Toulouse',
     readouts: [
       { key: 'nodes', label: 'nodes', value: '2' },
@@ -96,6 +99,7 @@ export const hero: Bi<HeroCopy> = {
     figureLabel: fr('coupe dans la pile'),
     figureNote: fr('le même territoire, à plat'),
     margin: 'feuille de couverture — 01',
+    ask: fr('alternance — SOC ou offensive, Toulouse'),
     scaleNote: fr('relevé depuis Toulouse'),
     readouts: [
       { key: 'nodes', label: 'nœuds', value: '2' },
