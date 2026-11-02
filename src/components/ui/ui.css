@@ -239,8 +239,8 @@
   inset-block-start: -1px;
   /* Same left edge as every content column on the site (72rem, centred). */
   inset-inline-start: max(var(--gutter), calc((100% - 72rem) / 2));
-  /* 76px: the same length as the chapter mark in #ranges and the hero collar's
-     mark. One registration mark, drawn four times. */
+  /* 76px: the same length as a chapter's registration mark and the cover
+     collar's. One registration mark, drawn on every section. */
   inline-size: 76px;
   block-size: 2px;
   background-color: var(--text);

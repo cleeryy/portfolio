@@ -868,9 +868,10 @@ function initHandleBreath(): () => void {
 /**
  * One-time motion setup for the whole sheet. Returns a disposer.
  *
- * Type arrives after the first layout, and the pinned traverse in `#ranges`
- * measures its travel from the type: without this refresh, a heading that
- * reflows when Archivo lands leaves the pin a few dozen pixels short.
+ * Type arrives after the first layout, and a pinned traverse — `#work` from
+ * phase B onward — measures its travel from the type: without this refresh, a
+ * heading that reflows when Archivo lands leaves the pin a few dozen pixels
+ * short.
  *
  * It also installs the two width interactions that are not tied to a section
  * (the link hover and the handle's breath), so a page that mounts no plate
