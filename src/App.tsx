@@ -10,6 +10,7 @@ import ScrollProgress from './components/ui/ScrollProgress'
 import InstrumentChrome from './components/chrome/InstrumentChrome'
 import PointerHud from './components/chrome/PointerHud'
 import NotFound from './components/site/NotFound'
+import RouteRule from './components/site/RouteRule'
 import ProjectFile from './components/project/ProjectFile'
 import Register from './components/register/Register'
 import Home from './pages/Home'
@@ -24,7 +25,7 @@ import { sound } from './lib/sound'
 
 /** The chrome controls that answer with a relay tick. */
 const CUE_SELECTOR =
-  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a'
+  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a, .reg a, .file a'
 const NO_CUE = '.sound-toggle, [data-no-cue]'
 
 /**
@@ -141,6 +142,8 @@ export default function App() {
       <SheetGrid />
       <BootGate />
       <NavBar />
+      {/* One hairline under the bar: the whole route transition. */}
+      <RouteRule />
       {home ? (
         <Home />
       ) : route.path === '/work' ? (
