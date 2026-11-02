@@ -2,6 +2,7 @@ import { domains, fileCopy, projectBySlug, projects } from '../../content/work'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
 import ProjectSeal from '../seal/ProjectSeal'
+import Ghost from '../type/Ghost'
 import './project.css'
 
 /* ============================================================================
@@ -107,9 +108,7 @@ export default function ProjectFile({ slug }: ProjectFileProps) {
             ) : null}
           </p>
 
-          <h1 className="file__name" id="file-title">
-            {project.name}
-          </h1>
+          <Ghost as="h1" className="file__name" id="file-title" text={project.name} />
 
           <p className="file__claim">{pick(project.claim)}</p>
 

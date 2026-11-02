@@ -1,6 +1,7 @@
 import { domains, projects, projectsByDomain, workCopy } from '../../content/work'
 import { useLang } from '../../lib/i18n'
 import { Link } from '../../lib/router'
+import Ghost from '../type/Ghost'
 import './register.css'
 
 /* ============================================================================
@@ -64,9 +65,7 @@ export default function Register() {
           {/* The measurement of the register, computed from the array: a printed
               count that could not disagree with the list below it. */}
           <p className="reg__count mono">{`${projects.length} ${copy.countLabel}`}</p>
-          <h1 className="reg__title" id="reg-title">
-            {copy.title}
-          </h1>
+          <Ghost as="h1" className="reg__title" id="reg-title" text={copy.title} />
           <p className="reg__lead">{copy.lead}</p>
         </header>
 

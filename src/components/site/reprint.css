@@ -1,0 +1,28 @@
+/* ============================================================================
+   reprint.css — the plate change
+   ----------------------------------------------------------------------------
+   The host is fixed and always present, but it paints nothing until the first
+   internal navigation; the canvas inside it is created at that moment. Above
+   the page, below the nav (60), inert to the pointer, `aria-hidden` in the
+   component: it can never take a click or enter the reading.
+
+   There is no background here on purpose. The plate is opaque `--ground` and is
+   painted by the canvas, so the sheet underneath is never washed, and a deep
+   link — which never runs the gesture — never shows a curtain.
+   ========================================================================== */
+
+.reprint {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-veil, 40);
+  pointer-events: none;
+  /* One fixed box: the canvas must not add scroll extent or invalidate the
+     page behind it. */
+  contain: layout paint;
+}
+
+.reprint__canvas {
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+}

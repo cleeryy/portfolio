@@ -12,7 +12,7 @@ import PointerHud from './components/chrome/PointerHud'
 import AboutPage from './components/about/AboutPage'
 import NotesPage from './components/notes/NotesPage'
 import NotFound from './components/site/NotFound'
-import RouteRule from './components/site/RouteRule'
+import Reprint from './components/site/Reprint'
 import ProjectFile from './components/project/ProjectFile'
 import Register from './components/register/Register'
 import Home from './pages/Home'
@@ -165,8 +165,9 @@ export default function App() {
       <SheetGrid />
       <BootGate />
       <NavBar />
-      {/* One hairline under the bar: the whole route transition. */}
-      <RouteRule />
+      {/* The plate change: one fixed canvas, created on the first internal
+          navigation and never on a deep link. */}
+      <Reprint />
       {home ? (
         <Home />
       ) : route.path === '/work' ? (
