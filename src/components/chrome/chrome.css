@@ -88,74 +88,23 @@
 /* ---------------------------------------------------------------------------
    The phone (≤900px)
    ---------------------------------------------------------------------------
-   The margin is a thumb's width, so the three-column instrument becomes two
-   readings at the foot of the page: the plate and the position, 10px mono,
-   inside the gutter, above the home indicator. The clock is retired — the
-   cover's collar already carries it, and so does the device itself.
-
-   Two surfaces own a phone's bottom edge, and neither is ours: the cover's
-   collar (the first screen is the collar's) and the chapters that print their
-   own foot rules (the traverse, the ink band). The instrument is drawn on the
-   ground in between, and it gives the colophon a strip to itself in
-   contact.css.
+   Not rendered. There is no margin to print in, and the compact reading that
+   used to sit in the bottom-left gutter lands on a plate's own text at 390px
+   (`plate 01/06 · sheet 008%` over the cipherbot claim). An instrument that
+   covers the reading is not an instrument.
    --------------------------------------------------------------------------- */
 
 @media (max-width: 900px) {
   .chrome {
-    inset-block-start: auto;
-    inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 0.875rem);
-    inset-inline-start: max(var(--gutter), env(safe-area-inset-left, 0px));
-    transform: none;
-    display: flex;
-    align-items: baseline;
-    gap: 0.95rem;
-    inline-size: auto;
-    max-inline-size: none;
-    font-size: 0.625rem;
-    line-height: 1.25;
-    text-align: start;
-    transition:
-      opacity var(--t-base) var(--ease-out),
-      visibility 0s linear;
-    /* The reading is printed *over* the sheet on a phone (there is no margin to
-       print it in), so it takes the two quiet inks: legible as an annotation,
-       never louder than the paragraph it crosses. */
-    --chrome-key: var(--ink-3);
-    --chrome-value: var(--ink-2);
-  }
-
-  /* No rule on a phone: a 7px tick over a two-word line is a header, not a
-     scale. The readings are the whole instrument. */
-  .chrome__rule {
     display: none;
-  }
-
-  /* paris: retired. The cover's collar owns the clock on the first screen. */
-  .chrome__read:first-of-type {
-    display: none;
-  }
-
-  /* Key and value on one line, the way a title block prints a short field. */
-  .chrome__read {
-    display: flex;
-    align-items: baseline;
-    gap: 0.3em;
-    white-space: nowrap;
-  }
-
-  .chrome[data-cover='true'],
-  .chrome[data-deep='true'],
-  .chrome[data-passage='true'] {
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity var(--t-fast) linear,
-      visibility 0s linear var(--t-fast);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* No live reading at all under a reduced-motion preference: the sheet is a
+     printed page, and a number that changes as you scroll is motion. */
   .chrome {
+    display: none;
     transition: none;
   }
 }

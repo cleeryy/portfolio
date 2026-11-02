@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../../lib/i18n'
 import { Link, useRoute } from '../../lib/router'
 import { handle } from '../../content/hero'
-import { navItems } from '../../content/site'
+import { homeSections, navItems } from '../../content/site'
+import { observeCurrentSection } from '../../lib/currentSection'
 import { RolloverLabel } from '../ui/Rollover'
 import SoundToggle from '../ui/SoundToggle'
 import './nav.css'
@@ -22,12 +23,15 @@ import './nav.css'
      names crosses the middle line of the viewport. On every other route no
      anchor is current, and the observer is not even installed.
 
+   The section observer reads every home section, not only the anchors: when
+   the reader is in `#flight` or `#operator` — chapters no destination names —
+   no item is marked. The old test kept the last anchor it had passed, so a red
+   rule claimed the reader was in Territory while the operator chapter was on
+   screen. `aria-current` is an answer, never a guess.
+
    The item list is `navItems` in `src/content/site.ts` — never a second copy
    here, and never a hardcoded path.
    ========================================================================== */
-
-/** The home anchors, derived from the one nav table. */
-const ANCHORS = navItems.filter((item) => item.kind === 'anchor')
 
 /** `/work` is current on `/work` and on every `/work/:slug` file under it. */
 const onRoute = (path: string, href: string) => path === href || path.startsWith(`${href}/`)
@@ -37,7 +41,7 @@ export default function NavBar() {
   const route = useRoute()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const [active, setActive] = useState<string | null>(null)
+  const [active, setActive] = useState<{ path: string; id: string | null } | null>(null)
   const rootRef = useRef<HTMLElement | null>(null)
   const toggleRef = useRef<HTMLButtonElement | null>(null)
 
@@ -45,7 +49,10 @@ export default function NavBar() {
 
   const current = (id: string, href: string, kind: 'route' | 'anchor'): 'page' | 'true' | undefined => {
     if (kind === 'route') return onRoute(route.path, href) ? 'page' : undefined
-    return home && active === id ? 'true' : undefined
+    // The reading belongs to the path it was measured on: a stale id from a
+    // previous visit to the cover never marks an anchor on the next one.
+    const measured = active?.path === route.path ? active.id : null
+    return home && measured === id ? 'true' : undefined
   }
 
   /* Compact the bar once the sheet has moved under it. */
@@ -66,59 +73,16 @@ export default function NavBar() {
     }
   }, [])
 
-  /* Mark the anchor section crossing the middle of the viewport.
-     A rect test, not an IntersectionObserver: the observer latch kept the last
-     section marked after scrolling back to the cover, where no section ever
-     re-enters the band. This reads the geometry, so it can also return null.
-     The reader has to be on the cover: an anchor names a place on that page and
-     nowhere else. Re-run when the route changes, since the targets are remounted
-     with the page. */
+  /* Mark the home section crossing the middle of the viewport.
+     The observer reads all six sections from the site table, and the answer is
+     the section's own id; `current()` then marks an anchor only when that id is
+     the destination it names. A chapter with no destination (`#flight`,
+     `#operator`) therefore clears every mark instead of leaving the last anchor
+     lit. Re-run when the route changes, since the targets are remounted with
+     the page. */
   useEffect(() => {
-    const clear = () => setActive(null)
-    if (route.path !== '/') {
-      clear()
-      return
-    }
-
-    const targets = ANCHORS.map((item) => document.getElementById(item.id)).filter(
-      (node): node is HTMLElement => node !== null,
-    )
-    if (targets.length === 0) {
-      clear()
-      return
-    }
-
-    let frame = 0
-    const apply = () => {
-      frame = 0
-      const line = window.innerHeight * 0.5
-      let id: string | null = null
-      for (const node of targets) {
-        const rect = node.getBoundingClientRect()
-        if (rect.top <= line && rect.bottom > line) {
-          id = node.id
-          break
-        }
-      }
-      if (!id) {
-        for (const node of targets) {
-          if (node.getBoundingClientRect().top <= line) id = node.id
-        }
-      }
-      setActive(id)
-    }
-    const onScroll = () => {
-      if (frame === 0) frame = requestAnimationFrame(apply)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    apply()
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-      if (frame !== 0) cancelAnimationFrame(frame)
-    }
+    if (route.path !== '/') return
+    return observeCurrentSection(homeSections, (id) => setActive({ path: route.path, id }))
   }, [route.path])
 
   /* Panel behaviour: close on Escape (returning focus to the control), on a

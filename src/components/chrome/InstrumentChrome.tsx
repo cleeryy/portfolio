@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { homeSections } from '../../content/site'
+import { observeCurrentSection } from '../../lib/currentSection'
 import { setReading } from './reading'
 import './chrome.css'
 
@@ -30,13 +32,13 @@ gsap.registerPlugin(ScrollTrigger)
    1. **paris** — Europe/Paris, `HH:MM`, rewritten by one interval every 10s (and
       on `visibilitychange`, so a tab that slept is corrected on return). Cost:
       one `Intl.format` and one text node per 10s.
-   2. **plate** — the cover counts as plate 01 and the nav's own targets follow,
-      so the number a visitor reads runs 01 → 06 with no gap and no zero. Both
-      the count and the divisor are read from `.nav__links`, so adding an item to
-      `navItems` renumbers the sheet with no second list to edit. Derived from the
-      nav's own `aria-current` (the single source of truth on this sheet), never
-      from a second copy of the section list. Cost: a MutationObserver that fires
-      only when the marked destination changes.
+   2. **plate** — the cover counts as plate 01 and every section in
+      `homeSections` (`src/content/site.ts`) follows, so the number a visitor
+      reads runs 01 → 06 with no gap and no zero. The reading is measured from
+      the sections themselves, not from the nav: `flight` and `operator` own no
+      destination, yet they are still plates of the sheet, and a nav item must
+      never be able to print a plate the reader is not on. Cost: one
+      IntersectionObserver over `main > section[id]`.
    3. **sheet** — the sheet's own progress, straight from one ScrollTrigger bound
       to `0 → max`. Cost: one arithmetic op per scroll frame, and one string only
       when the whole percent changes.
@@ -46,8 +48,9 @@ gsap.registerPlugin(ScrollTrigger)
    at every width: the foot of the viewport is the cover's collar on the first
    screen and the colophon on the last, and the section refs sit just inside the
    gutter at every section top. At 1024px the margin is 43px and the block is
-   34px of type, so it clears the text column at every width the layer is
-   rendered at; below 900px there is no margin to spare and it is not rendered.
+   34px of type, so it clears the text column. Below 900px there is no margin to
+   print in — the reading sat on the cipherbot claim at 390px — and the layer is
+   not rendered at all.
 
    The ink follows the surface behind it: over the one dark chapter the readings
    take the deep band's inks, decided by an IntersectionObserver on the band and
@@ -104,38 +107,21 @@ export default function InstrumentChrome() {
 
   useEffect(() => {
     const el = plateRef.current
-    const list = document.querySelector<HTMLElement>('.nav__links')
-    if (!el || !list) return
+    if (!el) return
 
-    const links = Array.from(list.querySelectorAll<HTMLAnchorElement>('.nav__link'))
-    if (links.length === 0) return
+    // The divisor is the sheet's own table, not the nav's list: five nav
+    // destinations plus a cover happened to be six, but the chapters also
+    // include two sections no nav item names.
+    const total = pad2(homeSections.length)
 
-    // The cover is the sheet's first plate and carries no nav link, so it is
-    // counted here rather than left as a zero: the reading runs 01/06 on the
-    // cover, 02/06 at /work, … 06/06 at the contact anchor. Both the divisor and
-    // the position come from the links the nav actually rendered.
-    const total = pad2(links.length + 1)
-
-    const write = () => {
-      // A route marks `page`, an observed home anchor marks `true`. Any other
-      // value (or none) is not a plate: it means the cover.
-      const index = links.findIndex((link) => {
-        const value = link.getAttribute('aria-current')
-        return value !== null && value !== 'false'
-      })
-      // No marked destination means the cover: plate 01, not plate nothing.
-      setReading(el, `${pad2(index + 2)}/${total}`)
+    const write = (id: string | null) => {
+      const index = id ? homeSections.indexOf(id) : -1
+      // No section on the reading line means the cover: plate 01, never 00.
+      setReading(el, `${pad2(Math.max(0, index) + 1)}/${total}`)
     }
 
-    const observer = new MutationObserver(write)
-    observer.observe(list, {
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['aria-current'],
-    })
-    write()
-
-    return () => observer.disconnect()
+    write(null)
+    return observeCurrentSection(homeSections, write)
   }, [])
 
   /* ---- 3. the sheet's progress ------------------------------------------ */
@@ -166,27 +152,6 @@ export default function InstrumentChrome() {
     print(trigger.progress, false)
 
     return () => trigger.kill()
-  }, [])
-
-  /* ---- the cover --------------------------------------------------------- */
-
-  useEffect(() => {
-    const root = rootRef.current
-    const cover = document.querySelector<HTMLElement>('.cover')
-    if (!root || !cover) return
-
-    // The strip the readings occupy: the bottom 8% of the viewport. While the
-    // cover reaches into it, the cover's collar is the instrument on screen and
-    // this one is not printed — the same rule that retires it over the ink band.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) root.dataset.cover = entry.isIntersecting ? 'true' : 'false'
-      },
-      { rootMargin: '-92% 0px 0px 0px' },
-    )
-    observer.observe(cover)
-
-    return () => observer.disconnect()
   }, [])
 
   /* ---- the ink follows the surface -------------------------------------- */
