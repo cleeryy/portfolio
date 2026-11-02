@@ -51,6 +51,12 @@ export type HeroCopy = {
 }
 
 /**
+ * The handle, language-invariant. It is the sheet's own name, not a sentence:
+ * the cover sets it at plate scale and the nav prints it in miniature.
+ */
+export const handle = 'cleeryy'
+
+/**
  * Language-invariant: the graticule reference printed behind the handle. This is
  * the production VLAN of the operator's own plan — an RFC1918 block, so it is a
  * coordinate, not a disclosure.
