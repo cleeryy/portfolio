@@ -3,7 +3,7 @@
 A portfolio built as **a survey sheet of a network I run** — the lab drawn as a map,
 and twenty projects documented one file at a time on the same sheet.
 
-Live: <https://cleeryy.com> · Design rationale: [`DESIGN.md`](./DESIGN.md)
+Live: <https://cleeryy.com> · Design rationale: [`DESIGN.md`](./DESIGN.md) · Source map: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 
 ## Stack
 
@@ -33,6 +33,7 @@ Live: <https://cleeryy.com> · Design rationale: [`DESIGN.md`](./DESIGN.md)
 pnpm install
 pnpm dev        # http://localhost:5173
 pnpm build      # tsc -b && vite build → dist/
+pnpm typecheck  # tsc -b --noEmit
 pnpm preview    # serve dist/
 pnpm lint       # oxlint
 ```
@@ -41,7 +42,7 @@ pnpm lint       # oxlint
 
 | File | Holds |
 | --- | --- |
-| `src/content/hero.ts` | the cover: claim, note, four readings, the four-band section |
+| `src/content/cover.ts` | the cover: claim, note, four readings, the four-band section |
 | `src/content/work.ts` | the register: 20 projects, domains, page and file copy |
 | `src/content/notes.ts` | the writing: 16 entries with dates and real URLs |
 | `src/content/about.ts` | the operator chapter, the record, the five domains |
