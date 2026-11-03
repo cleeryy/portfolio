@@ -1,59 +1,59 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLang } from '../lib/i18n'
 import { Link, useRoute } from '../lib/router'
 import { handle } from '../content/cover'
-import { homeSections, navItems } from '../content/site'
+import { chapters, homeSections, missingReading, routeReading } from '../content/site'
+import { projectBySlug } from '../content/work'
 import { observeCurrentSection } from '../lib/currentSection'
 import { RolloverLabel } from '../ui/Rollover'
 import SoundToggle from '../ui/SoundToggle'
+import LangSwitch from '../ui/LangSwitch'
+import NavReading from './NavReading'
+import NavPanel from './NavPanel'
 import './nav.css'
 
 /* ============================================================================
    NavBar — the collar of the sheet
    ----------------------------------------------------------------------------
-   Five destinations, in reading order: three routes (`/work`, `/notes`,
-   `/about`) and the two home anchors that must work from any page
-   (`/#territory`, `/#contact`).
+   Three controls and one reading. The mark walks home; the reading says where
+   the reader is; `Index` opens the plate that holds every destination. The six
+   text links are gone: a fixed edge that lists six places is a menu bar, and
+   this sheet is not an application.
 
-   Two notions of "current", and only two:
+   **The reading is the point.** It is the chapter under the reading line and its
+   plate number (`territory · 05/08`), or the document's own name on a route
+   (`the register`) with no number, because a route is not a plate of the cover.
+   It is a link to the register, so the reading is an address, not a decoration.
 
-   - a route marks itself `aria-current="page"` whenever the path is its own
-     (and, for `/work`, any file under it);
-   - an anchor is `aria-current="true"` only on the cover, while the section it
-     names crosses the middle line of the viewport. On every other route no
-     anchor is current, and the observer is not even installed.
+   Two notions of "where", and only two: the chapter crossing the reading line,
+   measured by the same `observeCurrentSection` the margin chrome uses (never a
+   second observer), and the route the router has already resolved. A hash
+   anchor on another page is still a route: the bar reads the document it is
+   on, not the destination in its address. `aria-current` remains the nav's own
+   answer, and it is printed only where it is known: a route is `page` on its
+   own path (and, for `/work`, under it), a chapter is `true` only on the cover,
+   only while it crosses the reading line.
 
-   The section observer reads every home section, not only the anchors: when
-   the reader is in `#flight` or `#operator` — chapters no destination names —
-   no item is marked. The old test kept the last anchor it had passed, so a red
-   rule claimed the reader was in Territory while the operator chapter was on
-   screen. `aria-current` is an answer, never a guess.
-
-   The item list is `navItems` in `src/content/site.ts` — never a second copy
-   here, and never a hardcoded path.
+   The panel owns the dialog: the trap, the scroll lock, the focus it moves in.
+   The bar owns the state and the two exits that are not a navigation — Escape
+   and the scrim — and puts the caret back on the button for both.
    ========================================================================== */
+
+/** Two digits: a plate number is a coordinate, not a count. */
+const pad2 = (value: number) => String(value).padStart(2, '0')
 
 /** `/work` is current on `/work` and on every `/work/:slug` file under it. */
 const onRoute = (path: string, href: string) => path === href || path.startsWith(`${href}/`)
 
 export default function NavBar() {
-  const { lang, setLang, pick } = useLang()
+  const { pick } = useLang()
   const route = useRoute()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState<{ path: string; id: string | null } | null>(null)
-  const rootRef = useRef<HTMLElement | null>(null)
   const toggleRef = useRef<HTMLButtonElement | null>(null)
 
   const home = route.path === '/'
-
-  const current = (id: string, href: string, kind: 'route' | 'anchor'): 'page' | 'true' | undefined => {
-    if (kind === 'route') return onRoute(route.path, href) ? 'page' : undefined
-    // The reading belongs to the path it was measured on: a stale id from a
-    // previous visit to the cover never marks an anchor on the next one.
-    const measured = active?.path === route.path ? active.id : null
-    return home && measured === id ? 'true' : undefined
-  }
 
   /* Compact the bar once the sheet has moved under it. */
   useEffect(() => {
@@ -73,100 +73,78 @@ export default function NavBar() {
     }
   }, [])
 
-  /* Mark the home section crossing the middle of the viewport.
-     The observer reads all six sections from the site table, and the answer is
-     the section's own id; `current()` then marks an anchor only when that id is
-     the destination it names. A chapter with no destination (`#flight`,
-     `#operator`) therefore clears every mark instead of leaving the last anchor
-     lit. Re-run when the route changes, since the targets are remounted with
-     the page. */
+  /* Mark the home section crossing the middle of the viewport. The observer
+     reads all eight chapters from the site table and reports the id; the panel
+     marks the same chapter, and the reading names it. Re-run when the route
+     changes, since the targets are remounted with the page. */
   useEffect(() => {
     if (route.path !== '/') return
     return observeCurrentSection(homeSections, (id) => setActive({ path: route.path, id }))
   }, [route.path])
 
-  /* Panel behaviour: close on Escape (returning focus to the control), on a
-     pointer press outside, or on navigation. No scroll lock: it is an index,
-     not a takeover. */
+  /* The reading belongs to the path it was measured on: a stale id from a
+     previous visit to the cover never names a chapter on the next one. */
+  const measured = active?.path === route.path ? active.id : null
+  const chapterIndex = Math.max(0, measured ? homeSections.indexOf(measured) : -1)
+  const chapter = chapters[chapterIndex]
+
+  const project = route.params.slug ? projectBySlug(route.params.slug) : undefined
+
+  let documentName: string
+  if (route.path === '/work') documentName = pick(routeReading.work)
+  else if (route.path === '/notes') documentName = pick(routeReading.notes)
+  else if (route.path === '/practice') documentName = pick(routeReading.practice)
+  else if (route.path === '/about') documentName = pick(routeReading.about)
+  else if (project) documentName = project.name
+  else documentName = pick(missingReading)
+
+  const readingName = home ? pick(chapter.label) : documentName
+  const readingNumber = home
+    ? `${pad2(chapterIndex + 1)}/${pad2(homeSections.length)}`
+    : null
+  const readingLive = readingNumber ? `${readingName} · ${readingNumber}` : readingName
+
+  /* The nav's one `aria-current` rule, shared with the panel. */
+  const isCurrent = (id: string, href: string, kind: 'route' | 'anchor') => {
+    if (kind === 'route') return onRoute(route.path, href) ? ('page' as const) : undefined
+    return home && measured === id ? ('true' as const) : undefined
+  }
+
+  /* One close path for every way out. `restore` is the two exits that are not a
+     navigation: the caret belongs back on the button that opened the plate. */
+  const close = useCallback((restore = false) => {
+    setOpen(false)
+    if (restore) requestAnimationFrame(() => toggleRef.current?.focus())
+  }, [])
+
+  /* An internal navigation is a way out. The router announces its own moves
+     (`portfolio:navigate` on `document`, a non-bubbling CustomEvent) and a
+     browser back/forward is the other one. */
   useEffect(() => {
-    if (!open) return
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setOpen(false)
-      toggleRef.current?.focus()
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (!(event.target instanceof Node)) return
-      if (!rootRef.current?.contains(event.target)) setOpen(false)
-    }
-
-    document.addEventListener('keydown', onKeyDown)
-    document.addEventListener('pointerdown', onPointerDown)
+    const shut = () => setOpen(false)
+    document.addEventListener('portfolio:navigate', shut)
+    window.addEventListener('popstate', shut)
     return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('pointerdown', onPointerDown)
-    }
-  }, [open])
-
-  /* A route change closes the index: the router announces its own navigations
-     (`portfolio:navigate` on `document`, not window — it is a non-bubbling
-     CustomEvent), and a browser back/forward (`popstate`) is the other way off
-     the page. */
-  useEffect(() => {
-    const close = () => setOpen(false)
-    document.addEventListener('portfolio:navigate', close)
-    window.addEventListener('popstate', close)
-    return () => {
-      document.removeEventListener('portfolio:navigate', close)
-      window.removeEventListener('popstate', close)
+      document.removeEventListener('portfolio:navigate', shut)
+      window.removeEventListener('popstate', shut)
     }
   }, [])
 
   return (
-    <header className="nav" data-scrolled={scrolled ? 'true' : 'false'} data-open={open ? 'true' : 'false'} ref={rootRef}>
+    <header className="nav" data-scrolled={scrolled ? 'true' : 'false'} data-open={open ? 'true' : 'false'}>
       <div className="nav__inner">
         <Link to="/" className="nav__brand" data-hud="/">
           <RolloverLabel text={handle} />
         </Link>
 
-        <nav className="nav__links" aria-label={pick({ en: 'Navigation', fr: 'Navigation' })}>
-          {navItems.map((item) => (
-            <Link
-              className="nav__link"
-              key={item.id}
-              to={item.href}
-              aria-current={current(item.id, item.href, item.kind)}
-            >
-              <RolloverLabel text={pick(item.label)} />
-            </Link>
-          ))}
-        </nav>
+        <NavReading
+          name={readingName}
+          number={readingNumber}
+          to={home ? '#index' : route.path}
+          live={readingLive}
+        />
 
         <div className="nav__tools">
-          <div className="nav__lang" role="group" aria-label={pick({ en: 'Language', fr: 'Langue' })}>
-            <button
-              type="button"
-              className="nav__lang-btn"
-              lang="en"
-              aria-pressed={lang === 'en'}
-              onClick={() => setLang('en')}
-            >
-              EN
-            </button>
-            <button
-              type="button"
-              className="nav__lang-btn"
-              lang="fr"
-              aria-pressed={lang === 'fr'}
-              onClick={() => setLang('fr')}
-            >
-              FR
-            </button>
-          </div>
-
-          <SoundToggle className="nav__sound" />
-
           <button
             type="button"
             className="nav__index"
@@ -183,30 +161,18 @@ export default function NavBar() {
             <span className="nav__index-label">{pick({ en: 'Index', fr: 'Index' })}</span>
             <span className="nav__index-sign" aria-hidden="true" />
           </button>
+
+          <LangSwitch className="nav__lang" />
+          <SoundToggle className="nav__sound" />
         </div>
       </div>
 
-      <div className="nav__panel" id="nav-index" inert={!open || undefined}>
-        <nav aria-label={pick({ en: 'Index', fr: 'Index' })}>
-          <ul className="nav__panel-list">
-            {navItems.map((item) => (
-              <li key={item.id}>
-                <Link
-                  className="nav__panel-link"
-                  to={item.href}
-                  aria-current={current(item.id, item.href, item.kind)}
-                  onClick={() => setOpen(false)}
-                >
-                  <span>{pick(item.label)}</span>
-                  <span className="nav__panel-ref" aria-hidden="true">
-                    {item.href}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+      <NavPanel
+        open={open}
+        onClose={close}
+        activeChapter={home ? measured : null}
+        isCurrent={isCurrent}
+      />
     </header>
   )
 }

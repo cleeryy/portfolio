@@ -1,0 +1,56 @@
+/* ============================================================================
+   lang.css — the language pair
+   ----------------------------------------------------------------------------
+   Two words in the mono face, one of them marked with the accent rule. The
+   control is type, so it has no box: no border, no pill, no globe. The only
+   decoration is the hairline under the active language — the same mark the
+   sheet uses everywhere to say "this one".
+
+   The quiet state is a *mix* of the inherited ink rather than an opacity, so the
+   focus ring (the accent, from base.css) keeps its full strength while the word
+   is quiet. Nothing here declares a colour: the bar prints it on the pale
+   ground, the panel prints it on the same ground, and both inherit.
+   ========================================================================== */
+
+.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  color: inherit;
+}
+
+.lang__btn {
+  min-inline-size: 2.125rem;
+  min-block-size: 32px;
+  padding-inline: 0.35rem;
+  border-bottom: var(--hair-strong) solid transparent;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: var(--w-regular);
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  transition:
+    color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out);
+}
+
+.lang__btn:hover,
+.lang__btn[aria-pressed='true'] {
+  color: inherit;
+}
+
+.lang__btn[aria-pressed='true'] {
+  border-bottom-color: var(--mark);
+}
+
+/* The panel's row: a full step of type and a 44px target, because it is read at
+   arm's length inside the plate. */
+.lang[data-variant='row'] {
+  gap: 0.25rem;
+}
+
+.lang[data-variant='row'] .lang__btn {
+  min-inline-size: 2.75rem;
+  min-block-size: 44px;
+  font-size: var(--step--1);
+}

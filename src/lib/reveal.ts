@@ -663,7 +663,7 @@ export function initSectionRig(root: HTMLElement, options: SectionRigOptions = {
  * body copy never get the width gesture: the axis is lettering, and the sheet
  * only cuts lettering wide.
  */
-const WIDTH_LINKS = '.nav__link, .nav__brand, .nav__panel-link, .ct__mail, .clp__top'
+const WIDTH_LINKS = '.nav__brand, .ct__mail, .clp__top'
 
 type WidthRun = {
   el: HTMLElement

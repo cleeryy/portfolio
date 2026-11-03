@@ -1,6 +1,20 @@
 /* ============================================================================
-   nav.css — the fixed collar of the sheet
-   A solid bar with a single hairline. No blur, no pill, no floating card.
+   nav.css — the collar, the reading, and the index plate
+   ----------------------------------------------------------------------------
+   The bar used to carry six destinations and a push-down panel that repeated
+   them. It now carries three controls and one reading: the mark walks home, the
+   reading says where the reader is, `Index` opens the only navigation the sheet
+   has. Everything a reader can *go* to lives in `#nav-index`, printed at a size
+   that deserves a plate.
+
+   The row is a grid — `auto minmax(0, 1fr) auto` — so the reading sits next to
+   the mark and the tools stay at the right edge, whatever the reading says. The
+   reading is the one thing in the bar whose width changes by itself, and it
+   changes only inside its own track.
+
+   Nothing here loops. The rollover ticker runs only while a label rolls, the
+   language rule follows a press, and the reading moves only when the plate under
+   it changes. A bar with no pointer on it is a still drawing.
    ========================================================================== */
 
 .nav {
@@ -19,10 +33,12 @@
 }
 
 .nav__inner {
-  display: flex;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-5);
+  gap: var(--s-4);
   height: var(--nav-h);
   padding-inline: var(--gutter);
   transition: height var(--t-base) var(--ease-out);
@@ -53,125 +69,114 @@
 .nav__brand::before {
   content: '';
   display: block;
+  flex: none;
   inline-size: 6px;
   block-size: 6px;
   background-color: var(--mark);
 }
 
 /* ---------------------------------------------------------------------------
-   Nav links — three routes and two home anchors
+   The reading — the chapter under the reading line, and its plate number
+   ---------------------------------------------------------------------------
+   A measurement, so it is mono with tabular figures. The name and the number
+   are written by `NavReading`; everything here is the two clipping boxes they
+   move inside.
    --------------------------------------------------------------------------- */
 
-.nav__links {
-  display: flex;
+.nav__reading {
+  display: inline-flex;
   align-items: center;
-  gap: clamp(1rem, 2.2vw, 2.1rem);
-}
-
-.nav__link {
-  position: relative;
-  display: inline-block;
-  padding-block: 0.4rem;
-  font-size: 0.875rem;
+  justify-self: start;
+  min-inline-size: 0;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
   font-weight: var(--w-regular);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--text-soft);
   text-decoration: none;
   transition: color var(--t-fast) var(--ease-out);
 }
 
-/* The rule under a nav link is drawn in two registers. On the wide sheet the
-   label rolls over itself (Rollover.tsx) and the rule is kept for the current
-   destination alone; where the rollover cannot run — ≤900px, a coarse pointer,
-   or reduced motion — the rule returns as the hover state, drawn from the left. */
-.nav__link::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: var(--hair);
-  background-color: currentColor;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform var(--t-base) var(--ease-out);
-}
-
-.nav__link[data-roll='plain']::after {
-  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-.nav__link[data-roll='plain']:hover::after,
-.nav__link[data-roll='plain']:focus-visible::after {
-  transform: scaleX(1);
-}
-
-.nav__link:hover,
-.nav__link[aria-current='page'],
-.nav__link[aria-current='true'] {
+.nav__reading:hover,
+.nav__reading:focus-visible {
   color: var(--ink);
 }
 
-/* The current destination is marked, not underlined: a short red rule at the
-   base. A route prints `page`; a home anchor observed at mid-viewport prints
-   `true`. Both are the same mark on the sheet. */
-.nav__link[aria-current='page']::after,
-.nav__link[aria-current='true']::after {
-  transform: scaleX(1);
-  height: var(--hair-strong);
-  background-color: var(--mark);
+.nav__reading:focus-visible {
+  outline-offset: 2px;
+}
+
+.nav__reading-visual {
+  display: inline-flex;
+  align-items: center;
+  min-inline-size: 0;
+}
+
+/* The name's mask: exactly 1.2 lines, so a departing word has one place to go. */
+.nav__reading-mask {
+  position: relative;
+  display: block;
+  block-size: 1.2em;
+  overflow: hidden;
+}
+
+.nav__reading-word {
+  display: block;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* The departing copy, created for the 180ms it takes to leave. */
+.nav__reading-out {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.nav__reading-sep {
+  padding-inline: 0.4em;
+  color: var(--text-quiet);
+}
+
+/* The number: one clipping column per digit, so a change flips one figure. */
+.nav__reading-count {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.nav__reading-digit {
+  position: relative;
+  display: inline-block;
+  block-size: 1.2em;
+  overflow: hidden;
+}
+
+.nav__reading-in {
+  display: block;
+  line-height: 1.2;
 }
 
 /* ---------------------------------------------------------------------------
-   Tools: language, sound, index
+   Tools: Index, language, sound
    --------------------------------------------------------------------------- */
 
 .nav__tools {
   display: flex;
   align-items: center;
+  justify-self: end;
   gap: var(--s-3);
-  flex: none;
-}
-
-.nav__lang {
-  display: flex;
-  align-items: center;
-  gap: 0.125rem;
-}
-
-.nav__lang-btn {
-  min-width: 2.125rem;
-  min-height: 32px;
-  padding: 0 0.35rem;
-  border-bottom: var(--hair-strong) solid transparent;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: var(--w-regular);
-  letter-spacing: 0.04em;
-  color: var(--text-quiet);
-  transition:
-    color var(--t-fast) var(--ease-out),
-    border-color var(--t-fast) var(--ease-out);
-}
-
-.nav__lang-btn:hover {
-  color: var(--ink);
-}
-
-.nav__lang-btn[aria-pressed='true'] {
-  color: var(--ink);
-  border-bottom-color: var(--mark);
-}
-
-/* SoundToggle owns its own plate; it only needs the right ink here. */
-.nav__sound {
-  color: var(--text-soft);
+  min-inline-size: 0;
 }
 
 .nav__index {
-  display: none;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 32px;
+  min-block-size: 32px;
   padding: 0 0.35rem;
   color: var(--ink);
   font-size: 0.8125rem;
@@ -209,65 +214,306 @@
   margin-left: -0.5px;
 }
 
+/* The plus becomes the cross: one rotation, no second icon. */
 .nav__index[aria-expanded='true'] .nav__index-sign {
   transform: rotate(45deg);
 }
 
+/* SoundToggle owns its own plate; it only needs the ink here. */
+.nav__sound {
+  color: var(--text-soft);
+}
+
 /* ---------------------------------------------------------------------------
-   Index panel — pushes down from the bar, never covers the page
+   The scrim — the ground behind the plate
+   ---------------------------------------------------------------------------
+   A child of the header, absolute from the bar's own edge, so it starts under
+   the bar at every width and never needs a measurement. The panel paints above
+   it; a press on the scrim is a dismissal.
+   --------------------------------------------------------------------------- */
+
+.nav__scrim {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline: 0;
+  block-size: 100dvh;
+  z-index: 0;
+  background-color: color-mix(in srgb, var(--deep) 18%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-base) var(--ease-out);
+}
+
+.nav[data-open='true'] .nav__scrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   The plate — the index, pushing down from the bar
+   ---------------------------------------------------------------------------
+   The same shell the small-screen index used, now at every width. It scrolls
+   inside itself: the sheet behind is locked, and a short viewport must never
+   clip the last project. `clip-path` is the wipe's property, written by GSAP on
+   open and close; the closed state is here, so the first paint is already shut.
    --------------------------------------------------------------------------- */
 
 .nav__panel {
   position: absolute;
-  top: 100%;
-  right: 0;
-  left: 0;
-  overflow: hidden;
-  max-height: 0;
+  inset-block-start: 100%;
+  inset-inline: 0;
+  z-index: 1;
+  max-block-size: calc(100dvh - var(--nav-h));
+  overflow: auto;
+  overscroll-behavior: contain;
   background-color: var(--ground);
   border-bottom: var(--hair) solid var(--ink);
-  transition: max-height 400ms var(--ease-out);
+  clip-path: inset(0 0 100% 0);
+  visibility: hidden;
 }
 
-.nav[data-open='true'] .nav__panel {
-  max-height: 24rem;
+.nav__panel-grid {
+  display: grid;
+  gap: var(--s-6) 0;
+  max-inline-size: 90rem;
+  margin-inline: auto;
+  padding: var(--s-6) var(--gutter) var(--s-8);
 }
 
-.nav__panel-list {
-  padding: 0 var(--gutter) var(--s-3);
+/* Two columns only where there is room for two readings: documents, chapters
+   and the plate on the left, the register on the right. */
+@media (min-width: 1100px) {
+  .nav__panel-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'docs     projects'
+      'chapters projects'
+      'plate    projects';
+    align-items: start;
+    gap: var(--s-6) clamp(2rem, 5vw, 5rem);
+    padding-block-start: var(--s-7);
+  }
+
+  .nav__panel-docs {
+    grid-area: docs;
+  }
+
+  .nav__panel-chapters {
+    grid-area: chapters;
+  }
+
+  .nav__panel-plate {
+    grid-area: plate;
+  }
+
+  .nav__panel-projects {
+    grid-area: projects;
+  }
 }
 
-.nav__panel-link {
-  display: flex;
+.nav__panel-label {
+  margin: 0 0 var(--s-3);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: var(--w-regular);
+  letter-spacing: 0.12em;
+  color: var(--text-quiet);
+}
+
+/* ---------------------------------------------------------------------------
+   The rows — hairline, rule, width, tick
+   ---------------------------------------------------------------------------
+   Every row is one line with a hairline under it. Pointing at one draws a rule
+   left to right, lifts the display name six points on Archivo's width axis, and
+   slides a 4px crimson tick out of the gutter. The tick lives inside the row's
+   own 14px inline padding, so the entrance mask can clip the row without
+   clipping the mark.
+   --------------------------------------------------------------------------- */
+
+.nav__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--s-4);
-  padding-block: 0.85rem;
-  border-top: var(--hair) solid var(--contour);
-  font-size: 1.0625rem;
-  font-weight: var(--w-medium);
+  inline-size: 100%;
+  padding-block: 0.55rem;
+  padding-inline: 14px 0;
+  border-block-end: var(--hair) solid var(--contour);
   color: var(--ink);
+  text-align: start;
   text-decoration: none;
+  transition: border-block-end-color var(--t-fast) var(--ease-out);
 }
 
-.nav__panel-list li:first-child .nav__panel-link {
-  border-top: 0;
+.nav__row-name {
+  display: block;
+  min-inline-size: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.12;
+  letter-spacing: var(--tracking-display);
+  transition: font-stretch 220ms var(--ease-out);
 }
 
-.nav__panel-ref {
+.nav__row-ref {
   font-family: var(--font-mono);
   font-size: var(--step--2);
   font-weight: var(--w-regular);
   letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+
+/* The crimson tick in the gutter. */
+.nav__row-tick {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 0;
+  inline-size: 4px;
+  block-size: 0.85em;
+  background-color: var(--mark);
+  opacity: 0;
+  transform: translate(-10px, -50%);
+  transition:
+    transform 120ms var(--ease-out),
+    opacity 120ms var(--ease-out);
+  pointer-events: none;
+}
+
+/* The rule, drawn over the hairline. */
+.nav__row::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  block-size: var(--hair-strong);
+  background-color: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 120ms var(--ease-out);
+  pointer-events: none;
+}
+
+.nav__row:focus-visible {
+  outline-offset: -3px;
+  border-block-end-color: var(--ink);
+}
+
+.nav__row:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.nav__row:focus-visible .nav__row-tick {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+@media (hover: hover) {
+  .nav__row:hover {
+    border-block-end-color: var(--ink);
+  }
+
+  .nav__row:hover::after {
+    transform: scaleX(1);
+  }
+
+  .nav__row:hover .nav__row-tick {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+
+  .nav__row:hover .nav__row-name {
+    font-stretch: 106%;
+  }
+}
+
+/* The current document marks its reference, never its name: a name in the
+   accent would read as a warning, and the sheet's accent is a mark, not a
+   sentence. */
+.nav__row[aria-current='page'] .nav__row-ref,
+.nav__row[aria-current='true'] .nav__row-ref {
+  color: var(--mark);
+}
+
+/* --- documents ----------------------------------------------------------- */
+
+.nav__row--doc .nav__row-name {
+  font-size: var(--step-4);
+  font-weight: var(--w-medium);
+}
+
+/* --- chapters ------------------------------------------------------------ */
+
+.nav__row--chapter {
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: baseline;
+  padding-block: 0.45rem;
+}
+
+.nav__row--chapter .nav__row-name,
+.nav__row--chapter .nav__row-ref {
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-mono);
+}
+
+.nav__row--chapter .nav__row-name {
+  font-size: var(--step--1);
+  font-weight: var(--w-regular);
+}
+
+/* --- projects ------------------------------------------------------------ */
+
+.nav__projects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(1rem, 3vw, 2.5rem);
+}
+
+.nav__row--project {
+  padding-block: 0.4rem;
+}
+
+.nav__row--project .nav__row-name {
+  font-size: var(--step-2);
+  overflow-wrap: anywhere;
+}
+
+.nav__row--project .nav__row-ref {
+  transition: color var(--t-fast) var(--ease-out);
+}
+
+/* --- the plate ----------------------------------------------------------- */
+
+.nav__row--plate {
+  font-size: var(--step-0);
+}
+
+.nav__row--lang {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.nav__row--lang .lang {
+  justify-self: end;
+}
+
+.nav__row--plate[disabled] {
+  color: var(--text-quiet);
+  cursor: default;
+}
+
+.nav__row--plate[disabled] .nav__row-name,
+.nav__row--plate[disabled] .nav__row-ref {
   color: var(--text-quiet);
 }
 
-.nav__panel-link:hover {
-  color: var(--mark);
-}
-
-.nav__panel-link:hover .nav__panel-ref {
-  color: var(--mark);
+.nav__row--plate[disabled] .nav__row-tick,
+.nav__row--plate[disabled]::after {
+  display: none;
 }
 
 /* ---------------------------------------------------------------------------
@@ -275,94 +521,64 @@
    --------------------------------------------------------------------------- */
 
 @media (max-width: 900px) {
-  .nav__links {
-    display: none;
-  }
-
-  .nav__index {
-    display: inline-flex;
-    /* Every control in the bar is a 44px target under a thumb. */
-    min-width: 44px;
-    min-height: 44px;
-    justify-content: center;
-    padding-inline: 0.4rem;
-  }
-
-  .nav__inner {
-    gap: var(--s-3);
-  }
-
-  .nav__tools {
-    gap: var(--s-2);
-  }
-
-  /* The bar is the one fixed element on the page: it has to clear the notch
-     and the home indicator when the sheet is installed or read in landscape. */
+  /* The bar anchors the index: it must clear the notch and the home indicator
+     when the sheet is installed or read in landscape. */
   .nav {
     padding-block-start: env(safe-area-inset-top, 0px);
   }
 
+  .nav__inner {
+    gap: var(--s-2);
+  }
+
   .nav__brand {
-    min-height: 44px;
+    min-block-size: 44px;
   }
 
-  .nav .nav__lang-btn {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .nav .nav__sound {
-    min-height: 44px;
+  .nav__index {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    justify-content: center;
     padding-inline: 0.4rem;
   }
 
-  /* Immediate press feedback on the three small controls: the plate's ink
-     answers the finger, and the language mark goes crimson for as long as the
-     press is held. */
-  .nav .nav__lang-btn:active,
-  .nav .nav__sound:active,
-  .nav__index:active {
-    color: var(--ink);
+  .nav .lang__btn {
+    min-inline-size: 44px;
+    min-block-size: 44px;
   }
 
-  .nav .nav__lang-btn:active {
-    border-bottom-color: var(--mark);
+  .nav .nav__sound {
+    min-block-size: 44px;
+    padding-inline: 0.4rem;
   }
 
-  /* An index link is a full row: 47px of type and padding, and a press that
-     answers immediately, since the hover it was designed on never happens. */
-  .nav__panel-link {
-    min-height: 44px;
-    padding-block: 0.95rem;
-  }
-
-  .nav__panel-link:active {
-    color: var(--mark);
-  }
-
-  .nav__panel-link:active .nav__panel-ref {
-    color: var(--mark);
-  }
-
-  /* The panel clips its own height while it opens. A full row's ring drawn
-     outside its box would lose its first and last edges, so it is inset. */
-  .nav__panel-link:focus-visible {
-    outline-offset: -3px;
-  }
-
-  /* A short phone (or a landscape one) must not clip the index: the panel
-     scrolls inside itself once it is open. */
-  .nav[data-open='true'] .nav__panel {
-    max-height: min(30rem, calc(100dvh - var(--nav-h-compact) - 1rem));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}
-
-/* The panel only exists on small screens; on desktop the links are inline. */
-@media (min-width: 901px) {
-  .nav__panel {
+  /* A phone has no room to name the chapter in the bar: the number is the part
+     that still measures something, and the panel prints the names. */
+  .nav__reading-mask,
+  .nav__reading-sep {
     display: none;
+  }
+
+  .nav__panel {
+    max-block-size: calc(100dvh - var(--nav-h) - env(safe-area-inset-top, 0px));
+  }
+
+  .nav__panel-grid {
+    padding-block: var(--s-5) var(--s-7);
+  }
+
+  .nav__row {
+    min-block-size: 44px;
+    align-items: center;
+  }
+
+  .nav__row--chapter {
+    padding-block: 0.6rem;
+  }
+
+  /* One column: a two-column register at 390px wraps every long slug mid-word. */
+  .nav__projects {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -372,6 +588,18 @@
   }
 
   .nav__inner {
+    gap: 6px;
+  }
+
+  .nav__tools {
     gap: var(--s-2);
+  }
+}
+
+/* Below a small phone the bar keeps its reading and its pair; the sound plate
+   is the one control the panel can hold alone. */
+@media (max-width: 340px) {
+  .nav__sound {
+    display: none;
   }
 }

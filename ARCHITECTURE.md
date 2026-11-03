@@ -29,7 +29,7 @@ src/
     contact/Contact.tsx  contact.css
     shared/PlatePop.tsx  plate-pop.css
   chrome/                 FIXED LAYERS, never in the document flow
-    NavBar.tsx  nav.css
+    NavBar.tsx  NavReading.tsx  NavPanel.tsx  nav.css
     InstrumentChrome.tsx  chrome.css  PointerHud.tsx  reading.ts
     BootGate.tsx  boot.css  handoff.ts
     Reprint.tsx  reprint.css
@@ -37,7 +37,8 @@ src/
     SheetGrid.tsx  grid.css
   ui/                     REUSABLE PRIMITIVES (no page, no section)
     Cursor.tsx  Grain.tsx  MagneticButton.tsx  Rollover.tsx  rollover.css
-    ScrollProgress.tsx  SoundToggle.tsx  sound.css  SplitText.tsx  ui.css
+    ScrollProgress.tsx  SoundToggle.tsx  useSoundControl.ts  sound.css
+    LangSwitch.tsx  lang.css  SplitText.tsx  ui.css
     Ghost.tsx  ghost.css  ProjectSeal.tsx  seal.css
   content/                ALL COPY, one module per surface
     cover.ts  work.ts  practice.ts  notes.ts  about.ts  contact.ts
