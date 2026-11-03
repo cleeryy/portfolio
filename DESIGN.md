@@ -552,3 +552,77 @@ says "award"; nothing is borrowed from a reference.
   in `<noscript>`, not a prerendered page. If search visibility ever matters more than
   the app, prerendering the five documents is the next step — it is a build change, not
   a design one.
+
+
+## 12. The sheet is played, not read (v8)
+
+v8 adds nothing to the direction — same paper, same ink, same crimson, same two
+faces. It changes **what happens while you read**, because a page of correct copy
+that never moves is still a page you skim. Four devices, one per chapter type.
+
+### The instrument
+
+A graticule sphere — 24 meridians, 12 parallels, one tilted orbit, twelve stations,
+one crimson node — drawn as a **second scene inside the existing atmosphere
+renderer** (`chrome/scene.ts`), so the site still opens two WebGL contexts, not
+three. It is a survey instrument, not an ornament: it follows the scroll with a
+damped pose (λ ≈ 3/s) through a table of eight positions, one per chapter, and it
+flips to `--deep-ink` on the ink chapters. It is never over the reading column on
+the cover, it stands down entirely on `#territory` and `#flight` (those chapters
+have their own scenes), and under `prefers-reduced-motion` it is still there but
+frozen — the object is part of the composition, the spin is the animation.
+
+### The index wall (`#index`)
+
+The register, turned into something you can play with: twenty names in two ruled
+columns, each row a file, and **one plate for the whole section** that fills with
+the named project and comes to the pointer — a `clip-path` open, a 0.96 → 1 lift,
+a 1.5° settle, then a 0.16 damped follow. The plate is drawn from the project's own
+data (seal, stack, state, year), never a screenshot: a fake capture of a private
+service would be a lie. Keyboard focus gets the same plate, anchored to the margin
+instead of the pointer; coarse pointers get a seal per row and tap-to-open. A 44 px
+`--chart` gutter marks the chapter, because `--ground-sunk` alone is 4 % darker
+than the sheet and does not read as a change of ground.
+
+### The statement (`#statement`)
+
+One sentence, at plate scale, on `--chart`: *"I don't rent my infrastructure. I run
+it. Twenty projects, one cluster, eight segments, and a backup I have restored. A
+network is not a diagram you draw once — it is a thing you keep alive."* Words rise
+out of their masks as the line enters; three devices live inside the text — `strong`
+words set wider and rolling on hover, and one `plate` word that keeps its letters and
+sits on a printed seal field, which opens into the project's plate on hover. The
+word is never replaced by a glyph: a sentence that hides a word is a sentence you
+cannot read, and this chapter is the one that asks to be read.
+
+### The bar, and the index overlay
+
+Three controls and one live reading: the mark, `cover · 01/08` (the current chapter,
+name and counter, flipped digit by digit), `Index`, `EN/FR`, `Sound`. The five text
+links are gone from the collar — they were the panel, printed twice. The `Index`
+button opens the sheet turned over: five documents at title size, the eight chapters
+with their plate numbers, the twenty files of the register under a printed head, and
+the three switches the bar cannot carry (sound, motion, language). It is a real
+dialog: `aria-modal`, focus moved in and trapped, `Esc` and an outside press out,
+the page behind locked, focus returned to the button that opened it.
+
+### Motion is a preference, and the sheet may only tighten it
+
+`lib/motion.ts` holds two sources: the system query and a switch in the overlay,
+stored in `localStorage`. The switch can only *add* restraint — a reader whose system
+asks for stillness is never offered motion back. Both the instrument's spin and loupe,
+the reprint, the veil and the row rolls read the same predicate, so the whole sheet
+answers one answer.
+
+### Validation performed
+
+- `pnpm lint` 0 error · `pnpm typecheck` 0 · `pnpm build` exit 0.
+- Eight chapters in the new reading order; 390 / 768 / 1440 with
+  `scrollWidth === clientWidth`; console clean through a full scroll and the overlay.
+- Waste of the instrument: draw calls ≤ 4 per frame, one RAF, one context; paused
+  offscreen and on `visibilitychange`.
+- Reduced motion: instrument frozen, plate opens without clip/scale, sentence printed,
+  overlay without wipe or stagger.
+- The overlay: keyboard-only open/close, `Tab` cycles inside, `Esc` returns focus to
+  `Index`, the page behind does not scroll.
+- No JavaScript: the `<noscript>` sheet is unchanged and still carries the addresses.

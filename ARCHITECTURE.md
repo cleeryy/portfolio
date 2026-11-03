@@ -45,6 +45,7 @@ src/
     territory.ts  flight.ts  site.ts
   lib/                    LOGIC, NO JSX
     router.tsx  seo.ts  pointer.ts  reveal.ts  scroll.ts  typo.ts  i18n.tsx
+    motion.ts
     currentSection.ts  veil.ts  reprint.ts
     sound/index.ts  sound/graph.ts  sound/rooms.ts  sound/cues.ts
   styles/
