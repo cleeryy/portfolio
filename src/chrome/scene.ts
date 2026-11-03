@@ -85,7 +85,9 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
    `data-deep`), so the instrument can print on the dark surface while the
    chapter's own type stays above it. The instrument reads `--deep-ink` from
    that section once per mode change and lifts its ink with it: no second
-   palette, no hardcoded dark.
+   palette, no hardcoded dark. The chart and sunk bands take the same fill
+   treatment but are light, so the instrument keeps the sheet's ink there — the
+   mode flag is `data-deep` alone.
 
    Under reduced motion the loop never starts: the instrument is posed once, at
    its station, with no spin and no tilt, and a scroll burst re-reads the pose
@@ -237,21 +239,28 @@ const NODE_LONGITUDE = 2.1
 const DEG = Math.PI / 180
 
 /* ---- the pose table ----------------------------------------------------
-   Where the instrument is pinned on each chapter. `x`/`y` are viewport
-   fractions, `scale` multiplies INSTRUMENT_K, `spin` is rad/s, `opacity` is the
-   instrument's own alpha. Read from the page, never from a scroll timeline:
-   `territory` and `flight` declare zero opacity so the instrument leaves the
-   reading chapters, and `index`/`statement` are listed before those chapters
-   exist — a pose without a section is simply never sampled. */
+   Where the instrument is pinned on each chapter, in the sheet's reading order:
+   cover → work → index → statement → territory → flight → operator → contact.
+   `x`/`y` are viewport fractions, `scale` multiplies INSTRUMENT_K, `spin` is
+   rad/s, `opacity` is the instrument's own alpha. Read from the page, never from
+   a scroll timeline (the record is keyed by section id, so the order below is
+   documentation — nothing iterates it); `territory` and `flight` declare zero
+   opacity so the instrument leaves the reading chapters, and a pose whose
+   chapter is not mounted is simply never sampled.
+
+   The instrument reads `data-deep` only. The chart and sunk bands are opaque,
+   but they are light platforms under the same sheet, so those chapters keep the
+   sheet's ink: `index` and `statement` print in ink like any light chapter, and
+   the one palette lift in this file stays the ink band's. */
 type Pose = { x: number; y: number; scale: number; spin: number; opacity: number }
 
 const POSES: Record<string, Pose> = {
   cover: { x: 0.76, y: 0.42, scale: 1.0, spin: 0.1, opacity: 0.85 },
   work: { x: 0.22, y: 0.3, scale: 0.72, spin: -0.08, opacity: 0.55 },
   index: { x: 0.72, y: 0.35, scale: 0.55, spin: 0.14, opacity: 0.4 },
+  statement: { x: 0.5, y: 0.62, scale: 1.55, spin: 0.06, opacity: 0.3 },
   territory: { x: 0.5, y: 0.42, scale: 0.6, spin: 0.05, opacity: 0 },
   flight: { x: 0.5, y: 0.42, scale: 0.6, spin: 0.05, opacity: 0 },
-  statement: { x: 0.5, y: 0.62, scale: 1.55, spin: 0.06, opacity: 0.3 },
   operator: { x: 0.84, y: 0.22, scale: 0.45, spin: 0.12, opacity: 0.35 },
   contact: { x: 0.14, y: 0.72, scale: 0.35, spin: -0.1, opacity: 0.45 },
 }

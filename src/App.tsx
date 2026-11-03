@@ -164,8 +164,11 @@ export default function App() {
       {/* The sheet itself, and the plate change. Both fixed, both behind the
           reading: mounted first so the canvas is painted under every page. */}
       <Atmosphere />
-      {/* The printed column grid: also z 0, also before every section. */}
-      <SheetGrid />
+      {/* The printed column grid: also z 0, also before every section. Keyed on
+          the route, because it finds the bands it tints when it mounts: a sheet
+          opened directly on `/work` has no home chapter to query, and the grid
+          would then keep the light mix on the chapters it reaches later. */}
+      <SheetGrid key={route.path} />
       <BootGate />
       <NavBar />
       {/* The plate change: one fixed canvas, created on the first internal

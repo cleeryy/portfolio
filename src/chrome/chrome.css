@@ -76,6 +76,16 @@
   line-height: 1.3;
 }
 
+/* Over the chart band: `--text-quiet` is 4.15:1 on `--chart`, below AA for 11px
+   text, so the key line steps up to `--ink-2` (5.85:1). The values already
+   print `--ink` (11.32:1). The rule and the value stay as they are — this band
+   is light, it only needs a darker grey, not the deep palette. Declared before
+   the ink block so `data-deep`/`data-passage` win on every token if the two
+   could ever be true together; the surfaces never overlap. */
+.chrome[data-chart='true'] {
+  --chrome-key: var(--ink-2);
+}
+
 /* Over the one dark chapter: the band's own two inks, and a rule that reads on
    ink instead of on ground. */
 .chrome[data-deep='true'],

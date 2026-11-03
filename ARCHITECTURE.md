@@ -16,15 +16,18 @@ src/
     notes/Notes.tsx  notes.css
     about/About.tsx  about.css
     not-found/NotFound.tsx  not-found.css
-  sections/               THE SIX CHAPTERS OF THE HOME, each self-contained
+  sections/               THE EIGHT CHAPTERS OF THE HOME, each self-contained
     cover/Cover.tsx  cover.css
     work/SelectedWork.tsx  selected-work.css  Plate.tsx  plate.css
+    index/Browse.tsx  browse.css
+    statement/Statement.tsx  statement.css
     territory/Territory.tsx  TerritoryScene.tsx  TerritoryPlate.tsx
               TerritoryCompact.tsx  territory.css
     flight/Flight.tsx  FlightScene.tsx  FlightStill.tsx  atlas.ts  curve.ts
               shaders.ts  flight.css
     operator/Operator.tsx  operator.css
     contact/Contact.tsx  contact.css
+    shared/PlatePop.tsx  plate-pop.css
   chrome/                 FIXED LAYERS, never in the document flow
     NavBar.tsx  nav.css
     InstrumentChrome.tsx  chrome.css  PointerHud.tsx  reading.ts
@@ -54,11 +57,12 @@ src/
 stylesheet, and the sections it composes. Never: a second page, a fixed layer,
 a primitive, a copy string.
 
-**`sections/`** — the six chapters of `/`. Belongs: a section, the scene and the
-poster it degrades to, the sub-components only it renders (`Plate`,
+**`sections/`** — the eight chapters of `/`. Belongs: a section, the scene and
+the poster it degrades to, the sub-components only it renders (`Plate`,
 `TerritoryPlate`, `TerritoryCompact`), its data-shaping helpers (`atlas.ts`,
-`curve.ts`, `shaders.ts`), its stylesheet. Never: anything reachable from a
-second page, a route, chrome.
+`curve.ts`, `shaders.ts`), its stylesheet — and `shared/`, which holds a device
+two chapters mount (`PlatePop`), never a chapter of its own. Never: anything
+reachable from a second page, a route, chrome.
 
 **`chrome/`** — fixed layers: `position: fixed`, or a canvas painted under the
 reading, or a gate over it. Belongs: nav, instrument margins, pointer readout,

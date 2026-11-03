@@ -53,8 +53,10 @@ gsap.registerPlugin(ScrollTrigger)
    not rendered at all.
 
    The ink follows the surface behind it: over the one dark chapter the readings
-   take the deep band's inks, decided by an IntersectionObserver on the band and
-   the strip of viewport the chrome occupies — no per-frame hit testing.
+   take the deep band's inks, and over the chart band the key line steps one ink
+   darker (the quiet ink is 4.15:1 there, the secondary ink 5.85:1). Both are
+   decided by the one IntersectionObserver this layer already runs, against the
+   strip of viewport the chrome occupies — no per-frame hit testing.
    ========================================================================== */
 
 /** The strip of viewport the chrome occupies, as a root margin (the middle 16%). */
@@ -162,16 +164,22 @@ export default function InstrumentChrome() {
 
     // Two surfaces own the ink: the chapter band (`.on-deep`, always dark) and
     // the passage, which turns dark part-way through its own track and says so
-    // on `data-ground`. Watching the attribute as well means the readings stop
-    // printing dark-on-dark during the hand-off.
+    // on `data-ground`. A third only darkens the key line: the chart band, where
+    // the quiet ink would sit at 4.15:1. Watching the attribute as well means
+    // the readings stop printing dark-on-dark during the hand-off.
     const band = document.querySelector<HTMLElement>('main > section.on-deep')
     const passage = document.querySelector<HTMLElement>('.flt[data-ground]')
+    const chart = document.querySelector<HTMLElement>('main > section[data-ground="chart"]')
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.target === passage) {
             root.dataset.passage = entry.isIntersecting && passage?.dataset.ground === 'deep' ? 'true' : 'false'
+            continue
+          }
+          if (entry.target === chart) {
+            root.dataset.chart = entry.isIntersecting ? 'true' : 'false'
             continue
           }
           root.dataset.deep = entry.isIntersecting ? 'true' : 'false'
@@ -181,6 +189,7 @@ export default function InstrumentChrome() {
     )
     if (band) observer.observe(band)
     if (passage) observer.observe(passage)
+    if (chart) observer.observe(chart)
 
     const onGround = () => {
       if (!passage) return
