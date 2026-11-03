@@ -383,6 +383,10 @@ export default function IndexOverlay({ open, onClose, triggerRef }: IndexOverlay
             className="idx__files"
             aria-label={pick({ en: 'Project files', fr: 'Fiches projets' })}
           >
+            <p className="idx__kicker idx__files-head">
+              <span>{pick({ en: 'the register', fr: 'le registre' })}</span>
+              <span className="idx__files-count">{pad2(projects.length)}</span>
+            </p>
             {projects.map((project) => (
               <Link
                 key={project.slug}
