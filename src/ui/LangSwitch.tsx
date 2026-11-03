@@ -2,53 +2,57 @@ import { useLang } from '../lib/i18n'
 import './lang.css'
 
 /* ============================================================================
-   LangSwitch — the language pair, in one place
+   LangSwitch — the language pair, once
    ----------------------------------------------------------------------------
-   The same control appears twice: in the bar, and as one row of the index
-   panel's plate block. Two copies of two buttons would be two chances to drift;
-   this is one component reading one store (`setLang` in `lib/i18n`), so a switch
-   made in the panel is already printed in the bar when the panel closes.
+   Two words, EN and FR, and the active one marked with the sheet's one accent
+   rule. It is type, not an icon: a map legend names its languages, it does not
+   draw a globe.
 
-   The pair is type, not a control with a box: two mono words, the active one
-   carrying the sheet's crimson rule. Ink is inherited, never declared — the bar
-   prints it on the ground, the panel prints it on the same ground, and neither
-   needs a skin of its own.
+   There are two places it is printed — the bar, and the index overlay's
+   settings plate — so it is one component with two *sizes*, never two copies of
+   the behaviour. `variant` is the size and the target height; the state, the
+   `lang` attributes and the two handlers are the same everywhere. The buttons
+   say `aria-pressed`, and the styling keys off that, so a screen reader hears
+   the same answer the ink shows.
+
+   The ink is inherited on purpose: the bar is on the sheet and the overlay is on
+   ink, and this control must read on both without knowing which surface it is
+   on. The quiet state is a mix of the inherited colour, not an opacity, so the
+   focus ring (which is `currentColor`-free, from base.css) stays at full
+   strength while the word is quiet.
    ========================================================================== */
 
+const LANGS = ['en', 'fr'] as const
+
 type LangSwitchProps = {
-  /** `bar` is the collar's 32px pair; `row` is read at arm's length in the panel. */
-  variant?: 'bar' | 'row'
   className?: string
+  /** `bar` is the compact pair in the collar; `row` is a settings-plate value. */
+  variant?: 'bar' | 'row'
 }
 
-export default function LangSwitch({ variant = 'bar', className }: LangSwitchProps) {
+export default function LangSwitch({ className, variant = 'bar' }: LangSwitchProps) {
   const { lang, setLang, pick } = useLang()
+  const label = pick({ en: 'Language', fr: 'Langue' })
 
   return (
     <div
       className={className ? `lang ${className}` : 'lang'}
-      data-variant={variant}
       role="group"
-      aria-label={pick({ en: 'Language', fr: 'Langue' })}
+      aria-label={label}
+      data-variant={variant}
     >
-      <button
-        type="button"
-        className="lang__btn"
-        lang="en"
-        aria-pressed={lang === 'en'}
-        onClick={() => setLang('en')}
-      >
-        EN
-      </button>
-      <button
-        type="button"
-        className="lang__btn"
-        lang="fr"
-        aria-pressed={lang === 'fr'}
-        onClick={() => setLang('fr')}
-      >
-        FR
-      </button>
+      {LANGS.map((code) => (
+        <button
+          key={code}
+          type="button"
+          className="lang__btn"
+          lang={code}
+          aria-pressed={lang === code}
+          onClick={() => setLang(code)}
+        >
+          {code.toUpperCase()}
+        </button>
+      ))}
     </div>
   )
 }

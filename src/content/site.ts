@@ -7,62 +7,68 @@ import { fr } from '../lib/typo'
    Everything a page needs that is not the page. Kept apart from the content
    modules so a route can change its title without touching a project.
 
-   There is one table per kind of place, and neither is written twice:
+   There is exactly **one** navigation table, and it is split by what a reader
+   can do with each entry:
 
-   - `navItems` are the documents — every address the index panel prints at
-     title size, in reading order. The bar no longer repeats them: the panel is
-     the navigation, and this table is its only source.
-   - `chapters` are the eight plates of the home sheet, with the name the bar's
-     live reading and the panel's chapter column print. `homeSections` is
-     *derived* from it, so a chapter inserted here is a chapter the margin
-     chrome, the reading, the panel and the atmosphere's pose table all know.
+   - `documents` are the five places a reader can open. The index overlay prints
+     them at plate scale; the bar still links only to the cover, because a bar
+     with six destinations in it was the thing this pass replaced.
+   - `chapters` are the eight plates of the home sheet, in reading order, named
+     in the site's own lowercase voice. `homeSections` is *derived* from them, so
+     a chapter inserted here is known by every instrument at once (the margin
+     chrome, the bar's live reading, the overlay's numbered column, the
+     atmosphere's pose table) and no surface can print a plate the others do not
+     have.
 
-   `routeReading` is what the bar prints on a document that is not the cover: a
-   route states its own name and no plate number, because a route is not a plate
-   of the cover and counting it in eighths would measure nothing. A file under
-   `/work` states the project's name; an address the sheet does not hold states
-   `missingReading`.
+   `routeReading` is the bar's answer on a document that is not the cover: a
+   route prints its own name and no plate number, because a route is not a plate
+   of the cover. A file under `/work` reads the project's name instead, and an
+   address the sheet does not hold reads `missingReading`.
    ========================================================================== */
 
-/** A document: a place a reader can open, its label, and what kind of address it is. */
-export type NavItem = { id: string; label: Bi; href: string; kind: 'route' | 'anchor' }
+/** A document: a place a reader can open, with the label the index prints. */
+export type SiteDocument = { id: string; label: Bi; href: string }
 
-export const navItems: NavItem[] = [
-  { id: 'work', label: { en: 'Work', fr: 'Projets' }, href: '/work', kind: 'route' },
-  { id: 'territory', label: { en: 'Territory', fr: 'Territoire' }, href: '/#territory', kind: 'anchor' },
-  { id: 'practice', label: { en: 'Practice', fr: 'Pratique' }, href: '/practice', kind: 'route' },
-  { id: 'notes', label: { en: 'Notes', fr: 'Notes' }, href: '/notes', kind: 'route' },
-  { id: 'about', label: { en: 'About', fr: 'À propos' }, href: '/about', kind: 'route' },
-  { id: 'contact', label: { en: 'Contact', fr: 'Contact' }, href: '/#contact', kind: 'anchor' },
+export const documents: SiteDocument[] = [
+  { id: 'work', label: { en: 'Work', fr: 'Projets' }, href: '/work' },
+  { id: 'practice', label: { en: 'Practice', fr: 'Pratique' }, href: '/practice' },
+  { id: 'notes', label: { en: 'Notes', fr: 'Notes' }, href: '/notes' },
+  { id: 'about', label: { en: 'About', fr: fr('À propos') }, href: '/about' },
+  { id: 'contact', label: { en: 'Contact', fr: 'Contact' }, href: '/#contact' },
 ]
 
-/** A chapter of the home sheet: the id its section carries, and its name. */
+/** A chapter of the home sheet: an id the section carries, and its name. */
 export type Chapter = { id: string; label: Bi }
 
-/**
- * The eight plates of the home sheet, in reading order. The names are lowercase
- * because the reading is a measurement printed in the margin, not a heading.
- */
 export const chapters: Chapter[] = [
   { id: 'cover', label: { en: 'cover', fr: 'couverture' } },
   { id: 'work', label: { en: 'selected work', fr: fr('travaux choisis') } },
-  { id: 'index', label: { en: 'index', fr: 'index' } },
+  { id: 'index', label: { en: 'the index', fr: fr('l’index') } },
   { id: 'statement', label: { en: 'statement', fr: fr('déclaration') } },
   { id: 'territory', label: { en: 'territory', fr: 'territoire' } },
-  { id: 'flight', label: { en: 'the passage', fr: 'le passage' } },
-  { id: 'operator', label: { en: 'operator', fr: 'opérateur' } },
+  { id: 'flight', label: { en: 'passage', fr: 'passage' } },
+  { id: 'operator', label: { en: 'operator', fr: fr('l’opérateur') } },
   { id: 'contact', label: { en: 'contact', fr: 'contact' } },
 ]
 
 /**
  * Home section ids, in reading order — derived from `chapters`, never written
- * twice. The chrome counts the plates (`03/08`), the bar's reading names the
- * chapter under the reading line, the panel prints the same eight numbers, and
- * the atmosphere's pose table is keyed by the same ids.
+ * twice.
+ *
+ * The margin chrome counts the plates from this list (`03/08`), the bar's live
+ * reading names the chapter under the reading line and prints its number, the
+ * index overlay prints the eight rows with the same numbers, and the
+ * atmosphere's pose table is keyed by the same ids — so a chapter inserted here
+ * is a chapter the whole sheet knows about, and the numbers on three surfaces
+ * cannot drift apart.
  */
 export const homeSections = chapters.map((chapter) => chapter.id)
 
-/** The bar's reading on a document: the route's own name, no plate number. */
+/**
+ * What the bar prints on a route: the route's name, no plate number. A route is
+ * a document, not a plate of the cover, so counting it in eighths would be a
+ * measurement of nothing.
+ */
 export const routeReading: Record<'work' | 'notes' | 'practice' | 'about', Bi> = {
   work: { en: 'the register', fr: 'le registre' },
   notes: { en: 'field notes', fr: fr('notes de terrain') },
@@ -70,7 +76,11 @@ export const routeReading: Record<'work' | 'notes' | 'practice' | 'about', Bi> =
   about: { en: 'about', fr: fr('à propos') },
 }
 
-/** An address the sheet does not hold — the 404 and a missing file both read it. */
+/**
+ * An address the sheet does not hold. The 404 page and a `/work/:slug` the
+ * register does not carry both read this — the bar states the fact instead of
+ * going quiet.
+ */
 export const missingReading: Bi = { en: 'no such plate', fr: fr('planche introuvable') }
 
 export type RouteKey = 'cover' | 'work' | 'notes' | 'practice' | 'about' | 'notFound'
@@ -80,7 +90,7 @@ export const titles: Record<RouteKey, Bi> = {
   work: { en: 'cleeryy — the register', fr: 'cleeryy — le registre' },
   notes: { en: 'cleeryy — field notes', fr: fr('cleeryy — notes de terrain') },
   practice: { en: 'cleeryy — practice', fr: 'cleeryy — pratique' },
-  about: { en: 'cleeryy — about', fr: 'cleeryy — à propos' },
+  about: { en: 'cleeryy — about', fr: fr('cleeryy — à propos') },
   notFound: { en: 'cleeryy — no such plate', fr: 'cleeryy — planche introuvable' },
 }
 

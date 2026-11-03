@@ -2,14 +2,21 @@
    lang.css — the language pair
    ----------------------------------------------------------------------------
    Two words in the mono face, one of them marked with the accent rule. The
-   control is type, so it has no box: no border, no pill, no globe. The only
-   decoration is the hairline under the active language — the same mark the
-   sheet uses everywhere to say "this one".
+   control is type, so it has no box of its own: no border, no pill, no globe.
+   The only decoration is the hairline under the active language, which is the
+   same mark the sheet uses to say "this one".
 
-   The quiet state is a *mix* of the inherited ink rather than an opacity, so the
-   focus ring (the accent, from base.css) keeps its full strength while the word
-   is quiet. Nothing here declares a colour: the bar prints it on the pale
-   ground, the panel prints it on the same ground, and both inherit.
+   Two sizes, one skin:
+
+   - `bar` (default) is the collar's pair: 32px targets, 12px type, quiet until
+     pointed at.
+   - `row` is the index plate's settings value: 44px targets, a full step of
+     type, because it is read at arm's length in a full-screen panel.
+
+   Ink is inherited, never declared: the bar is on the pale sheet and the plate
+   is on ink, and this control has to read on both. The quiet state is a *mix* of
+   the inherited colour rather than an opacity, so the focus ring — which is the
+   accent, from base.css — keeps its full strength while the word is quiet.
    ========================================================================== */
 
 .lang {
@@ -43,8 +50,6 @@
   border-bottom-color: var(--mark);
 }
 
-/* The panel's row: a full step of type and a 44px target, because it is read at
-   arm's length inside the plate. */
 .lang[data-variant='row'] {
   gap: 0.25rem;
 }

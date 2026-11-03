@@ -26,9 +26,11 @@ import { alignHash, useRoute } from './lib/router'
 import { setMeta } from './lib/seo'
 import { sound } from './lib/sound'
 
-/** The chrome controls that answer with a relay tick. */
+/** The chrome controls that answer with a relay tick. The index plate is named
+    as well as the bar: its rows and its switches are chrome too, and a row that
+    opens a document should be heard the same way a link in the bar is. */
 const CUE_SELECTOR =
-  '.nav a, .nav button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a, .reg a, .file a, .nt a, .pr a, .ab a'
+  '.nav a, .nav button, .idx a, .idx button, .cover a, .cover button, .wt a, .wt button, .op a, .op button, .ct a, .ct button, .clp a, .nf a, .reg a, .file a, .nt a, .pr a, .ab a'
 const NO_CUE = '.sound-toggle, [data-no-cue]'
 
 /**

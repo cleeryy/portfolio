@@ -1,20 +1,21 @@
 /* ============================================================================
-   nav.css — the collar, the reading, and the index plate
+   nav.css — the fixed collar, now three controls and one reading
    ----------------------------------------------------------------------------
-   The bar used to carry six destinations and a push-down panel that repeated
-   them. It now carries three controls and one reading: the mark walks home, the
-   reading says where the reader is, `Index` opens the only navigation the sheet
-   has. Everything a reader can *go* to lives in `#nav-index`, printed at a size
-   that deserves a plate.
+   The bar used to carry six destinations and a push-down panel. It now carries
+   what a fixed edge is actually for: the mark that walks home, the reading that
+   says where the reader is, and one way into the index. Everything a reader can
+   *go* to lives in the index plate (`overlay.css`), printed at a size that
+   deserves a whole screen.
 
-   The row is a grid — `auto minmax(0, 1fr) auto` — so the reading sits next to
-   the mark and the tools stay at the right edge, whatever the reading says. The
-   reading is the one thing in the bar whose width changes by itself, and it
-   changes only inside its own track.
+   The row is a three-column grid — `1fr auto 1fr` — so the reading is centred on
+   the sheet itself, not centred in whatever the brand and the tools left over.
+   A reading that is longer than its column truncates: it may never wrap, may
+   never widen the bar, and may never push the two controls that flank it.
 
-   Nothing here loops. The rollover ticker runs only while a label rolls, the
-   language rule follows a press, and the reading moves only when the plate under
-   it changes. A bar with no pointer on it is a still drawing.
+   Nothing here loops. The Rollover ticker runs only while a label rolls, the
+   square answers a pointer in 140ms, the index frame draws once per hover, and
+   the reading moves only when the plate under it changes. A bar with no pointer
+   on it is a still drawing.
    ========================================================================== */
 
 .nav {
@@ -23,20 +24,40 @@
   right: 0;
   left: 0;
   z-index: var(--z-nav);
+  color: var(--ink);
   background-color: var(--ground);
   border-bottom: var(--hair) solid var(--contour);
-  transition: border-color var(--t-base) var(--ease-out);
+  transition:
+    color var(--t-base) var(--ease-out),
+    background-color var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out);
 }
 
 .nav[data-scrolled='true'] {
   border-bottom-color: var(--ink);
 }
 
+/* Open: the bar stops being a surface and becomes part of the plate. The index
+   overlay is a child of this header and is painted under it, so the bar's own
+   ground and rule would otherwise cut a light band across the deep sheet. The
+   ink flips here, once, and every control inherits it. */
+.nav[data-open='true'] {
+  color: var(--deep-ink);
+  background-color: transparent;
+  border-bottom-color: transparent;
+}
+
 .nav__inner {
+  /* Inside the header's own stacking context these two numbers only order the
+     bar against the plate beneath it; the header is `--z-nav` on the page. */
   position: relative;
-  z-index: 1;
+  z-index: var(--z-nav);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* The reading is the column that yields. It is centred on the sheet (equal
+     `1fr` tracks either side, each holding its own content) and capped at half
+     the row, so a long project name truncates instead of squeezing the mark or
+     the way in. */
+  grid-template-columns: minmax(auto, 1fr) fit-content(50%) minmax(auto, 1fr);
   align-items: center;
   gap: var(--s-4);
   height: var(--nav-h);
@@ -56,80 +77,93 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  flex: none;
+  justify-self: start;
+  color: inherit;
   font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: var(--w-semi);
   font-stretch: var(--width-heading);
   letter-spacing: -0.008em;
-  color: var(--ink);
   text-decoration: none;
 }
 
+/* The mark grows, the handle does not move.
+   The pseudo element is a 10px box whose *painted* square is 6px at rest — the
+   other 4px are its own inline margins. Growing the square to 10px and dropping
+   the margins keeps the outer box at exactly 10px, so the label's x position is
+   identical in both states and only the ink changes. Block growth is centred by
+   the flex line above. */
 .nav__brand::before {
   content: '';
   display: block;
   flex: none;
   inline-size: 6px;
   block-size: 6px;
+  margin-inline: 2px;
   background-color: var(--mark);
+  transition:
+    inline-size var(--t-fast) var(--ease-out),
+    block-size var(--t-fast) var(--ease-out),
+    margin-inline-start var(--t-fast) var(--ease-out),
+    margin-inline-end var(--t-fast) var(--ease-out);
+}
+
+.nav__brand:hover::before,
+.nav__brand:focus-visible::before {
+  inline-size: 10px;
+  block-size: 10px;
+  margin-inline: 0;
 }
 
 /* ---------------------------------------------------------------------------
-   The reading — the chapter under the reading line, and its plate number
+   The reading — the plate under the reading line, and its number
    ---------------------------------------------------------------------------
-   A measurement, so it is mono with tabular figures. The name and the number
-   are written by `NavReading`; everything here is the two clipping boxes they
-   move inside.
-   --------------------------------------------------------------------------- */
+   A measurement, so it is set in the mono face with tabular figures. The name is
+   a text node React owns; the number is written by GSAP so a re-render can never
+   fight the flip that is already in flight. */
 
-.nav__reading {
-  display: inline-flex;
+.nav__read {
+  display: flex;
   align-items: center;
-  justify-self: start;
+  gap: 0;
+  justify-self: center;
   min-inline-size: 0;
+  max-inline-size: 100%;
   font-family: var(--font-mono);
   font-size: var(--step--1);
   font-weight: var(--w-regular);
-  line-height: 1.2;
+  line-height: 1;
   letter-spacing: var(--tracking-mono);
   font-variant-numeric: tabular-nums;
   color: var(--text-soft);
-  text-decoration: none;
-  transition: color var(--t-fast) var(--ease-out);
-}
-
-.nav__reading:hover,
-.nav__reading:focus-visible {
-  color: var(--ink);
-}
-
-.nav__reading:focus-visible {
-  outline-offset: 2px;
-}
-
-.nav__reading-visual {
-  display: inline-flex;
-  align-items: center;
-  min-inline-size: 0;
-}
-
-/* The name's mask: exactly 1.2 lines, so a departing word has one place to go. */
-.nav__reading-mask {
-  position: relative;
-  display: block;
-  block-size: 1.2em;
-  overflow: hidden;
-}
-
-.nav__reading-word {
-  display: block;
-  line-height: 1.2;
   white-space: nowrap;
 }
 
-/* The departing copy, created for the 180ms it takes to leave. */
-.nav__reading-out {
+.nav[data-open='true'] .nav__read {
+  color: var(--deep-ink-2);
+}
+
+/* The name's clipping box. It is `block` rather than `inline-block` so the
+   ellipsis has a width to resolve against, and it owns the mask the cross-fade
+   lifts out of. */
+.nav__read-name {
+  position: relative;
+  display: block;
+  min-inline-size: 0;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.nav__read-in {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The departing copy. Created for one 160ms move, removed when it lands: the
+   resting DOM is always the single React text node above. */
+.nav__read-out {
   position: absolute;
   inset-block-start: 0;
   inset-inline-start: 0;
@@ -137,27 +171,25 @@
   pointer-events: none;
 }
 
-.nav__reading-sep {
-  padding-inline: 0.4em;
-  color: var(--text-quiet);
-}
-
-/* The number: one clipping column per digit, so a change flips one figure. */
-.nav__reading-count {
-  display: inline-flex;
-  align-items: baseline;
-}
-
-.nav__reading-digit {
+/* The number's mask: exactly one line tall, so a flip has nowhere to spill.
+   `5ch` is the format's own width (`02/08`, five mono glyphs) and it holds the
+   box open while the two layers inside it are absolutely positioned. */
+.nav__read-num {
   position: relative;
-  display: inline-block;
-  block-size: 1.2em;
+  display: block;
+  flex: none;
+  inline-size: 5ch;
+  block-size: 1em;
   overflow: hidden;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
-.nav__reading-in {
-  display: block;
-  line-height: 1.2;
+.nav__read-flip {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------------------
@@ -169,18 +201,48 @@
   align-items: center;
   justify-self: end;
   gap: var(--s-3);
-  min-inline-size: 0;
+  color: inherit;
+}
+
+/* SoundToggle and the language pair own their own shapes; the bar owns the ink.
+   Both read `currentColor`, so the flip to the deep plate is one inheritance. */
+.nav__sound {
+  color: var(--text-soft);
+}
+
+.nav[data-open='true'] .nav__sound {
+  color: var(--deep-ink-2);
 }
 
 .nav__index {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   min-block-size: 32px;
   padding: 0 0.35rem;
-  color: var(--ink);
+  color: inherit;
   font-size: 0.8125rem;
   font-weight: var(--w-medium);
+}
+
+/* The frame draws in from its top-left corner rather than fading: a rule that is
+   being drawn is the sheet's whole hover vocabulary. `clip-path` keeps it a
+   paint operation, and there is no loop — it holds while the control is under
+   the pointer or the focus ring, and retracts when it is not. */
+.nav__index::after {
+  content: '';
+  position: absolute;
+  inset: -0.35rem;
+  border: var(--hair) solid currentColor;
+  clip-path: inset(0 100% 100% 0);
+  transition: clip-path var(--t-base) var(--ease-draw);
+  pointer-events: none;
+}
+
+.nav__index:hover::after,
+.nav__index:focus-visible::after {
+  clip-path: inset(0 0 0 0);
 }
 
 .nav__index-sign {
@@ -219,310 +281,15 @@
   transform: rotate(45deg);
 }
 
-/* SoundToggle owns its own plate; it only needs the ink here. */
-.nav__sound {
-  color: var(--text-soft);
-}
-
 /* ---------------------------------------------------------------------------
-   The scrim — the ground behind the plate
+   Responsive — a phone keeps the mark, the reading, and the way in
    ---------------------------------------------------------------------------
-   A child of the header, absolute from the bar's own edge, so it starts under
-   the bar at every width and never needs a measurement. The panel paints above
-   it; a press on the scrim is a dismissal.
-   --------------------------------------------------------------------------- */
-
-.nav__scrim {
-  position: absolute;
-  inset-block-start: 100%;
-  inset-inline: 0;
-  block-size: 100dvh;
-  z-index: 0;
-  background-color: color-mix(in srgb, var(--deep) 18%, transparent);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--t-base) var(--ease-out);
-}
-
-.nav[data-open='true'] .nav__scrim {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* ---------------------------------------------------------------------------
-   The plate — the index, pushing down from the bar
-   ---------------------------------------------------------------------------
-   The same shell the small-screen index used, now at every width. It scrolls
-   inside itself: the sheet behind is locked, and a short viewport must never
-   clip the last project. `clip-path` is the wipe's property, written by GSAP on
-   open and close; the closed state is here, so the first paint is already shut.
-   --------------------------------------------------------------------------- */
-
-.nav__panel {
-  position: absolute;
-  inset-block-start: 100%;
-  inset-inline: 0;
-  z-index: 1;
-  max-block-size: calc(100dvh - var(--nav-h));
-  overflow: auto;
-  overscroll-behavior: contain;
-  background-color: var(--ground);
-  border-bottom: var(--hair) solid var(--ink);
-  clip-path: inset(0 0 100% 0);
-  visibility: hidden;
-}
-
-.nav__panel-grid {
-  display: grid;
-  gap: var(--s-6) 0;
-  max-inline-size: 90rem;
-  margin-inline: auto;
-  padding: var(--s-6) var(--gutter) var(--s-8);
-}
-
-/* Two columns only where there is room for two readings: documents, chapters
-   and the plate on the left, the register on the right. */
-@media (min-width: 1100px) {
-  .nav__panel-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      'docs     projects'
-      'chapters projects'
-      'plate    projects';
-    align-items: start;
-    gap: var(--s-6) clamp(2rem, 5vw, 5rem);
-    padding-block-start: var(--s-7);
-  }
-
-  .nav__panel-docs {
-    grid-area: docs;
-  }
-
-  .nav__panel-chapters {
-    grid-area: chapters;
-  }
-
-  .nav__panel-plate {
-    grid-area: plate;
-  }
-
-  .nav__panel-projects {
-    grid-area: projects;
-  }
-}
-
-.nav__panel-label {
-  margin: 0 0 var(--s-3);
-  font-family: var(--font-mono);
-  font-size: var(--step--2);
-  font-weight: var(--w-regular);
-  letter-spacing: 0.12em;
-  color: var(--text-quiet);
-}
-
-/* ---------------------------------------------------------------------------
-   The rows — hairline, rule, width, tick
-   ---------------------------------------------------------------------------
-   Every row is one line with a hairline under it. Pointing at one draws a rule
-   left to right, lifts the display name six points on Archivo's width axis, and
-   slides a 4px crimson tick out of the gutter. The tick lives inside the row's
-   own 14px inline padding, so the entrance mask can clip the row without
-   clipping the mark.
-   --------------------------------------------------------------------------- */
-
-.nav__row {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: var(--s-4);
-  inline-size: 100%;
-  padding-block: 0.55rem;
-  padding-inline: 14px 0;
-  border-block-end: var(--hair) solid var(--contour);
-  color: var(--ink);
-  text-align: start;
-  text-decoration: none;
-  transition: border-block-end-color var(--t-fast) var(--ease-out);
-}
-
-.nav__row-name {
-  display: block;
-  min-inline-size: 0;
-  font-family: var(--font-display);
-  font-size: var(--step-0);
-  font-weight: var(--w-medium);
-  font-stretch: var(--width-body);
-  line-height: 1.12;
-  letter-spacing: var(--tracking-display);
-  transition: font-stretch 220ms var(--ease-out);
-}
-
-.nav__row-ref {
-  font-family: var(--font-mono);
-  font-size: var(--step--2);
-  font-weight: var(--w-regular);
-  letter-spacing: var(--tracking-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-quiet);
-  white-space: nowrap;
-}
-
-/* The crimson tick in the gutter. */
-.nav__row-tick {
-  position: absolute;
-  inset-block-start: 50%;
-  inset-inline-start: 0;
-  inline-size: 4px;
-  block-size: 0.85em;
-  background-color: var(--mark);
-  opacity: 0;
-  transform: translate(-10px, -50%);
-  transition:
-    transform 120ms var(--ease-out),
-    opacity 120ms var(--ease-out);
-  pointer-events: none;
-}
-
-/* The rule, drawn over the hairline. */
-.nav__row::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: -1px;
-  block-size: var(--hair-strong);
-  background-color: var(--ink);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 120ms var(--ease-out);
-  pointer-events: none;
-}
-
-.nav__row:focus-visible {
-  outline-offset: -3px;
-  border-block-end-color: var(--ink);
-}
-
-.nav__row:focus-visible::after {
-  transform: scaleX(1);
-}
-
-.nav__row:focus-visible .nav__row-tick {
-  opacity: 1;
-  transform: translate(0, -50%);
-}
-
-@media (hover: hover) {
-  .nav__row:hover {
-    border-block-end-color: var(--ink);
-  }
-
-  .nav__row:hover::after {
-    transform: scaleX(1);
-  }
-
-  .nav__row:hover .nav__row-tick {
-    opacity: 1;
-    transform: translate(0, -50%);
-  }
-
-  .nav__row:hover .nav__row-name {
-    font-stretch: 106%;
-  }
-}
-
-/* The current document marks its reference, never its name: a name in the
-   accent would read as a warning, and the sheet's accent is a mark, not a
-   sentence. */
-.nav__row[aria-current='page'] .nav__row-ref,
-.nav__row[aria-current='true'] .nav__row-ref {
-  color: var(--mark);
-}
-
-/* --- documents ----------------------------------------------------------- */
-
-.nav__row--doc .nav__row-name {
-  font-size: var(--step-4);
-  font-weight: var(--w-medium);
-}
-
-/* --- chapters ------------------------------------------------------------ */
-
-.nav__row--chapter {
-  grid-template-columns: 2.5rem minmax(0, 1fr);
-  align-items: baseline;
-  padding-block: 0.45rem;
-}
-
-.nav__row--chapter .nav__row-name,
-.nav__row--chapter .nav__row-ref {
-  font-family: var(--font-mono);
-  letter-spacing: var(--tracking-mono);
-}
-
-.nav__row--chapter .nav__row-name {
-  font-size: var(--step--1);
-  font-weight: var(--w-regular);
-}
-
-/* --- projects ------------------------------------------------------------ */
-
-.nav__projects {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: clamp(1rem, 3vw, 2.5rem);
-}
-
-.nav__row--project {
-  padding-block: 0.4rem;
-}
-
-.nav__row--project .nav__row-name {
-  font-size: var(--step-2);
-  overflow-wrap: anywhere;
-}
-
-.nav__row--project .nav__row-ref {
-  transition: color var(--t-fast) var(--ease-out);
-}
-
-/* --- the plate ----------------------------------------------------------- */
-
-.nav__row--plate {
-  font-size: var(--step-0);
-}
-
-.nav__row--lang {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
-.nav__row--lang .lang {
-  justify-self: end;
-}
-
-.nav__row--plate[disabled] {
-  color: var(--text-quiet);
-  cursor: default;
-}
-
-.nav__row--plate[disabled] .nav__row-name,
-.nav__row--plate[disabled] .nav__row-ref {
-  color: var(--text-quiet);
-}
-
-.nav__row--plate[disabled] .nav__row-tick,
-.nav__row--plate[disabled]::after {
-  display: none;
-}
-
-/* ---------------------------------------------------------------------------
-   Responsive
-   --------------------------------------------------------------------------- */
+   The language pair and the sound plate are not deleted from the site: they
+   move into the index plate, where a thumb can reach them and where they have
+   room to say what they are. The reading stays, because it is the one piece of
+   feedback that tells a reader where the scroll has taken them. */
 
 @media (max-width: 900px) {
-  /* The bar anchors the index: it must clear the notch and the home indicator
-     when the sheet is installed or read in landscape. */
   .nav {
     padding-block-start: env(safe-area-inset-top, 0px);
   }
@@ -542,63 +309,7 @@
     padding-inline: 0.4rem;
   }
 
-  .nav .lang__btn {
-    min-inline-size: 44px;
-    min-block-size: 44px;
-  }
-
-  .nav .nav__sound {
-    min-block-size: 44px;
-    padding-inline: 0.4rem;
-  }
-
-  /* A phone has no room to name the chapter in the bar: the number is the part
-     that still measures something, and the panel prints the names. */
-  .nav__reading-mask,
-  .nav__reading-sep {
-    display: none;
-  }
-
-  .nav__panel {
-    max-block-size: calc(100dvh - var(--nav-h) - env(safe-area-inset-top, 0px));
-  }
-
-  .nav__panel-grid {
-    padding-block: var(--s-5) var(--s-7);
-  }
-
-  .nav__row {
-    min-block-size: 44px;
-    align-items: center;
-  }
-
-  .nav__row--chapter {
-    padding-block: 0.6rem;
-  }
-
-  /* One column: a two-column register at 390px wraps every long slug mid-word. */
-  .nav__projects {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 420px) {
-  .nav__index-label {
-    display: none;
-  }
-
-  .nav__inner {
-    gap: 6px;
-  }
-
-  .nav__tools {
-    gap: var(--s-2);
-  }
-}
-
-/* Below a small phone the bar keeps its reading and its pair; the sound plate
-   is the one control the panel can hold alone. */
-@media (max-width: 340px) {
+  .nav__lang,
   .nav__sound {
     display: none;
   }
