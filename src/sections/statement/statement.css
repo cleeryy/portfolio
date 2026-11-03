@@ -48,13 +48,17 @@
    reduced motion. Two axis units on one word move its neighbours by a few
    pixels at most, which is the same trade the sheet's link hover already makes.
 
-   THE PLATE. The word the copy marks as `plate` is replaced on the page by a
-   0.9em square: a hairline box, the project's deterministic seal, and the word
-   itself kept as `.sr-only` inside the link so the sentence still reads and the
-   link still has a name. The seal's quiet ink is `--contour`, which on this band
-   would sit at 1.2:1 — so the plate re-points `--contour` to `--ink-2` (5.85:1)
-   rather than letting the lattice sink into the water. Its hairline is the box
-   border: the svg's own frame is stood down so the plate has one line, not two.
+   THE PLATE. The word the copy marks as `plate` is not replaced: it prints in
+   ink, at the sentence's own size, weight and baseline, and the plate is
+   printed *behind* it. Three planes, all inside the word's own box — the field
+   (the project's seal at 16% density, one word box + 0.14em wide), the hairline
+   (2px outside the word's box, so the word reads as a specimen pasted into the
+   line) and the word itself. On this band the seal's `--contour` dots would be
+   water on water (1.2:1), so the field re-points them to ink and lets the alpha
+   do the quieting. The frame turns crimson on hover and focus, and the field
+   lifts 2px where motion is allowed. The seal stays `aria-hidden`; the word is
+   real text, so the sentence is still words to a screen reader and the link
+   still has a name.
 
    Below 900px the rail turns horizontal above the block (the Operator device)
    and the sentence keeps the whole field. The wide cut is kept at every size:
@@ -71,11 +75,10 @@
   /* Glyph room inside a mask: twice the 0.08em the face overhangs its own line
      box at `--leading-none`. */
   --st-mask-pad: 0.16em;
-  /* The inline plate: the box, the hair of room over the seal that lets a 100%
-     translation clear the clip, and the ring room for the focus outline. */
-  --st-plate-size: 0.9em;
-  --st-plate-lift: 0.02em;
-  --st-plate-ring: 0.1em;
+  /* The plate word's field: how far the seal bleeds past the word's own box on
+     each side, and how far the hairline stands off it. */
+  --st-field: 0.07em;
+  --st-frame: 2px;
   /* One axis step under `--width-plate`. */
   --st-strong-width: calc(var(--width-plate) - 2%);
   /* The printed line's ceiling, and the gap that keeps three authored lines
@@ -237,50 +240,105 @@
 /* ---------------------------------------------------------------------------
    The plate word
    ---------------------------------------------------------------------------
-   The mask gets ring room on both sides — the focus outline is drawn outside
-   the link and would otherwise be cut at the line's start. The room is cancelled
-   by an equal negative margin, so the space between words is unchanged.
+   The word stays in the sentence: it is a word, and a sentence cannot do
+   without one. So the word prints in ink at the sentence's own size, weight
+   and baseline, and the plate prints behind it.
+
+   Everything the plate adds lives inside the word's own padding box, which is
+   also the mask's clip box. That is the whole trick: the word carries the same
+   0.16em of glyph room `.st__word` carries, and the field (0.07em) and the
+   hairline (2px) both sit inside that room. Nothing is clipped by the mask,
+   nothing is added to the line, and the word's baseline cannot drift from its
+   neighbours'.
    --------------------------------------------------------------------------- */
 
+/* No strut: the plate word's own box is the mask's height, so a 100% rise
+   clears the clip exactly as a text word does. */
 .st__mask--plate {
-  padding-inline: var(--st-plate-ring);
-  margin-inline: calc(var(--st-plate-ring) * -1);
-  /* No strut. A text mask's word carries its own line box; the plate is a block
-     inside a rise, and the mask's inherited 0.92 line box would add a descent
-     under it — a band of clip box the plate could still cross at 100%. With the
-     strut gone, the mask is exactly the rise's box and the plate is clipped at
-     the same line a word is. */
   line-height: 0;
 }
 
-/* The rising box for the plate. The hair of top padding is what makes a 100%
-   translation land outside the clip; the bottom padding is the same glyph room
-   a word gets, so the plate's mask is as tall as a text mask. */
-.st__plate-rise {
-  display: inline-block;
-  padding-block: var(--st-plate-lift) var(--st-mask-pad);
-}
-
-/* The plate itself: a square, a hairline, no fill, no radius. */
 .st__plate {
-  display: block;
-  inline-size: var(--st-plate-size);
-  block-size: var(--st-plate-size);
-  border: var(--hair) solid var(--ink);
-  /* The seal's quiet ink on this band. */
-  --contour: var(--ink-2);
+  /* The word's own box: the sentence's line box, plus the glyph room every word
+     in the sentence gets, plus the air a pasted specimen keeps. */
+  position: relative;
+  display: inline-block;
+  padding: var(--st-mask-pad) 0.12em;
+  line-height: var(--leading-none);
+  color: var(--text);
+  font-weight: inherit;
+  text-decoration: none;
 }
 
-/* `ProjectSeal` takes a pixel size for its attributes; the sentence needs an
-   em box, so the drawing is scaled here and the prop stays the fallback. */
-.st__plate .st__seal {
+/* The field: the seal at 16%, exactly one word box + 0.14em. Its ink is the
+   sheet's own — on `--chart` the seal's `--contour` dots would be water on
+   water, so the field re-points them to ink and lets the alpha do the quieting. */
+.st__field {
+  position: absolute;
+  inset: calc(var(--st-mask-pad) - var(--st-field)) calc(0.12em - var(--st-field));
+  opacity: 0.16;
+  pointer-events: none;
+  --contour: var(--ink);
+}
+
+/* `ProjectSeal` takes a pixel size for its attributes; the word needs an em box,
+   so the drawing is scaled here and the prop stays the fallback. */
+.st__field .st__seal {
   inline-size: 100%;
   block-size: 100%;
 }
 
-/* One hairline, the box's: the svg's own frame would double it at 0.9em. */
-.st__plate .seal__frame {
+/* One hairline, the field's: the svg's own square would cut the field in two. */
+.st__field .seal__frame {
   display: none;
+}
+
+/* The hairline, 2px outside the word's box. A pseudo element, so the word's own
+   box is unchanged and the sentence's pitch does not move. */
+.st__plate::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--st-mask-pad) - var(--st-frame)) calc(0.12em - var(--st-frame));
+  border: var(--hair) solid var(--rule);
+  pointer-events: none;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+
+/* The word sits on the field, not inside a box: its ink, its weight and its
+   place on the line are the sentence's. */
+.st__plate-word {
+  position: relative;
+}
+
+/* The answer. The colour change is also the focus indicator, so it survives
+   reduced motion and every pointer; the focus ring stands down because the mask
+   would clip it — the frame is the ring. */
+.st__plate:focus-visible {
+  outline: none;
+}
+
+.st__plate:focus-visible::after {
+  border-color: var(--mark);
+  border-width: 2px;
+}
+
+@media (hover: hover) {
+  .st__plate:hover::after {
+    border-color: var(--mark);
+  }
+}
+
+/* The lift is the movement in the gesture, so it is gated on the preference —
+   and on a pointer that can hover. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .st__field {
+    transition: transform var(--t-fast) var(--ease-out);
+  }
+
+  .st__plate:hover .st__field,
+  .st__plate:focus-visible .st__field {
+    transform: translateY(-2px);
+  }
 }
 
 /* ---------------------------------------------------------------------------

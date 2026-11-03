@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { gsap } from 'gsap'
 import { useLang } from '../../lib/i18n'
@@ -61,17 +61,24 @@ import './statement.css'
      under the pointer (140ms, the sheet's ease). `Rollover`'s character roll
      needs an `a`/`button` host and a strong word is not a link — the axis is the
      sheet's own word-level device, so it answers instead.
-   - `plate`: the word is replaced visually by a 0.9em project plate — a real
-     `<Link>` to `/work/<slug>` named by the word kept as `.sr-only` inside it.
-     A slug missing from the register prints the word as plain text: a sentence
-     must never contain a broken link.
+   - `plate`: the word stays in the sentence — its ink, size, weight and
+     baseline are the sentence's own — and its project's seal is printed behind
+     it as a low-density field, inside a hairline two points outside the word's
+     box. A sentence has no room for a glyph where a word belongs: a square in
+     the middle of "a backup I have ▦." is a hole, not a device. It is still a
+     real `<Link>` to `/work/<slug>`, named by the word itself; only the seal is
+     `aria-hidden`. A slug missing from the register prints the word as plain
+     text: a sentence must never contain a broken link.
 
    THE FLOATING PLATE. `PlatePop` is rendered once, at the section level, and
    driven by this component's state — not by the word. Two reasons: the pop must
    not live inside an `overflow: clip` mask (it would be cut), and it must not
    live inside a `<p>` (a block-level popover would close the paragraph in the
    parser). The word reports `pointer` on hover and `anchor` on focus, hands its
-   own box to `anchorRef`, and clears on leave, blur and Escape.
+   own box to `anchorRef`, and clears on leave, blur and Escape. It answers in
+   two beats: the frame turns crimson and the field lifts at once, and the plate
+   follows 120ms later, so a pointer merely crossing the sentence never fires a
+   plate it did not mean to name.
    ========================================================================== */
 
 /** The rhythm inside the sentence: one word every 40ms. */
@@ -82,6 +89,9 @@ const START = 'top 78%'
 
 /** How the floating plate is placed: under the pointer, or under the word. */
 type PlateMode = 'pointer' | 'anchor'
+
+/** The float waits this long, in ms: the frame answers first, the plate after. */
+const HOLD = 120
 
 /* --------------------------------------------------------------------------
    The sentence, split into what is printed and what only separates
@@ -109,8 +119,9 @@ type PrintPiece = { space: string } | { word: PrintWord }
  * break between two adjacent inline-blocks is a legal line break, and a French
  * line must not end on `l’`.
  *
- * A plate is a word of its own: the seal cannot share a line box with ink, so
- * the current word is closed before it and the plate is emitted alone.
+ * A plate is a word of its own: the copy never bolds half of one, and the plate
+ * word carries its own box — so the current word is closed before it is
+ * emitted, and the punctuation that follows it is a word of its own too.
  */
 function printPieces(parts: StatementPart[]): PrintPiece[] {
   const pieces: PrintPiece[] = []
@@ -168,35 +179,66 @@ type PlateWordProps = {
 
 function PlateWord({ word, project, index, anchorRef, onShow, onHide }: PlateWordProps) {
   const href = '/work/' + project.slug
+  const hold = useRef(0)
+
+  /* The word answers at once and the plate answers 120ms later: a pointer
+     crossing the sentence must not fire a plate it never meant to name. Under
+     reduced motion there is no lift to sit through, so the plate opens at once. */
+  const show = (mode: PlateMode) => {
+    window.clearTimeout(hold.current)
+    hold.current = window.setTimeout(
+      () => onShow(project, index, mode),
+      prefersReducedMotion() ? 0 : HOLD,
+    )
+  }
+
+  /* Changing one's mind inside the delay is a leave like any other. */
+  const cancel = () => {
+    window.clearTimeout(hold.current)
+    hold.current = 0
+  }
+
+  /* A language switch replaces the word mid-hover: drop the pending float. */
+  useEffect(() => () => window.clearTimeout(hold.current), [])
 
   return (
-    <span className="st__mask st__mask--plate">
-      <span
-        className="st__plate-rise"
+    <span className="st__mask st__mask--plate" ref={anchorRef}>
+      <Link
+        to={href}
+        className="st__plate"
+        data-hud={href}
         data-st-word=""
-        ref={anchorRef}
         onPointerEnter={(event) => {
           // A tap is a navigation, not a hover: only real pointers float the plate.
-          if (event.pointerType !== 'touch') onShow(project, index, 'pointer')
+          if (event.pointerType !== 'touch') show('pointer')
         }}
         onPointerLeave={(event) => {
           // A focused word keeps its plate: the pointer leaving is not the reader
           // leaving the link.
           if (event.currentTarget.contains(document.activeElement)) return
+          cancel()
           onHide()
         }}
-        onFocus={() => onShow(project, index, 'anchor')}
-        onBlur={onHide}
+        onFocus={() => show('anchor')}
+        onBlur={() => {
+          cancel()
+          onHide()
+        }}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') onHide()
+          if (event.key === 'Escape') {
+            cancel()
+            onHide()
+          }
         }}
       >
-        <Link to={href} className="st__plate" data-hud={href}>
-          {/* The word is the sentence; the seal is its printed replacement. */}
-          <span className="sr-only">{word}</span>
+        {/* The field prints under the word: the seal is a paper, not a badge. */}
+        <span className="st__field" aria-hidden="true">
           <ProjectSeal slug={project.slug} size={96} className="st__seal" />
-        </Link>
-      </span>
+        </span>
+        {/* The word is real text: it is the link's name, it is what a screen
+            reader hears, and it is what a selection copies — one copy, once. */}
+        <span className="st__plate-word">{word}</span>
+      </Link>
     </span>
   )
 }

@@ -9,9 +9,9 @@ import { fr } from '../lib/typo'
 
    - `strong` — the word is set heavier and wider, and it answers the pointer by
      rolling (the site's existing width-axis device);
-   - `plate` — the word is replaced by a miniature of a project plate: the seal at
-     cap height. Hovering it lifts it into a full plate, so the sentence can be
-     played with;
+   - `plate` — the word stays in the sentence, in ink, and its project's seal is
+     printed behind it as a low-density field. Hovering it lifts the full plate,
+     so the sentence can be played with;
    - everything else — plain ink.
 
    The paragraph is the same claim as the cover, one register lower: not "look at
@@ -24,7 +24,7 @@ export type StatementPart = {
   text: string
   /** Set heavier + wider, and rolling on hover. */
   strong?: boolean
-  /** Replaced by the plate of this project slug (`content/work.ts`). */
+  /** Printed on the plate of this project slug (`content/work.ts`). */
   plate?: string
 }
 
