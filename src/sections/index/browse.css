@@ -1,0 +1,480 @@
+/* ============================================================================
+   browse.css — the index, a wall of plates
+   ----------------------------------------------------------------------------
+   Twenty names, two columns, one hairline under each. The chapter is the one
+   place on the home sheet where the register is not read but *played*: the rows
+   are the button, and the plate that answers them is drawn by `PlatePop`, not
+   here. So this file is a list, and it spends nothing on being a card.
+
+   **The band is recessed, the reading is not.** `data-ground="sunk"` puts the
+   chapter on `--ground-sunk` (painted by the chrome layer at z −1). On that
+   darker step the quiet ink is only ~4.8:1, so every reading that matters — the
+   domain label, the hint, the foot — steps up to `--ink-2` (6.8:1). The
+   reference numerals stay `--ink-3`: they are instrumentation, and they clear
+   AA where they stand.
+
+   **The wall spans the field; the header hangs in the rail.** The margin label
+   and the reference open the chapter on the left, the title takes the reading
+   column, the lead the right half — then the wall runs edge to edge under all
+   three. A register whose rows were indented by the rail would be a table; a
+   wall should meet the sheet's margin.
+
+   **Two columns are a wide-sheet reading.** Below 1100px the names take the full
+   field, because a two-column register at 900px is a squeeze that wraps the
+   longest slugs mid-word. Above it, the columns are separated by a gutter wide
+   enough to read as two columns rather than one broken one, and the shorter row
+   is centred in the taller one so the hairlines stay level across the pair.
+
+   **The response is the rule and the axis.** Hover and focus darken the
+   hairline under the row and lift the name six points on Archivo's width axis —
+   the register's own gesture, borrowed from `/work` so the same record answers
+   the same way on both sheets. Both are declared inside
+   `prefers-reduced-motion: no-preference`: under reduce the rule still darkens
+   and the focus ring still prints, nothing widens.
+
+   **The phone gets a seal, not a plate.** A fixed plate with no cursor to follow
+   is a panel that hides the list it belongs to, so a coarse pointer prints a
+   40px `ProjectSeal` at the end of each row instead: the same mark the plate
+   would carry, at the size a thumb can hit, with the whole row still the link.
+   It is `display: none` everywhere else, and it is out of flow, so the fine
+   layout never reserves a column for it.
+   ========================================================================== */
+
+.bx {
+  /* The reference column: wide enough for `W.20` and no wider. */
+  --bx-num: 2.5rem;
+  /* The width-axis position a pointed-at name takes. Mirrors
+     `MOTION.width.hover` in lib/reveal.ts: the sheet has one hover width. */
+  --bx-hover: 106%;
+  /* The chapter's gutter: a printed margin, so a fixed width and never a
+     percentage. `--bx-band` is the section's own top padding, restated because
+     the gutter label has to start on the rail's line. */
+  --bx-gutter: 44px;
+  --bx-band: clamp(4rem, 9vw, 7rem);
+
+  position: relative;
+  padding-block: var(--bx-band) clamp(3.5rem, 7vw, 5.5rem);
+  padding-inline: var(--gutter);
+  border-block-start: var(--hair) solid var(--contour);
+  /* The fixed bar must not cover the chapter when `/#index` is followed. */
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* The chapter's registration tick, in the accent. The rule under it is drawn by
+   the rig in `--rule`; only the tick is a mark. */
+.bx .bx__mark {
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   The field — rail · title · lead, then the wall, then the foot
+   --------------------------------------------------------------------------- */
+
+.bx__inner {
+  display: grid;
+  max-inline-size: var(--field);
+  margin-inline: auto;
+  grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 44ch);
+  grid-template-areas:
+    'rail title lead'
+    'wall wall  wall'
+    'foot foot  foot';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  row-gap: clamp(2.25rem, 4.5vw, 3.5rem);
+}
+
+.bx__rail {
+  grid-area: rail;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-6);
+  padding-block-start: 0.55rem;
+}
+
+/* ---------------------------------------------------------------------------
+   The gutter
+   ---------------------------------------------------------------------------
+   A printed margin: the chapter's own field of `--chart`, full height, 44px
+   wide, with the margin label reversed out of it and one `--rule` hairline on
+   its right edge. The band's recess is only ~4% darker than the sheet, so this
+   is what says "chapter" at a glance without changing a token or inventing a
+   seventh surface.
+
+   It is absolute (not fixed, not sticky): a fixed mark would stay on screen
+   through the pinned `#work` above, while an absolute one belongs to this
+   section's box and scrolls with the page, under the fixed chrome (z 60) at
+   z 0.
+   --------------------------------------------------------------------------- */
+
+.bx__gutter {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: var(--bx-gutter);
+  display: flex;
+  justify-content: center;
+  padding-block-start: calc(var(--bx-band) + 0.55rem);
+  background-color: var(--chart);
+  border-inline-end: var(--hair) solid var(--rule);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* The label runs down the gutter and the plate number follows it: one column of
+   reading, top to bottom, the way a printed sheet names a margin. */
+.bx .bx__gutter-label {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.6rem;
+  writing-mode: vertical-rl;
+  line-height: 1;
+  font-size: var(--step--1);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  color: var(--deep);
+}
+
+.bx__gutter-num {
+  font-size: var(--step--2);
+  letter-spacing: 0.06em;
+}
+
+/* The gutter takes its width out of the chapter's measure: the section's own
+   content box starts 44px further right, so the centred field moves with it
+   instead of running under the mark. */
+@media (min-width: 901px) {
+  .bx {
+    padding-inline-start: calc(var(--gutter) + var(--bx-gutter));
+  }
+}
+
+.bx__ref {
+  margin: 0;
+  color: var(--ink-3);
+}
+
+.bx__title {
+  grid-area: title;
+  max-inline-size: 18ch;
+  font-size: var(--step-4);
+  font-weight: var(--w-semi);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.bx__lead {
+  grid-area: lead;
+  max-inline-size: 44ch;
+  /* Lands on the title's cap line rather than on its line box. */
+  padding-block-start: 0.55rem;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   The wall
+   --------------------------------------------------------------------------- */
+
+.bx__wall {
+  grid-area: wall;
+  min-inline-size: 0;
+}
+
+/* The instruction is a promise the device can keep: printed only where a
+   pointer can hover, and never part of the list's height on a phone. */
+.bx__hint {
+  display: none;
+  margin-block-end: var(--s-3);
+  color: var(--ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bx .bx__hint {
+    display: block;
+  }
+}
+
+.bx__list {
+  margin: 0;
+  padding: 0;
+}
+
+/* The item stretches to its row's height so the two columns of a pair share one
+   hairline; the row inside fills it and centres its own reading. */
+.bx__item {
+  display: flex;
+  min-inline-size: 0;
+}
+
+.bx__row {
+  position: relative;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: var(--bx-num) minmax(0, 1fr) auto;
+  grid-template-areas: 'num name domain';
+  column-gap: var(--s-4);
+  align-items: baseline;
+  align-content: center;
+  padding-block: 0.85rem;
+  color: var(--ink);
+  text-decoration: none;
+  /* The row's rule is paper, not a link underline: `--rule` at full strength,
+     so twenty rows read as a ruled table. */
+  border-block-end: var(--hair) solid var(--rule);
+  transition: border-block-end-color var(--t-fast) var(--ease-out);
+}
+
+/* Every cell shrinks rather than widening the field. */
+.bx__row > * {
+  min-inline-size: 0;
+}
+
+.bx__num {
+  grid-area: num;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.bx__name {
+  grid-area: name;
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: var(--w-medium);
+  /* The body width at rest; the pointed-at state lifts it six points. */
+  font-stretch: var(--width-body);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  /* A long slug breaks inside its column instead of pushing the grid wider. */
+  overflow-wrap: anywhere;
+  transition: font-stretch var(--t-base) var(--ease-out);
+}
+
+.bx__domain {
+  grid-area: domain;
+  text-align: end;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+/* The plate is the fine-pointer answer; the seal is the coarse one. Hidden
+   here, printed in the `hover: none` block below, and out of flow when it is. */
+.bx .bx__seal {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   The response — the rule darkens, the name widens
+   ---------------------------------------------------------------------------
+   A rule darkening is a colour change, not a movement: it survives reduced
+   motion and every pointer gets it. The width axis is the movement, so it is
+   gated on both a preference and a device that can answer a hover.
+   --------------------------------------------------------------------------- */
+
+.bx__row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  /* The sheet has square corners; the base ring's 1px radius is not wanted. */
+  border-radius: var(--r-0);
+  border-block-end-color: var(--ink);
+}
+
+@media (hover: hover) {
+  .bx__row:hover {
+    border-block-end-color: var(--ink);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bx__row:focus-visible .bx__name {
+    font-stretch: var(--bx-hover);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .bx__row:hover .bx__name {
+    font-stretch: var(--bx-hover);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Foot — the closing rule, the colophon, the way to the whole register
+   --------------------------------------------------------------------------- */
+
+.bx__foot {
+  grid-area: foot;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4) var(--s-6);
+  padding-block-start: var(--s-4);
+  border-block-start: var(--hair) solid var(--ink);
+}
+
+.bx__note {
+  max-inline-size: 56ch;
+  font-size: var(--step--1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.bx__all {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-body);
+  line-height: 1.3;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color var(--t-fast) var(--ease-out);
+}
+
+.bx__all:hover,
+.bx__all:focus-visible {
+  text-decoration-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   Two columns (≥1100px)
+   ---------------------------------------------------------------------------
+   `repeat(2, 1fr)` in DOM order: the register reads left to right along each
+   line, which is what the numbered reference lets the eye verify. The column
+   gap is wide because two columns of names are two columns, not one broken one.
+   --------------------------------------------------------------------------- */
+
+@media (min-width: 1100px) {
+  .bx__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(2rem, 4vw, 3.5rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The phone (≤900px)
+   ---------------------------------------------------------------------------
+   The rail turns horizontal above the title, and the header is read in one
+   column: label, title, lead. The wall keeps the field's full width.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .bx {
+    padding-block-start: calc(clamp(3rem, 9vw, 4.5rem) + 6px);
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  /* The margin becomes a rule: 100% wide, 6px of `--chart` across the top of
+     the chapter, one `--rule` hairline under it. The label is laid horizontally
+     in it — its own fill carries the strip under the type, so the word sits in
+     the band rather than across its edge. */
+  .bx__gutter {
+    inset-block-end: auto;
+    inset-inline: 0;
+    inline-size: auto;
+    block-size: 6px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-block-start: 0;
+    border-inline-end: 0;
+    border-block-end: var(--hair) solid var(--rule);
+  }
+
+  .bx .bx__gutter-label {
+    align-items: baseline;
+    gap: 0.5em;
+    margin-inline-start: var(--gutter);
+    padding-block: 0.34em 0.42em;
+    padding-inline-end: 0.55em;
+    writing-mode: horizontal-tb;
+    letter-spacing: var(--tracking-mono);
+    background-color: var(--chart);
+    white-space: normal;
+  }
+
+  .bx__inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'rail'
+      'title'
+      'lead'
+      'wall'
+      'foot';
+    row-gap: clamp(1.5rem, 4vw, 2rem);
+  }
+
+  .bx__rail {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding-block-start: 0;
+  }
+
+  .bx__lead {
+    padding-block-start: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The narrow phone (≤640px)
+   ---------------------------------------------------------------------------
+   Three readings will not sit on one line at 360px, so the domain drops under
+   the name and the reference stays in its gutter, spanning both. The row is
+   still one link.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .bx__row {
+    grid-template-columns: var(--bx-num) minmax(0, 1fr);
+    grid-template-areas:
+      'num name'
+      'num domain';
+    row-gap: 0.3rem;
+  }
+
+  .bx__num {
+    align-self: start;
+  }
+
+  .bx__domain {
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Coarse pointers — no plate, a seal per row
+   ---------------------------------------------------------------------------
+   The seal is absolute, so the fine layout above never reserves its column and
+   the row's own padding makes the room on a thumb. The whole row is still the
+   target; the mark is `aria-hidden` and changes nothing about the link's name.
+   --------------------------------------------------------------------------- */
+
+@media (hover: none) {
+  .bx .bx__seal {
+    display: block;
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 0;
+    transform: translateY(-50%);
+  }
+
+  .bx__row {
+    min-block-size: 56px;
+    /* 40px of mark and the same gutter the field keeps everywhere else. */
+    padding-inline-end: 3.5rem;
+  }
+}

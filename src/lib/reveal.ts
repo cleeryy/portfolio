@@ -1,5 +1,6 @@
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { effectiveReduced } from './motion'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -89,7 +90,6 @@ gsap.registerPlugin(ScrollTrigger)
      value immediately.
    ========================================================================== */
 
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 const noop = () => {}
 
 /**
@@ -209,8 +209,10 @@ export const MOTION = {
   },
 } as const
 
+/** The one predicate, from `lib/motion`: the system's query or the sheet's own
+    override. Every caller asks once, when its rig is created. */
 export function prefersReducedMotion(): boolean {
-  return window.matchMedia(REDUCED_QUERY).matches
+  return effectiveReduced()
 }
 
 /**
@@ -221,7 +223,7 @@ export function prefersReducedMotion(): boolean {
  * because a trigger was created after its start line had been passed — and a
  * reload halfway down the sheet prints everything instead of masking it.
  */
-function startsBelowFold(el: Element, ratio = 0.92): boolean {
+export function startsBelowFold(el: Element, ratio = 0.92): boolean {
   return el.getBoundingClientRect().top > window.innerHeight * ratio
 }
 
@@ -661,7 +663,7 @@ export function initSectionRig(root: HTMLElement, options: SectionRigOptions = {
  * body copy never get the width gesture: the axis is lettering, and the sheet
  * only cuts lettering wide.
  */
-const WIDTH_LINKS = '.nav__link, .nav__brand, .nav__panel-link, .ct__mail, .clp__top'
+const WIDTH_LINKS = '.nav__brand, .ct__mail, .clp__top'
 
 type WidthRun = {
   el: HTMLElement

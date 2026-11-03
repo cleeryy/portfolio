@@ -25,8 +25,12 @@ import './grid.css'
       Both states cancel themselves — the wrong ink on the wrong surface renders
       nothing, never a wrong colour.
    3. **One state, decided once.** When the ink chapter owns the viewport the
-      rules become the band's raised surface. One IntersectionObserver, one
-      element, no scroll listener, no rect read per frame.
+      rules become the band's raised surface; when the chart band does, they take
+      the heavier mix that keeps the printed step on that tint. One observer, one
+      entry per band, and each entry writes only its own attribute: no scroll
+      listener, no rect read per frame. A route with no chart band never attaches
+      its observer, and the attribute stays absent — the light sheet's state, not
+      a wrong one.
    4. **Nothing to animate.** No transition, no scroll coupling, no reduced-motion
       variant: a printed rule is a state of the plate. Reduced motion gets the
       identical grid.
@@ -44,29 +48,46 @@ export default function SheetGrid() {
   useEffect(() => {
     const root = rootRef.current
     const band = document.querySelector<HTMLElement>('main > section.on-deep')
-    if (!root || !band) return
+    /* The chart band is optional: only the home has one, and only once the
+       chapter is mounted. No band, no observer — the rules keep the light
+       sheet's mix, which is the correct state there, not a fallback. */
+    const chart = document.querySelector<HTMLElement>('main > section[data-ground="chart"]')
+    if (!root || (!band && !chart)) return
 
     /* The 5% margins shrink the viewport to its middle 90%: the observer fires
        when the band covers that strip, i.e. when at most a sliver of paper is
        still on screen. The chrome's `data-deep` answers a different question —
        "is the reading in my own 14% strip on ink?" — so this reuses the
        technique, not the signal, and stays correct if the chrome is ever
-       unmounted (the grid would then be invisible over the band, never wrong). */
+       unmounted (the grid would then be invisible over the band, never wrong).
+
+       One observer, one entry per band, and each entry writes only its own
+       attribute: a band leaving the strip turns its own state off, so the two
+       can never be true on the same surface. */
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          root.dataset.deep = entry.isIntersecting ? 'true' : 'false'
+          const on = entry.isIntersecting ? 'true' : 'false'
+          if (entry.target === chart) root.dataset.chart = on
+          else root.dataset.deep = on
         }
       },
       { rootMargin: '-5% 0px -5% 0px' },
     )
-    observer.observe(band)
+    if (band) observer.observe(band)
+    if (chart) observer.observe(chart)
 
     return () => observer.disconnect()
   }, [])
 
   return (
-    <div className="sheet-grid" ref={rootRef} aria-hidden="true" data-deep="false">
+    <div
+      className="sheet-grid"
+      ref={rootRef}
+      aria-hidden="true"
+      data-deep="false"
+      data-chart="false"
+    >
       {Array.from({ length: RULES }, (_, index) => (
         <span
           key={index}

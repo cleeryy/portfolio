@@ -9,7 +9,10 @@
 
    The line is a tint of `--contour` — the same constructor token as every other
    hairline — at 30%, which is 16/255 over the ground: strong enough to read as
-   printed structure, quiet enough to stay an underlay.
+   printed structure, quiet enough to stay an underlay. The chart band is the
+   exception to that percentage, not to the step: `--contour` is much closer to
+   `--chart`, so the printed 30% is only 7/255 there. That band therefore raises
+   the mix to 70% — the same ~16/255 step, arrived at by measurement, not taste.
 
    Why the layer moves. Every section on the sheet is transparent (the
    atmosphere is the ground), so a grid stacked under them shows through the
@@ -21,6 +24,10 @@
    and nothing else, so the chapter's type and its crimson tick are left exactly
    as printed. Both states are self-cancelling — the wrong ink on the wrong
    surface renders nothing, never a wrong colour.
+
+   The chart band needs no lift (its fill is at z −1, under this layer); it only
+   needs a heavier mix, so one `data-chart` state re-points the rule's mix while
+   the layer stays exactly where the light sheet puts it.
 
    No transition, no scroll coupling, no reduced-motion variant: the grid is a
    state of the plate, not a motion.
@@ -54,6 +61,13 @@
   inset-block: 0;
   inline-size: 1px;
   background-color: var(--grid-rule);
+}
+
+/* The chart band. Note the state cannot fight the ink one: `--chart` is a light
+   opaque surface and `--deep` a dark one, so the two bands never overlap, and
+   the ink rule below is declared last so it wins if they ever could. */
+.sheet-grid[data-chart='true'] {
+  --grid-rule: color-mix(in srgb, var(--contour) 70%, transparent);
 }
 
 /* The ink chapter. `--deep-2` is the band's raised surface, so the rule is a

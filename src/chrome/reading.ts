@@ -1,4 +1,5 @@
 import { gsap } from 'gsap'
+import { effectiveReduced } from '../lib/motion'
 
 /* ============================================================================
    reading.ts — how an instrument prints a new value
@@ -20,7 +21,9 @@ import { gsap } from 'gsap'
      A value is scrambled only if the previous one had been stable for 260ms —
      a jump, a plate change, a settled reading — and is written straight
      otherwise.
-   - Reduced motion gets the final value, immediately.
+   - Reduced motion — the system's query or the sheet's own override — gets
+     the final value, immediately. It is read per change, not at mount, so the
+     override takes effect on the next reading.
    ========================================================================== */
 
 /** The resolve, in seconds, and the number of churn frames inside it (6–8). */
@@ -29,14 +32,6 @@ const FRAMES = 7
 
 /** A reading has to have been stable this long before it is allowed to churn. */
 const QUIET_MS = 260
-
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
-let reducedQuery: MediaQueryList | null = null
-
-function reducedMotion(): boolean {
-  if (!reducedQuery) reducedQuery = window.matchMedia(REDUCED_QUERY)
-  return reducedQuery.matches
-}
 
 type Reading = {
   value: string
@@ -86,7 +81,7 @@ export function setReading(el: HTMLElement, next: string, scramble = true): void
   reading.tween?.kill()
   reading.tween = null
 
-  if (!scramble || !settled || reducedMotion()) {
+  if (!scramble || !settled || effectiveReduced()) {
     el.textContent = next
     return
   }

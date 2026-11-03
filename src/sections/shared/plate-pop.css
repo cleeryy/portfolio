@@ -1,0 +1,123 @@
+/* ============================================================================
+   plate-pop.css — the plate that comes to the name
+   ----------------------------------------------------------------------------
+   One fixed element for the whole index. It is a print pulled off the sheet, not
+   a tooltip and not a card: a raised ground one step above the band it floats
+   over, a full ink rule along its head, a hairline around the rest, square
+   corners and no shadow. The only accent is the 6 × 6 survey square sitting on
+   the head rule, the same mark every chapter prints on its own rule.
+
+   The layer: above the sections (2) and the veil (40 is transient), below the
+   nav (60). It is declared here because this file owns that layer, and the plate
+   is the only thing that ever sits on it.
+
+   The two clocks. `.pp` is placed by one `translate3d`, written by the pointer
+   frame or by an anchor measurement — place only, never layout. `.pp__plate` is
+   printed by `clip-path` and a transform, written by GSAP for 420 ms on the way
+   in and 280 ms on the way out. Splitting them keeps a follow frame from
+   overwriting a reveal frame, and keeps the clip on the object that is clipped.
+
+   Visibility is the print state. The plate is `visibility: hidden` until the
+   reveal opens it, and hidden again once the take-down has finished: a fixed
+   layer is never left on a page it no longer belongs to. Nothing here is
+   load-bearing — the wall of links under the plate carries every fact it prints,
+   so a script that never runs, or a preference that refuses motion, leaves the
+   sheet complete.
+   ========================================================================== */
+
+.pp {
+  /* Above the sections, under the nav. */
+  --z-plate: 35;
+  /* The plate's printed width. Wide enough for the 220px seal to breathe. */
+  --pp-w: 21rem;
+  /* The survey square on the head rule. */
+  --pp-tick: 6px;
+
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: var(--z-plate);
+  /* Decoration: it must never take the pointer from the row it describes. */
+  pointer-events: none;
+  /* One layer, promoted once: the follow only ever writes a transform. */
+  will-change: transform;
+}
+
+.pp__plate {
+  position: relative;
+  inline-size: var(--pp-w);
+  /* A narrow desktop window must not push the plate under the scrollbar; the
+     3rem is the two 24px edges the placement keeps, plus nothing. */
+  max-inline-size: calc(100vw - 3rem);
+  padding: var(--s-4) var(--s-4) var(--s-5);
+  background-color: var(--ground-raised);
+  border: var(--hair) solid var(--contour);
+  border-block-start: var(--hair-strong) solid var(--ink);
+  /* The print state: closed until the reveal writes it open. */
+  visibility: hidden;
+  /* It grows out of its foot, which is the edge the clip opens from. */
+  transform-origin: 50% 100%;
+}
+
+/* The one crimson mark on the plate, centred on the head rule. */
+.pp__tick {
+  position: absolute;
+  inset-block-start: calc(-1 * ((var(--pp-tick) + var(--hair-strong)) / 2));
+  inset-inline-start: var(--s-4);
+  inline-size: var(--pp-tick);
+  block-size: var(--pp-tick);
+  background-color: var(--mark);
+}
+
+/* ---------------------------------------------------------------------------
+   The head — the plate's own reference
+   --------------------------------------------------------------------------- */
+
+.pp__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding-block-end: var(--s-3);
+  border-block-end: var(--hair) solid var(--contour-soft);
+}
+
+.pp .pp__note {
+  color: var(--ink-3);
+}
+
+.pp .pp__ref {
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   The reading — seal, name, measurements, instruments
+   --------------------------------------------------------------------------- */
+
+.pp__seal {
+  margin: var(--s-5) auto var(--s-4);
+}
+
+.pp__name {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-medium);
+  font-stretch: var(--width-heading);
+  line-height: 1.08;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  /* A long slug breaks inside the plate instead of widening it. */
+  overflow-wrap: anywhere;
+}
+
+.pp .pp__meta {
+  margin-block-start: var(--s-2);
+  color: var(--ink-2);
+}
+
+/* The instruments wrap rather than clip: the list is a reading, not a badge. */
+.pp .pp__stack {
+  margin-block-start: var(--s-1);
+  color: var(--ink-3);
+  overflow-wrap: break-word;
+}

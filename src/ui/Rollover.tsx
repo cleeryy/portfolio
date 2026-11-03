@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AnchorHTMLAttributes } from 'react'
 import { gsap } from 'gsap'
+import { effectiveReduced, subscribeMotion } from '../lib/motion'
 import './rollover.css'
 
 /* ============================================================================
@@ -87,14 +88,11 @@ const FINE = '(hover: hover) and (pointer: fine)'
 /* 900px is the sheet's own portrait breakpoint: below it the wide-sheet hover
    language is unavailable anyway, so there is nothing to roll. */
 const WIDE = '(min-width: 901px)'
-const REDUCED = '(prefers-reduced-motion: reduce)'
 
+/* The third condition is the motion preference, read through the sheet's one
+   predicate: the system's answer, or the override set in the index panel. */
 function canRoll(): boolean {
-  return (
-    window.matchMedia(FINE).matches &&
-    window.matchMedia(WIDE).matches &&
-    !window.matchMedia(REDUCED).matches
-  )
+  return window.matchMedia(FINE).matches && window.matchMedia(WIDE).matches && !effectiveReduced()
 }
 
 /**
@@ -106,12 +104,16 @@ function useSplit(): boolean {
   const [split, setSplit] = useState<boolean>(canRoll)
 
   useEffect(() => {
-    const queries = [FINE, WIDE, REDUCED].map((query) => window.matchMedia(query))
+    const queries = [FINE, WIDE].map((query) => window.matchMedia(query))
     const update = () => setSplit(canRoll())
     for (const query of queries) query.addEventListener('change', update)
+    // A roll is motion the reader did not ask for: the panel's override turns
+    // the labels plain exactly as the system preference does.
+    const release = subscribeMotion(update)
     update()
     return () => {
       for (const query of queries) query.removeEventListener('change', update)
+      release()
     }
   }, [])
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 import { gsap } from 'gsap'
+import { effectiveReduced } from '../lib/motion'
 import { RolloverLabel } from './Rollover'
 import './ui.css'
 
@@ -57,8 +58,7 @@ export default function MagneticButton({
     if (!el || !label) return
 
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)')
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (!fine.matches || reduced.matches) return
+    if (!fine.matches || effectiveReduced()) return
 
     const xTo = gsap.quickTo(el, 'x', { duration: 0.6, ease: 'power3.out' })
     const yTo = gsap.quickTo(el, 'y', { duration: 0.6, ease: 'power3.out' })

@@ -1,59 +1,235 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { gsap } from 'gsap'
 import { useLang } from '../lib/i18n'
 import { Link, useRoute } from '../lib/router'
 import { handle } from '../content/cover'
-import { homeSections, navItems } from '../content/site'
+import { chapters, homeSections, missingReading, routeReading } from '../content/site'
+import { projectBySlug } from '../content/work'
 import { observeCurrentSection } from '../lib/currentSection'
+import { useReducedMotion } from '../lib/motion'
+import { MOTION } from '../lib/reveal'
 import { RolloverLabel } from '../ui/Rollover'
 import SoundToggle from '../ui/SoundToggle'
+import LangSwitch from '../ui/LangSwitch'
+import IndexOverlay from './IndexOverlay'
 import './nav.css'
 
 /* ============================================================================
    NavBar — the collar of the sheet
    ----------------------------------------------------------------------------
-   Five destinations, in reading order: three routes (`/work`, `/notes`,
-   `/about`) and the two home anchors that must work from any page
-   (`/#territory`, `/#contact`).
+   Three controls and one reading. The mark walks home; the reading says where
+   the reader is; `Index` opens the plate that holds every destination. The six
+   text links and the push-down panel are gone: a fixed edge that lists six
+   places is a menu bar, and this sheet is not an application.
 
-   Two notions of "current", and only two:
+   **The reading is the point.** It is not a link and not a menu label: it is a
+   measurement of the plate under the reading line, printed in the mono face
+   with tabular figures, the same way the margin chrome prints a plate number.
+   On the cover it reads `<chapter> · 02/08`; on a document it reads the
+   document's own name and no number, because a route is not a plate of the
+   cover and counting it in eighths would be a measurement of nothing.
 
-   - a route marks itself `aria-current="page"` whenever the path is its own
-     (and, for `/work`, any file under it);
-   - an anchor is `aria-current="true"` only on the cover, while the section it
-     names crosses the middle line of the viewport. On every other route no
-     anchor is current, and the observer is not even installed.
+   How it is written, and why two of the three parts are imperative:
 
-   The section observer reads every home section, not only the anchors: when
-   the reader is in `#flight` or `#operator` — chapters no destination names —
-   no item is marked. The old test kept the last anchor it had passed, so a red
-   rule claimed the reader was in Territory while the operator chapter was on
-   screen. `aria-current` is an answer, never a guess.
+   - **The number is GSAP's.** It changes on scroll, and a React re-render can
+     land in the middle of the flip — the same hazard `Rollover` solved by
+     owning its own timeline. Two stacked layers move inside a mask exactly one
+     line tall (180ms), and when the move lands the box is reduced to a single
+     text node, so the resting DOM is plain text and a later render has nothing
+     to reconcile.
+   - **The name is React's.** It is a text node the sheet owns, and the departing
+     copy is a ghost created for 160ms: the old line lifts out of the mask while
+     the new one rises in. Language and route changes therefore print the right
+     word even if they arrive mid-move.
+   - **Reduced motion is the same answer, printed at once.** No flip, no
+     cross-fade, no ghost: the state changes and nothing travels.
 
-   The item list is `navItems` in `src/content/site.ts` — never a second copy
-   here, and never a hardcoded path.
+   Two notions of "where", and only two: the chapter crossing the reading line
+   (measured by the same `observeCurrentSection` the margin chrome uses — never
+   a second observer), and the route the router has already resolved. A hash
+   anchor on another page is still a route: the bar reads the document it is on,
+   not the destination in its address.
+
+   On a phone the bar keeps the mark, the reading and `Index`. The language pair
+   and the sound plate are not dropped from the site — they move into the index
+   plate (`IndexOverlay`), where a thumb can reach them and they have room to
+   say what they are.
    ========================================================================== */
 
-/** `/work` is current on `/work` and on every `/work/:slug` file under it. */
-const onRoute = (path: string, href: string) => path === href || path.startsWith(`${href}/`)
+/** Two digits: a plate number is a coordinate, not a count. */
+const pad2 = (value: number) => String(value).padStart(2, '0')
+
+/** The flip, in seconds. One plate number is a short move, not an entrance. */
+const FLIP = 0.18
+
+/** The cross-fade of the name: shorter than the number, because it is text. */
+const FADE = 0.16
+
+type ReadingProps = {
+  /** The chapter or document under the reading line. */
+  name: string
+  /** `02/08` on the cover; `null` on a document. */
+  number: string | null
+}
+
+function Reading({ name, number }: ReadingProps) {
+  const reduced = useReducedMotion()
+  const nameBox = useRef<HTMLSpanElement | null>(null)
+  const nameLine = useRef<HTMLSpanElement | null>(null)
+  const numBox = useRef<HTMLSpanElement | null>(null)
+  const shownName = useRef<string | null>(null)
+  const shownNumber = useRef<string | null>(null)
+  const nameMove = useRef<gsap.core.Timeline | null>(null)
+  const numberMove = useRef<gsap.core.Timeline | null>(null)
+
+  /* The name: one React text node in flow, one ghost for the 160ms it takes to
+     leave. The ghost is a decoration (aria-hidden), so dropping it is the whole
+     cleanup — there is no state to reconcile and no second source of truth. */
+  useLayoutEffect(() => {
+    const box = nameBox.current
+    const line = nameLine.current
+    if (!box || !line) return
+
+    const previous = shownName.current
+    shownName.current = name
+
+    // Every new value ends the previous move — including a preference that
+    // flipped mid-flight. The ghost is the only thing a tween owns, so dropping
+    // it is the whole cleanup: there is no state to reconcile.
+    nameMove.current?.kill()
+    nameMove.current = null
+    box.querySelector('.nav__read-out')?.remove()
+    gsap.set(line, { clearProps: 'transform,opacity' })
+
+    // Reduced motion, a first value, or the same word: print it and stop.
+    if (reduced || previous === null || previous === name) return
+
+    const ghost = document.createElement('span')
+    ghost.className = 'nav__read-out'
+    ghost.setAttribute('aria-hidden', 'true')
+    ghost.textContent = previous
+    box.appendChild(ghost)
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        ghost.remove()
+        gsap.set(line, { clearProps: 'transform,opacity' })
+        nameMove.current = null
+      },
+    })
+
+    tl.fromTo(
+      ghost,
+      { yPercent: 0, opacity: 1 },
+      { yPercent: -60, opacity: 0, duration: FADE, ease: MOTION.ease },
+      0,
+    )
+    tl.fromTo(
+      line,
+      { yPercent: 55, opacity: 0 },
+      { yPercent: 0, opacity: 1, duration: FADE, ease: MOTION.ease },
+      0,
+    )
+
+    nameMove.current = tl
+  }, [name, reduced])
+
+  /* The number: two layers inside a 1em mask, then one clean text node. */
+  useLayoutEffect(() => {
+    const box = numBox.current
+
+    if (!box) {
+      // A document prints no number; the next cover starts from a clean box.
+      numberMove.current?.kill()
+      numberMove.current = null
+      shownNumber.current = null
+      return
+    }
+
+    if (number === null) return
+
+    const previous = shownNumber.current
+    shownNumber.current = number
+
+    if (reduced || previous === null || previous === number) {
+      numberMove.current?.kill()
+      numberMove.current = null
+      box.textContent = number
+      return
+    }
+
+    numberMove.current?.kill()
+    numberMove.current = null
+
+    const out = document.createElement('span')
+    out.className = 'nav__read-flip'
+    // The departing number is a picture of the last reading: AT keeps the one
+    // value the box is actually showing.
+    out.setAttribute('aria-hidden', 'true')
+    out.textContent = previous
+    const incoming = document.createElement('span')
+    incoming.className = 'nav__read-flip'
+    incoming.textContent = number
+    box.replaceChildren(out, incoming)
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        box.textContent = number
+        numberMove.current = null
+      },
+    })
+
+    tl.fromTo(
+      out,
+      { yPercent: 0, opacity: 1 },
+      { yPercent: -100, opacity: 0, duration: FLIP, ease: MOTION.ease },
+      0,
+    )
+    tl.fromTo(
+      incoming,
+      { yPercent: 100, opacity: 0 },
+      { yPercent: 0, opacity: 1, duration: FLIP, ease: MOTION.ease },
+      0,
+    )
+
+    numberMove.current = tl
+  }, [number, reduced])
+
+  // An unmount mid-move must not leave a ticker callback targeting a dead node.
+  useEffect(
+    () => () => {
+      nameMove.current?.kill()
+      numberMove.current?.kill()
+    },
+    [],
+  )
+
+  return (
+    <p className="nav__read">
+      <span className="nav__read-name" ref={nameBox}>
+        <span className="nav__read-in" ref={nameLine}>
+          {name}
+        </span>
+      </span>
+      {number === null ? null : (
+        <>
+          <span className="nav__read-sep">{'\u00a0·\u00a0'}</span>
+          <span className="nav__read-num" ref={numBox} />
+        </>
+      )}
+    </p>
+  )
+}
 
 export default function NavBar() {
-  const { lang, setLang, pick } = useLang()
+  const { pick } = useLang()
   const route = useRoute()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState<{ path: string; id: string | null } | null>(null)
-  const rootRef = useRef<HTMLElement | null>(null)
   const toggleRef = useRef<HTMLButtonElement | null>(null)
 
   const home = route.path === '/'
-
-  const current = (id: string, href: string, kind: 'route' | 'anchor'): 'page' | 'true' | undefined => {
-    if (kind === 'route') return onRoute(route.path, href) ? 'page' : undefined
-    // The reading belongs to the path it was measured on: a stale id from a
-    // previous visit to the cover never marks an anchor on the next one.
-    const measured = active?.path === route.path ? active.id : null
-    return home && measured === id ? 'true' : undefined
-  }
 
   /* Compact the bar once the sheet has moved under it. */
   useEffect(() => {
@@ -73,140 +249,101 @@ export default function NavBar() {
     }
   }, [])
 
-  /* Mark the home section crossing the middle of the viewport.
-     The observer reads all six sections from the site table, and the answer is
-     the section's own id; `current()` then marks an anchor only when that id is
-     the destination it names. A chapter with no destination (`#flight`,
-     `#operator`) therefore clears every mark instead of leaving the last anchor
-     lit. Re-run when the route changes, since the targets are remounted with
-     the page. */
+  /* The chapter crossing the middle of the viewport — the same measurement the
+     margin chrome prints, from the same helper: `homeSections` is the sheet's
+     table, and no second observer exists for the bar alone. Re-run on a route
+     change, because the targets are remounted with the page. */
   useEffect(() => {
     if (route.path !== '/') return
     return observeCurrentSection(homeSections, (id) => setActive({ path: route.path, id }))
   }, [route.path])
 
-  /* Panel behaviour: close on Escape (returning focus to the control), on a
-     pointer press outside, or on navigation. No scroll lock: it is an index,
-     not a takeover. */
+  /* The reading belongs to the path it was measured on: a stale id from a
+     previous visit to the cover never names a chapter on the next one. */
+  const measured = active?.path === route.path ? active.id : null
+  const chapterIndex = Math.max(0, measured ? homeSections.indexOf(measured) : -1)
+
+  const project = route.params.slug ? projectBySlug(route.params.slug) : undefined
+
+  const documentName = project
+    ? project.name
+    : route.path === '/work'
+      ? pick(routeReading.work)
+      : route.path === '/notes'
+        ? pick(routeReading.notes)
+        : route.path === '/practice'
+          ? pick(routeReading.practice)
+          : route.path === '/about'
+            ? pick(routeReading.about)
+            : pick(missingReading)
+
+  const readingName = home ? pick(chapters[chapterIndex].label) : documentName
+  const readingNumber = home
+    ? `${pad2(chapterIndex + 1)}/${pad2(homeSections.length)}`
+    : null
+
+  /* One close path for every way out, so the plate never has to know which one
+     happened. */
+  const close = useCallback(() => setOpen(false), [])
+
+  /* Escape closes the plate. The bar owns the key because it owns the state;
+     the dialog owns the trap, the lock and the focus it moved. */
   useEffect(() => {
     if (!open) return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setOpen(false)
-      toggleRef.current?.focus()
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (!(event.target instanceof Node)) return
-      if (!rootRef.current?.contains(event.target)) setOpen(false)
+      if (event.key === 'Escape') setOpen(false)
     }
 
     document.addEventListener('keydown', onKeyDown)
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('pointerdown', onPointerDown)
-    }
+    return () => document.removeEventListener('keydown', onKeyDown)
   }, [open])
 
-  /* A route change closes the index: the router announces its own navigations
-     (`portfolio:navigate` on `document`, not window — it is a non-bubbling
-     CustomEvent), and a browser back/forward (`popstate`) is the other way off
-     the page. */
+  /* An internal navigation is a way out. The router announces its own moves
+     (`portfolio:navigate` on `document`, a non-bubbling CustomEvent) and a
+     browser back/forward is the other one. */
   useEffect(() => {
-    const close = () => setOpen(false)
-    document.addEventListener('portfolio:navigate', close)
-    window.addEventListener('popstate', close)
+    const shut = () => setOpen(false)
+    document.addEventListener('portfolio:navigate', shut)
+    window.addEventListener('popstate', shut)
     return () => {
-      document.removeEventListener('portfolio:navigate', close)
-      window.removeEventListener('popstate', close)
+      document.removeEventListener('portfolio:navigate', shut)
+      window.removeEventListener('popstate', shut)
     }
   }, [])
 
   return (
-    <header className="nav" data-scrolled={scrolled ? 'true' : 'false'} data-open={open ? 'true' : 'false'} ref={rootRef}>
+    <header
+      className="nav"
+      data-scrolled={scrolled ? 'true' : 'false'}
+      data-open={open ? 'true' : 'false'}
+    >
       <div className="nav__inner">
         <Link to="/" className="nav__brand" data-hud="/">
           <RolloverLabel text={handle} />
         </Link>
 
-        <nav className="nav__links" aria-label={pick({ en: 'Navigation', fr: 'Navigation' })}>
-          {navItems.map((item) => (
-            <Link
-              className="nav__link"
-              key={item.id}
-              to={item.href}
-              aria-current={current(item.id, item.href, item.kind)}
-            >
-              <RolloverLabel text={pick(item.label)} />
-            </Link>
-          ))}
-        </nav>
+        <Reading name={readingName} number={readingNumber} />
 
         <div className="nav__tools">
-          <div className="nav__lang" role="group" aria-label={pick({ en: 'Language', fr: 'Langue' })}>
-            <button
-              type="button"
-              className="nav__lang-btn"
-              lang="en"
-              aria-pressed={lang === 'en'}
-              onClick={() => setLang('en')}
-            >
-              EN
-            </button>
-            <button
-              type="button"
-              className="nav__lang-btn"
-              lang="fr"
-              aria-pressed={lang === 'fr'}
-              onClick={() => setLang('fr')}
-            >
-              FR
-            </button>
-          </div>
-
-          <SoundToggle className="nav__sound" />
-
           <button
             type="button"
             className="nav__index"
             ref={toggleRef}
             aria-expanded={open}
-            aria-controls="nav-index"
-            aria-label={
-              open
-                ? pick({ en: 'Close the index', fr: "Fermer l'index" })
-                : pick({ en: 'Open the index', fr: "Ouvrir l'index" })
-            }
+            aria-controls="sheet-index"
             onClick={() => setOpen((value) => !value)}
           >
-            <span className="nav__index-label">{pick({ en: 'Index', fr: 'Index' })}</span>
+            <RolloverLabel text={open ? pick({ en: 'Close', fr: 'Fermer' }) : pick({ en: 'Index', fr: 'Index' })} />
             <span className="nav__index-sign" aria-hidden="true" />
           </button>
+
+          <LangSwitch className="nav__lang" />
+          <SoundToggle className="nav__sound" />
         </div>
       </div>
 
-      <div className="nav__panel" id="nav-index" inert={!open || undefined}>
-        <nav aria-label={pick({ en: 'Index', fr: 'Index' })}>
-          <ul className="nav__panel-list">
-            {navItems.map((item) => (
-              <li key={item.id}>
-                <Link
-                  className="nav__panel-link"
-                  to={item.href}
-                  aria-current={current(item.id, item.href, item.kind)}
-                  onClick={() => setOpen(false)}
-                >
-                  <span>{pick(item.label)}</span>
-                  <span className="nav__panel-ref" aria-hidden="true">
-                    {item.href}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+      <IndexOverlay open={open} onClose={close} triggerRef={toggleRef} />
     </header>
   )
 }

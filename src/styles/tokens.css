@@ -28,7 +28,8 @@
      separate from the sheet without a shadow. */
   --ground-raised: #eef0ea;
 
-  /* One step down — recessed bands, the base of the hero collar. */
+  /* One step down — recessed bands, the base of the hero collar, and the ground
+     the `#index` chapter is printed on. */
   --ground-sunk: #dde1d8;
 
   /* Drafting ink. Near-black with a green cast so it sits inside the ground's
@@ -47,8 +48,10 @@
   --contour: #b2bcb1;
   --contour-soft: #cbd2c8;
 
-  /* Shallow-water tint. Used by the WebGL plot and by quiet fill panels; it is
-     the only blue-green on the site and it never carries text. */
+  /* Shallow-water tint. Used by the WebGL plot and by quiet fill panels, and it
+     now also carries the `#statement` chapter — ink prints 11.32:1 on it, so the
+     chapter's type is safe. Still the only blue-green on the site, and still
+     never used for body copy anywhere else. */
   --chart: #c9d3cc;
 
   /* Hard chapter break. The single dark surface in the whole design — it appears
@@ -105,6 +108,8 @@
   --w-regular: 400;
   --w-medium: 500;
   --w-semi: 580;
+  /* The statement's strong word: one step above `--w-semi`, the brief's 600. */
+  --w-strong: 600;
 
   /* Scale — a 1.22–1.5 ratio with fluid steps. Every size in the UI maps here. */
   --step--2: 0.6875rem; /* 11px  legend keys, scale bar */

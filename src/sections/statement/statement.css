@@ -1,0 +1,377 @@
+/* ============================================================================
+   statement.css — the chapter that is only a sentence
+   ----------------------------------------------------------------------------
+   One paragraph, set at `--step-5`, on the sheet's shallow-water band. There is
+   no title, no panel, no figure and no accent mark of its own: the sentence is
+   the chapter, and the only crimson on it is the last station of a project
+   seal, inside the one word the copy turns into a plate.
+
+   THE BAND. `tokens.css` says `--chart` never carries text. This chapter is the
+   single exception, and it earns it by measurement, not by taste:
+
+   | ink        | on `--chart` | verdict                              |
+   | ---------- | ------------ | ------------------------------------ |
+   | `--ink`    | 11.32 : 1    | the three sentence lines             |
+   | `--ink-2`  | 5.85 : 1     | every mono annotation on the band    |
+   | `--ink-3`  | 4.15 : 1     | refused: below AA for small text     |
+
+   So the section re-points `--text-quiet` at `--ink-2` once, and every `.mono`
+   annotation inside it is legal without a per-element colour. The fill itself
+   is not painted here: `chrome/atmosphere.css` lays the band under the canvas
+   from the `data-ground="chart"` attribute, which is why this file sets no
+   background and only makes the section a positioning context for it.
+
+   THE MASK. A word rises out of a clipping box, not out of a copy of itself.
+   The box is the inline-block `.st__mask`; the word is a real text node in
+   `.st__word`. Nothing in this file hides anything: there is no `opacity: 0`
+   and no initial transform, so a failed script, a reduced-motion reader or a
+   reload already inside the chapter prints the sentence whole. GSAP writes the
+   starting displacement at mount, and only when the chapter is still below the
+   fold (`src/sections/statement/Statement.tsx`).
+
+   The clip geometry is the one thing that needs arithmetic. At 0.92 leading the
+   face paints outside its own line box: Archivo's ascent and descent measure
+   0.875em + 0.205em, so a 1.08em glyph box sits in a 0.92em line and overhangs
+   it by 0.08em above and below. The word therefore carries 0.16em of vertical
+   padding — twice the overhang, which is the headroom accents need — and the
+   mask pays that padding back with a negative margin so the printed pitch stays
+   exactly `--leading-none`. A full `yPercent: 100` translation is then larger
+   than the clip box by those same 0.16em: the word starts fully outside its
+   mask, not as a sliver of letter-tops. The mask is `overflow: clip`, never
+   `hidden`, so no scroll container is created inside the page.
+
+   THE WIDTH AXIS. The sentence is set at `--width-plate` (112%). The strong
+   words rest one axis step narrower (110%, i.e. the plate width minus 2%) and
+   relax to the plate width under the pointer, on `--t-fast` / `--ease-out`.
+   That gesture is a hover language, so it is declared only where the sheet has
+   one — a wide, fine-pointer, motion-allowed viewport — and it is absent under
+   reduced motion. Two axis units on one word move its neighbours by a few
+   pixels at most, which is the same trade the sheet's link hover already makes.
+
+   THE PLATE. The word the copy marks as `plate` is not replaced: it prints in
+   ink, at the sentence's own size, weight and baseline, and the plate is
+   printed *behind* it. Three planes, all inside the word's own box — the field
+   (the project's seal at 16% density, one word box + 0.14em wide), the hairline
+   (2px outside the word's box, so the word reads as a specimen pasted into the
+   line) and the word itself. On this band the seal's `--contour` dots would be
+   water on water (1.2:1), so the field re-points them to ink and lets the alpha
+   do the quieting. The frame turns crimson on hover and focus, and the field
+   lifts 2px where motion is allowed. The seal stays `aria-hidden`; the word is
+   real text, so the sentence is still words to a screen reader and the link
+   still has a name.
+
+   Below 900px the rail turns horizontal above the block (the Operator device)
+   and the sentence keeps the whole field. The wide cut is kept at every size:
+   the longest word in the copy (`infrastructure.`, 15 characters) measures
+   274px at the phone size, inside a 280px field at the narrowest sheet the site
+   supports, and a word that could not fit still folds inside its own mask
+   (`overflow-wrap`) instead of pushing the page sideways.
+   ========================================================================== */
+
+.st {
+  /* --------------------------------------------------------------------------
+     The chapter's own numbers, stated once.
+     ------------------------------------------------------------------------ */
+  /* Glyph room inside a mask: twice the 0.08em the face overhangs its own line
+     box at `--leading-none`. */
+  --st-mask-pad: 0.16em;
+  /* The plate word's field: how far the seal bleeds past the word's own box on
+     each side, and how far the hairline stands off it. */
+  --st-field: 0.07em;
+  --st-frame: 2px;
+  /* One axis step under `--width-plate`. */
+  --st-strong-width: calc(var(--width-plate) - 2%);
+  /* The printed line's ceiling, and the gap that keeps three authored lines
+     reading as three printed lines rather than one justified block. */
+  --st-measure: 26ch;
+  --st-line-gap: 0.24em;
+  /* The band's breathing: above the lead, between the lead and the sentence,
+     before the foot note, and under its rule. */
+  --st-band: clamp(4.5rem, 12vh, 8rem);
+  --st-lead-gap: clamp(1.75rem, 5vh, 3.25rem);
+  --st-note-gap: clamp(2.5rem, 8vh, 4.5rem);
+  --st-note-rule: 0.7rem;
+  /* The margin label's cap-height offset and its opened tracking. */
+  --st-rail-pad: 0.35rem;
+  --st-margin-track: 0.14em;
+
+  position: relative;
+  padding-block: var(--st-band);
+  padding-inline: var(--gutter);
+  color: var(--text);
+  /* The band's one token re-point: `--ink-3` would be 4.15:1 here. */
+  --text-quiet: var(--ink-2);
+  /* The fixed bar must not cover the chapter when `/#statement` is followed. */
+  scroll-margin-block-start: var(--nav-h);
+}
+
+/* ---------------------------------------------------------------------------
+   The field — margin rail, then the sentence
+   ---------------------------------------------------------------------------
+   The same rail width as every other chapter (`--rail`), so the margin labels
+   of the sheet line up from section to section.
+   --------------------------------------------------------------------------- */
+
+.st__inner {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  grid-template-areas: 'rail body';
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  inline-size: 100%;
+  max-inline-size: var(--field);
+  margin-inline: auto;
+}
+
+.st__rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* The margin label, set down the rail. `vertical-rl` is how a printed sheet
+   names a margin: the word runs top to bottom and the rail stays one line wide.
+   Its tracking is opened a step — vertical mono at the face's own 0.02em reads
+   as a stack of letters rather than as a word. */
+.st .st__margin {
+  margin: 0;
+  padding-block-start: var(--st-rail-pad);
+  writing-mode: vertical-rl;
+  line-height: 1;
+  letter-spacing: var(--st-margin-track);
+  white-space: nowrap;
+  color: var(--text-quiet);
+}
+
+.st__body {
+  grid-area: body;
+  min-inline-size: 0;
+}
+
+/* The lead opens the chapter in the measuring face, one size up from the foot
+   note: it is a sentence about the sentence, and it has to be read first. */
+.st .st__lead {
+  margin: 0;
+  max-inline-size: var(--measure);
+  font-size: var(--step--1);
+  color: var(--text-quiet);
+}
+
+/* The sentence. One block per authored line, set tight enough that the three
+   read as one paragraph printed by hand; each block caps its own measure and
+   balances its own rag, because a display line that ends on a single word is a
+   hole in a page this size. */
+.st__line {
+  margin: 0;
+  max-inline-size: var(--st-measure);
+  font-weight: var(--w-regular);
+  font-stretch: var(--width-plate);
+  font-size: var(--step-5);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-plate);
+  text-wrap: balance;
+  color: var(--text);
+}
+
+.st__line + .st__line {
+  margin-block-start: var(--st-line-gap);
+}
+
+.st__lead + .st__line {
+  margin-block-start: var(--st-lead-gap);
+}
+
+/* The foot note, under a short rule: a printed annotation closes the plate. */
+.st .st__note {
+  margin-block-start: var(--st-note-gap);
+  padding-block-start: var(--st-note-rule);
+  max-inline-size: var(--measure);
+  border-block-start: var(--hair) solid var(--rule);
+  color: var(--text-quiet);
+}
+
+/* ---------------------------------------------------------------------------
+   The mask
+   ---------------------------------------------------------------------------
+   `overflow: clip` clips at the padding box and creates no scroll container.
+   `vertical-align: top` is required: a clipping inline-block would otherwise
+   align its bottom edge on the baseline and lift every word off its line.
+   --------------------------------------------------------------------------- */
+
+.st__mask {
+  display: inline-block;
+  max-inline-size: 100%;
+  overflow: clip;
+  vertical-align: top;
+  /* The word's glyph room is paid back here, so the printed pitch is exactly
+     `--leading-none` and the clip box still clears the ascenders. */
+  margin-block: calc(var(--st-mask-pad) * -1);
+}
+
+/* The rising part: a transformable box, one word wide. It can break only when
+   a word is wider than the field — the whole word then folds inside its mask
+   instead of pushing the page sideways. */
+.st__word {
+  display: inline-block;
+  max-inline-size: 100%;
+  padding-block: var(--st-mask-pad);
+  overflow-wrap: break-word;
+}
+
+.st__strong {
+  font-weight: var(--w-strong);
+  font-stretch: var(--st-strong-width);
+}
+
+/* The width-axis rollover. A strong word is not a link, so there is no character
+   roll to run here (Rollover needs an `a`/`button` host): the axis answers
+   instead, from 110% to the plate width. Hover is a wide-sheet language; a
+   phone, a coarse pointer and a reduced-motion reader keep the word still. */
+@media (min-width: 901px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .st .st__strong {
+    transition: font-stretch var(--t-fast) var(--ease-out);
+  }
+
+  .st .st__strong:hover {
+    font-stretch: var(--width-plate);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The plate word
+   ---------------------------------------------------------------------------
+   The word stays in the sentence: it is a word, and a sentence cannot do
+   without one. So the word prints in ink at the sentence's own size, weight
+   and baseline, and the plate prints behind it.
+
+   Everything the plate adds lives inside the word's own padding box, which is
+   also the mask's clip box. That is the whole trick: the word carries the same
+   0.16em of glyph room `.st__word` carries, and the field (0.07em) and the
+   hairline (2px) both sit inside that room. Nothing is clipped by the mask,
+   nothing is added to the line, and the word's baseline cannot drift from its
+   neighbours'.
+   --------------------------------------------------------------------------- */
+
+/* No strut: the plate word's own box is the mask's height, so a 100% rise
+   clears the clip exactly as a text word does. */
+.st__mask--plate {
+  line-height: 0;
+}
+
+.st__plate {
+  /* The word's own box: the sentence's line box, plus the glyph room every word
+     in the sentence gets, plus the air a pasted specimen keeps. */
+  position: relative;
+  display: inline-block;
+  padding: var(--st-mask-pad) 0.12em;
+  line-height: var(--leading-none);
+  color: var(--text);
+  font-weight: inherit;
+  text-decoration: none;
+}
+
+/* The field: the seal at 16%, exactly one word box + 0.14em. Its ink is the
+   sheet's own — on `--chart` the seal's `--contour` dots would be water on
+   water, so the field re-points them to ink and lets the alpha do the quieting. */
+.st__field {
+  position: absolute;
+  inset: calc(var(--st-mask-pad) - var(--st-field)) calc(0.12em - var(--st-field));
+  opacity: 0.16;
+  pointer-events: none;
+  --contour: var(--ink);
+}
+
+/* `ProjectSeal` takes a pixel size for its attributes; the word needs an em box,
+   so the drawing is scaled here and the prop stays the fallback. */
+.st__field .st__seal {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* One hairline, the field's: the svg's own square would cut the field in two. */
+.st__field .seal__frame {
+  display: none;
+}
+
+/* The hairline, 2px outside the word's box. A pseudo element, so the word's own
+   box is unchanged and the sentence's pitch does not move. */
+.st__plate::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--st-mask-pad) - var(--st-frame)) calc(0.12em - var(--st-frame));
+  border: var(--hair) solid var(--rule);
+  pointer-events: none;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+
+/* The word sits on the field, not inside a box: its ink, its weight and its
+   place on the line are the sentence's. */
+.st__plate-word {
+  position: relative;
+}
+
+/* The answer. The colour change is also the focus indicator, so it survives
+   reduced motion and every pointer; the focus ring stands down because the mask
+   would clip it — the frame is the ring. */
+.st__plate:focus-visible {
+  outline: none;
+}
+
+.st__plate:focus-visible::after {
+  border-color: var(--mark);
+  border-width: 2px;
+}
+
+@media (hover: hover) {
+  .st__plate:hover::after {
+    border-color: var(--mark);
+  }
+}
+
+/* The lift is the movement in the gesture, so it is gated on the preference —
+   and on a pointer that can hover. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .st__field {
+    transition: transform var(--t-fast) var(--ease-out);
+  }
+
+  .st__plate:hover .st__field,
+  .st__plate:focus-visible .st__field {
+    transform: translateY(-2px);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Narrower sheets
+   ---------------------------------------------------------------------------
+   The rail turns horizontal above the block, as it does in the Operator
+   chapter: the same words, in the order a phone reads them.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .st {
+    padding-block: clamp(3.5rem, 9vw, 6rem);
+    scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  .st__inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'rail'
+      'body';
+    row-gap: clamp(1.25rem, 4vw, 2rem);
+  }
+
+  .st__rail {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .st .st__margin {
+    padding-block-start: 0;
+    writing-mode: horizontal-tb;
+    letter-spacing: var(--tracking-mono);
+    white-space: normal;
+  }
+}

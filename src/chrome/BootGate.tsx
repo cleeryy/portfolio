@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import type { Bi } from '../lib/i18n'
 import { useLang } from '../lib/i18n'
+import { effectiveReduced } from '../lib/motion'
 import { sound } from '../lib/sound'
 import { handle } from '../content/cover'
 import { announceSheetReady } from './handoff'
@@ -45,10 +46,10 @@ import './boot.css'
 const SESSION_KEY = 'portfolio:sheet'
 
 /** Earliest lift, so the plate has time to be read instead of flashing. */
-const RELEASE_MIN = 0.78
-/** Latest lift. With the wipe below, the plate is gone by 1.30s. */
-const RELEASE_CEILING = 0.92
-const WIPE = 0.38
+const RELEASE_MIN = 1.9
+/** Latest lift. With the wipe below, the plate is gone by ~3.0 s. */
+const RELEASE_CEILING = 2.35
+const WIPE = 0.62
 
 const TOTAL_SIGNALS = 2
 
@@ -73,7 +74,7 @@ function shouldBoot(): boolean {
   let skip = false
   try {
     skip =
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      effectiveReduced() ||
       window.sessionStorage.getItem(SESSION_KEY) === '1' ||
       window.location.hash.length > 1
   } catch {
@@ -215,9 +216,17 @@ export default function BootGate() {
     /* The ceiling. Whatever is still missing, the plate leaves. */
     scheduleAt(RELEASE_CEILING)
 
+    /* The plate is worth looking at, not worth waiting for: a click or a key
+       pulls it at once. The wipe still runs, so the page is never cut in. */
+    const skip = () => lift()
+    window.addEventListener('pointerdown', skip, { once: true, passive: true })
+    window.addEventListener('keydown', skip, { once: true })
+
     return () => {
       cancelled = true
       timer?.kill()
+      window.removeEventListener('pointerdown', skip)
+      window.removeEventListener('keydown', skip)
       ctx.revert()
     }
   }, [])

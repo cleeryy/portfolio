@@ -51,10 +51,72 @@
    exactly the colour the atmosphere now paints. Left in place, each fill would
    simply paint the layer out. So the fill is lifted from the sections and the
    footer — and only that property: their rules, graticules, fills and figures
-   are untouched. The dark chapter is opaque by design and keeps its ink. */
+   are untouched. A chapter that wants a fill of its own gets one back on a
+   pseudo element at z −1 (`data-deep`, `data-ground`), under the canvas rather
+   than over it: the dark chapter by design, the two lighter bands so their
+   instrument still prints. */
 main > section:not(.on-deep),
 main > footer {
   background-color: transparent;
+}
+
+/* A chapter that carries an instrument — `data-deep` — puts its ink *behind*
+   the canvas instead of over it: the band's fill moves to one pseudo element at
+   z −1, so the instrument prints on the dark surface, while the chapter's own
+   content (including `.op`'s top rule) stays above the canvas. Nothing is
+   lifted above the type; only the ink drops below the sheet.
+
+   The body must not repaint the sheet for that to be visible: its fill is the
+   same `--ground` as `html`'s (the colour the canvas already carries), and an
+   in-flow body background paints above every negative-z layer. The ground is
+   therefore the html canvas's, here and nowhere else. Two elements deep, so the
+   rule does not depend on which stylesheet happens to be parsed last. */
+html body {
+  background-color: transparent;
+}
+
+main > section[data-deep='true'] {
+  background-color: transparent;
+}
+
+main > section[data-deep='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--deep);
+}
+
+/* Two chapters carry a plate fill of their own, and neither is ink: `#index`
+   sits on the recessed step, `#statement` on the chart tint. Both use the same
+   device as the ink band, for the same reason — the layer stack, not the colour.
+   The canvas is one transparent sheet at z 0 over the page; a fill left in flow
+   paints *over* that sheet and hides the instrument's ink, while a fill at −1
+   sits under it, in the band the ink prints into.
+
+   That only works while the body does not repaint the sheet: an in-flow body
+   background paints above every negative-z layer, so `html body` stays
+   transparent (above) and the ground belongs to the html canvas alone. Each
+   section is positioned so the pseudo is inset to its own box, never the page. */
+main > section[data-ground='sunk'],
+main > section[data-ground='chart'] {
+  position: relative;
+}
+
+main > section[data-ground='sunk']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--ground-sunk);
+}
+
+main > section[data-ground='chart']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--chart);
 }
 
 /* ---------------------------------------------------------------------------

@@ -1,0 +1,384 @@
+/* ============================================================================
+   overlay.css — the index plate
+   ----------------------------------------------------------------------------
+   A full-screen sheet in the ink palette, printed under the bar and over the
+   page. It is not a drawer sliding in from an edge and it is not a blurred
+   panel: it is the same drawing, turned over, with the whole of the site
+   printed at three sizes.
+
+   The plate's three tiers are three *sizes*, and that is the whole hierarchy:
+   the five documents at title scale, the eight chapters as a mono column, the
+   twenty files in two columns. Nothing is numbered that should not be, nothing
+   is boxed, and the only rules are the ones the sheet already draws — the head's
+   hairline, the divider before the files, the rules the rows draw under a
+   pointer.
+
+   Two pieces of grammar, both borrowed from the rest of the sheet:
+
+   1. **The mask.** Every row's text lives inside an `overflow: hidden` line box,
+      so an entrance can raise it from below and a hover can move it without
+      the row growing. The mask carries a hairline of vertical padding with an
+      equal negative margin: the clip keeps the glyphs' overhang (descenders, the
+      widest cut of the axis) and the layout does not grow by it.
+   2. **The width axis.** A pointed-at row's name settles from 100 to 106 —
+      `MOTION.width.hover` in `lib/reveal`, the same position the scripted link
+      hover writes. It is done in CSS here because the whole overlay's hover
+      language is CSS: no listener, no ticker, no frame while the pointer is
+      still.
+
+   The tick, the rule and the axis are all state changes with a duration. Under
+   reduced motion the reduced block in `base.css` takes their duration to zero,
+   so the state still answers — it simply does not travel.
+   ========================================================================== */
+
+.idx {
+  /* The width a pointed-at row settles to. `MOTION.width.hover` is 106; no
+     `--width-*` token carries it, because those tokens name the printed rest
+     positions, not the gesture. */
+  --idx-lift: 106%;
+
+  /* The hairline's draw, and the axis' settle. Two jobs, two durations. */
+  --idx-draw: 120ms;
+  --idx-settle: 220ms;
+
+  /* The gutter a row's crimson tick slides out of. */
+  --idx-gutter: 0.55rem;
+
+  --idx-top: var(--nav-h);
+
+  position: fixed;
+  inset: 0;
+  /* One layer under the bar's own row, inside the header's stacking context: the
+     header is `--z-nav` on the page, so the plate is over everything the page
+     paints and under the three controls that stay live. */
+  z-index: calc(var(--z-nav) - 1);
+  display: grid;
+  grid-template-rows: var(--idx-top) minmax(0, 1fr);
+  /* The closed state. `visibility` rather than `display` so the element can be
+     animated shut and stay mounted for the next opening. */
+  visibility: hidden;
+  scrollbar-color: var(--deep-ink-2) var(--deep);
+}
+
+/* The bar's own height, read where the plate needs it: the content starts below
+   the collar, and a compact bar leaves a compact gap. */
+.nav[data-scrolled='true'] .idx {
+  --idx-top: var(--nav-h-compact);
+}
+
+/* The panel scrolls inside itself, never the page behind it. It is placed in the
+   grid's second row explicitly: the first row is the bar's height, reserved and
+   empty, so the content starts below the collar instead of under its type. The
+   scroll box's own padding is the scrim's hit area: a press in the gutter is a
+   press on the ground, not on the content column. */
+.idx__scroll {
+  grid-row: 2;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--s-6) var(--gutter) var(--s-8);
+}
+
+.idx__scroll::-webkit-scrollbar-track {
+  background: var(--deep);
+}
+
+.idx__scroll::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-color: var(--deep);
+}
+
+/* The sheet's own field: the same centred column the pages are set in. */
+.idx__sheet {
+  max-inline-size: 72rem;
+  margin-inline: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   The head — the dialog's own name, printed
+   --------------------------------------------------------------------------- */
+
+.idx__head {
+  display: grid;
+  gap: var(--s-1);
+  padding-block-end: var(--s-5);
+  border-bottom: var(--hair) solid var(--rule);
+}
+
+.idx__kicker {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-soft);
+}
+
+.idx__title {
+  font-size: var(--step-3);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-heading);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+}
+
+/* ---------------------------------------------------------------------------
+   The two upper tiers — documents at title scale, chapters as a mono column
+   --------------------------------------------------------------------------- */
+
+.idx__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.6fr);
+  column-gap: var(--gutter);
+  padding-block: var(--s-5) 0;
+}
+
+.idx__docs,
+.idx__chapters {
+  display: grid;
+  align-content: start;
+}
+
+.idx__chapters {
+  padding-inline-start: var(--s-5);
+  border-inline-start: var(--hair) solid var(--rule);
+}
+
+/* ---------------------------------------------------------------------------
+   The files — twenty rows, two columns, one step down from the documents
+   --------------------------------------------------------------------------- */
+
+.idx__files {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  margin-block-start: var(--s-5);
+  padding-block-start: var(--s-3);
+  border-top: var(--hair) solid var(--rule);
+}
+
+.idx__files-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 var(--s-2);
+  color: var(--text-soft);
+}
+
+.idx__files-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   A row — one link, three readings of the same place
+   --------------------------------------------------------------------------- */
+
+.idx__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-block-size: 2.25rem;
+  padding-inline-start: var(--idx-gutter);
+  color: var(--text);
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+/* The rule under a pointed-at row, drawn from the left. It is a paint
+   operation, not a border: the row's height is identical at every state. */
+.idx__row::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--hair);
+  background-color: color-mix(in srgb, currentColor 45%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--idx-draw) var(--ease-out);
+  pointer-events: none;
+}
+
+.idx__row:hover::after,
+.idx__row:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* The tick sits in the row's own gutter, in flow, so sliding it can never move
+   the label: the 4px of layout is paid for at every state and only the paint
+   changes. */
+.idx__tick {
+  flex: none;
+  inline-size: 4px;
+  block-size: 4px;
+  background-color: var(--mark);
+  opacity: 0;
+  transform: translateX(-0.5rem);
+  transition:
+    transform var(--idx-draw) var(--ease-out),
+    opacity var(--idx-draw) linear;
+}
+
+.idx__row:hover .idx__tick,
+.idx__row:focus-visible .idx__tick {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* The mask: the line box an entrance rises out of, and the box a hover moves
+   inside. The padding/negative-margin pair keeps the glyph overhang inside the
+   clip without adding height to the row. */
+.idx__mask {
+  display: block;
+  min-inline-size: 0;
+  overflow: hidden;
+  padding-block: 0.09em;
+  margin-block: -0.09em;
+}
+
+.idx__line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+.idx__num {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-soft);
+}
+
+.idx__label {
+  display: block;
+  min-inline-size: 0;
+  font-stretch: var(--width-body);
+  transition: font-stretch var(--idx-settle) var(--ease-out);
+}
+
+.idx__row:hover .idx__label,
+.idx__row:focus-visible .idx__label {
+  font-stretch: var(--idx-lift);
+}
+
+/* Documents: title scale, one notch wide like every heading on the sheet. */
+.idx__row--doc {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  font-weight: var(--w-medium);
+  line-height: 1.08;
+  letter-spacing: var(--tracking-display);
+}
+
+.idx__row--doc .idx__label {
+  font-stretch: var(--width-heading);
+}
+
+/* Chapters: a mono column, numbers tabular, one step of caption type. */
+.idx__row--chapter {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: var(--w-regular);
+  letter-spacing: var(--tracking-mono);
+}
+
+/* Files: the register's names, at the size a list of twenty deserves. */
+.idx__row--file {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: var(--w-regular);
+  letter-spacing: var(--tracking-body);
+}
+
+/* ---------------------------------------------------------------------------
+   The settings plate — sound, motion, language
+   --------------------------------------------------------------------------- */
+
+.idx__settings {
+  display: grid;
+  max-inline-size: 32rem;
+  margin-block-start: var(--s-6);
+  border-top: var(--hair) solid var(--rule);
+}
+
+.idx__setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  min-block-size: 44px;
+  border-bottom: var(--hair) solid var(--rule);
+  color: inherit;
+  text-align: start;
+}
+
+.idx__setting:not(:disabled):hover {
+  border-bottom-color: var(--mark);
+}
+
+.idx__setting:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.idx__setting-key {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mono);
+  color: var(--text-soft);
+}
+
+.idx__setting-val {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------------------
+   Focus — inset, because the masks clip an outside ring
+   --------------------------------------------------------------------------- */
+
+.idx a:focus-visible,
+.idx button:focus-visible {
+  outline-offset: -3px;
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .idx__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .idx__chapters {
+    margin-block-start: var(--s-5);
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+
+  .idx__scroll {
+    padding-block-start: var(--s-5);
+  }
+}
+
+@media (max-width: 700px) {
+  .idx__files {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A thumb needs a target, not a text line: the rows open up to 44px, and the
+   press answers with the same three signs the pointer gets. */
+@media (pointer: coarse) {
+  .idx__row {
+    min-block-size: 44px;
+  }
+}
