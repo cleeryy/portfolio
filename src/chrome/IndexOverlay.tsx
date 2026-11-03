@@ -80,7 +80,15 @@ function RowLine({ label, num }: { label: string; num?: string }) {
   return (
     <span className="idx__mask">
       <span className="idx__line" data-idx-line="">
-        {num ? <span className="idx__num">{num}</span> : null}
+        {num ? (
+          <>
+            <span className="idx__num">{num}</span>
+            {/* A space, so the accessible name is "02 selected work" and not
+                "02selected work". The flex row drops the text node; the
+                accessible-name computation keeps it. */}
+            {' '}
+          </>
+        ) : null}
         <span className="idx__label">{label}</span>
       </span>
     </span>

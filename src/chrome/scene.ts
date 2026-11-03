@@ -270,6 +270,10 @@ const FACE_NOSE_SIZE = 3.5
 const FACE_NOSE_ALPHA = 1
 const FACE_FLOOR = 0.45
 
+/** The face never prints lighter than this, even when the sphere is a
+    watermark behind the statement. */
+const FACE_ALPHA_FLOOR = 0.62
+
 /** 4° of pitch on the face's own head-turn; the yaw reuses TILT (6°). */
 const FACE_PITCH = 4 * DEG
 
@@ -310,7 +314,7 @@ const ROUTE: readonly RoutePoint[] = [
   { at: 0.08, x: 0.7, y: 0.33, scale: 0.78, spin: 0.03, opacity: 0.62 }, // hold
   { at: 0.1, x: 0.2, y: 0.28, scale: 0.74, spin: -0.08, opacity: 0.55 }, // work
   { at: 0.24, x: 0.74, y: 0.34, scale: 0.56, spin: 0.14, opacity: 0.4 }, // index
-  { at: 0.38, x: 0.5, y: 0.6, scale: 1.5, spin: 0.06, opacity: 0.3 }, // statement
+  { at: 0.38, x: 0.5, y: 0.6, scale: 1.5, spin: 0.06, opacity: 0.4 }, // statement
   { at: 0.52, x: 0.62, y: 0.4, scale: 0.8, spin: 0.05, opacity: 0 }, // territory
   { at: 0.68, x: 0.5, y: 0.42, scale: 0.6, spin: 0.05, opacity: 0 }, // flight
   { at: 0.82, x: 0.84, y: 0.22, scale: 0.46, spin: 0.12, opacity: 0.35 }, // operator
@@ -1041,8 +1045,13 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
         (state.deep ? DEEP_GRATICULE_ALPHA : GRATICULE_ALPHA) * state.instrumentOpacity
       ringMaterial.opacity = (state.deep ? DEEP_RING_ALPHA : RING_ALPHA) * state.instrumentOpacity
       stationUniforms.uAlpha.value = state.instrumentOpacity
-      faceUniforms.uAlpha.value = state.instrumentOpacity
-      mouthMaterial.opacity = FACE_MOUTH_ALPHA * state.instrumentOpacity
+      /* The face is the character, the graticule is the texture: below
+         FACE_ALPHA_FLOOR the lines may fade to a watermark, but the two eyes
+         and the smile stay printed. Above it, the face follows the instrument
+         so it still disappears on the two schematic chapters. */
+      const faceAlpha = Math.max(state.instrumentOpacity, FACE_ALPHA_FLOOR)
+      faceUniforms.uAlpha.value = faceAlpha
+      mouthMaterial.opacity = FACE_MOUTH_ALPHA * faceAlpha
       renderer.render(instrumentScene, instrumentCamera)
     }
   }
