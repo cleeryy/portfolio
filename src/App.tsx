@@ -95,8 +95,10 @@ export default function App() {
   // Metadata follows the plate. `pick` changes identity with the language, so a
   // language switch rewrites the title as well as the page.
   useEffect(() => {
-    if (project) setMeta(`cleeryy — ${project.name}`, pick(project.claim))
-    else setMeta(pick(titles[pageKey]), pick(descriptions[pageKey]))
+    if (project) setMeta(`cleeryy — ${project.name}`, pick(project.claim), { index: true })
+    else if (pageKey === 'notFound') {
+      setMeta(pick(titles.notFound), pick(descriptions.notFound), { index: false })
+    } else setMeta(pick(titles[pageKey]), pick(descriptions[pageKey]), { index: true })
 
     // After paint, not during commit: the mounted page's own triggers were
     // created in its effects, and a pinned section adds its spacer late.

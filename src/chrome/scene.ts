@@ -3,6 +3,7 @@ import {
   Color,
   Float32BufferAttribute,
   Group,
+  Line,
   LineBasicMaterial,
   LineLoop,
   LineSegments,
@@ -67,21 +68,29 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
    stays at zero.
 
    In V8 the sheet carries a second scene: **the survey instrument**. One
-   renderer, one canvas, one `gsap.ticker` callback, and four draw calls at the
-   very most — the sheet, the graticule, the orbit ring, the thirteen marks. The
-   instrument has its own `Scene` and its own orthographic camera (frustum two
-   units tall, so one world unit is half the viewport and a pose scale is a
-   fraction of the screen), drawn into the same buffer with `autoClear` off.
+   renderer, one canvas, one `gsap.ticker` callback, and six draw calls at the
+   very most — the sheet, the graticule, the orbit ring, the twelve marks, the
+   face's eyes and nose, and its mouth. The instrument has its own `Scene` and
+   its own orthographic camera (frustum two units tall, so one world unit is
+   half the viewport and a pose scale is a fraction of the screen), drawn into
+   the same buffer with `autoClear` off.
 
-   The instrument is not a timeline per chapter. It is a table of poses — a
-   station on the sheet, a scale, a spin rate, an opacity — read from the page:
-   every eighth frame the loop asks which `main > section[id]` spans the
-   viewport centre and damps toward that chapter's pose with one time-correct
-   exponential, λ = 3/s. A chapter absent from the DOM is absent from the
-   reading (that is the graceful fallback for chapters not written yet), and a
-   chapter that declares opacity 0 simply fades the instrument out. Nothing is
-   keyed to a scroll offset, so a jump, a resize and a route change all land on
-   the same station.
+   In V9 the instrument is not pinned to stations. It follows **one route**:
+   an ordered set of waypoints keyed by the document's scroll progress, read
+   from a single scalar — `scrollY / (documentHeight - innerHeight)` — and
+   interpolated with a Catmull-Rom spline in `at`. Position, scale and the spin
+   rate are therefore C1 across every chapter boundary: the sphere travels,
+   it does not jump. The route is held clear of the cover's reading column and
+   goes faint wherever it passes over the type. A chapter absent from the DOM
+   is still absent from the reading: the instrument belongs to the home sheet,
+   and another route fades it out.
+
+   The same object now has a **face** — two eyes and a smile printed in the
+   chapter's ink, the crimson node moved to the bridge of the nose, the whole
+   face counter-rotated every frame so it stays front-facing while the
+   graticule turns behind it. It blinks on a random 3.5–6 s clock, and it is a
+   mark on an instrument, not a mascot: two dots and a smile, no brows, no
+   cheeks, no second colour.
 
    On the ink chapter the band's fill moves *behind* the canvas (atmosphere.css,
    `data-deep`), so the instrument can print on the dark surface while the
@@ -93,9 +102,9 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
 
    Under reduced motion — the system's or the panel's override — the loop never
    starts, and a preference that flips mid-session stops it, closes the lens and
-   settles the instrument where it stands. The instrument is posed once, at its
-   station, with no spin and no tilt, and a scroll burst re-reads the pose
-   through a single `requestAnimationFrame`.
+   settles the instrument where it stands. The route is still followed, because
+   a pose is a position and not an animation, but it is applied as a fact: no
+   damping, no spin, no tilt, no blink. The face is printed, not animated.
    ========================================================================== */
 
 /** Raw sRGB, matching --ink (#131c19) exactly — written straight to the
@@ -186,14 +195,19 @@ const INSTRUMENT_K = 0.2
 const COMPACT_WIDTH = 900
 const COMPACT_FACTOR = 0.7
 
-/** Pose damping, per second: λ = 3 is 63% of the way in 330ms. The instrument
-    glides to its station and stops; it never follows the scroll frame by frame,
-    which would read as a sticker on the glass. */
-const POSE_DAMP = 3
+/** Pose damping, per second: λ = 2.2 is 63% of the way in 450ms. The instrument
+    follows the scroll rather than arriving at a station: slower than the old
+    station glide, so the travel reads as one continuous reading of the sheet. */
+const POSE_DAMP = 2.2
 
-/** The pose is re-read from the page every eighth frame. ~130ms at 60Hz: a
-    section boundary cannot cross the centre line faster than that, and it keeps
-    the `getBoundingClientRect` reads off the per-frame path. */
+/** The drawn pose may not travel more than this between two frames, however
+    far the route asks it to move. At 60 Hz the damping never reaches the cap;
+    it is the guarantee that a scroll jump is a fast glide, not a teleport. */
+const POSE_STEP = 0.05
+
+/** The route and the document height are re-read every eighth frame. ~130ms at
+    60Hz: the height and the two chapter bands are measured here, never in the
+    frame path, and progress itself is one scalar. */
 const POSE_SAMPLE = 8
 
 /** ±6° of tilt at the edge of the viewport: enough that the sphere reads as an
@@ -213,7 +227,8 @@ const RING_ALPHA = 0.1
 const DEEP_RING_ALPHA = 0.11
 
 /** The draw budget: one `LineSegments` for the graticule, one `LineLoop` for
-    the ring, one `Points` for the thirteen marks. 960 graticule segments. */
+    the ring, one `Points` for the twelve marks, one `Points` for the eyes and
+    nose, one `Line` for the mouth — five instrument calls plus the sheet. */
 const MERIDIANS = 24
 const MERIDIAN_STEPS = 24
 const PARALLELS = 12
@@ -228,59 +243,198 @@ const STATIONS = 12
 const GOLDEN_ANGLE = 2.399963
 
 /** Marks are printed symbols, not little spheres: their size is stated in CSS
-    pixels and does not attenuate with the pose's scale. The node sits inside
-    the graticule (0.86) so its larger mark never breaks the silhouette. */
+    pixels and does not attenuate with the pose's scale. */
 const STATION_SIZE = 2.2
 const STATION_ALPHA = 0.55
-const NODE_SIZE = 6
-const NODE_ALPHA = 0.95
-const NODE_RADIUS = 0.86
-const NODE_LATITUDE = 0.62
-const NODE_LONGITUDE = 2.1
 
 const DEG = Math.PI / 180
 
-/* ---- the pose table ----------------------------------------------------
-   Where the instrument is pinned on each chapter, in the sheet's reading order:
-   cover → work → index → statement → territory → flight → operator → contact.
+/* ---- the face -----------------------------------------------------------
+   The face is drawn in the sphere's own local space, on the front cap
+   (radius 0.97), so every mark sits on the curvature. Its own scale has a
+   floor: at the contact station the sphere is only ~58 CSS px across, and a
+   face that shrank with it would be a speck. The floor is on the face, never
+   on the sphere — the instrument still obeys its pose. */
+const FACE_RADIUS = 0.97
+const FACE_EYE_X = 0.3
+const FACE_EYE_Y = 0.16
+const FACE_EYE_RADIUS = 0.085
+const FACE_EYE_ALPHA = 0.96
+const FACE_MOUTH_HALF = 0.2
+const FACE_MOUTH_Y = -0.24
+const FACE_MOUTH_SAG = 0.09
+const FACE_MOUTH_POINTS = 24
+const FACE_MOUTH_ALPHA = 0.9
+const FACE_NOSE_Y = 0.02
+const FACE_NOSE_SIZE = 3.5
+const FACE_NOSE_ALPHA = 1
+const FACE_FLOOR = 0.45
+
+/** The face never prints lighter than this, even when the sphere is a
+    watermark behind the statement. */
+const FACE_ALPHA_FLOOR = 0.62
+
+/** 4° of pitch on the face's own head-turn; the yaw reuses TILT (6°). */
+const FACE_PITCH = 4 * DEG
+
+/** Blink: random 3.5–6 s clock, 110 ms closed, left a beat after right. The
+    squash leaves 12% of the eye's height, which is a line, not a wink. */
+const BLINK_MIN = 3.5
+const BLINK_SPAN = 2.5
+const BLINK_LENGTH = 0.11
+const BLINK_STAGGER = 0.04
+const BLINK_CLOSE = 0.88
+
+/* ---- the route ---------------------------------------------------------
+   Where the instrument is on the sheet, keyed by the document's scroll
+   progress: 0 at the top of `/`, 1 at the bottom. It is one route, not a
+   table of stations — a Catmull-Rom spline through these points, so the
+   object travels between chapters instead of jumping.
+
    `x`/`y` are viewport fractions, `scale` multiplies INSTRUMENT_K, `spin` is
-   rad/s, `opacity` is the instrument's own alpha. Read from the page, never from
-   a scroll timeline (the record is keyed by section id, so the order below is
-   documentation — nothing iterates it); `territory` and `flight` declare zero
-   opacity so the instrument leaves the reading chapters, and a pose whose
-   chapter is not mounted is simply never sampled.
+   rad/s, `opacity` is the instrument's own alpha. The waypoint names are
+   documentation: nothing iterates them, the route is sampled by `at`.
 
-   The instrument reads `data-deep` only. The chart and sunk bands are opaque,
-   but they are light platforms under the same sheet, so those chapters keep the
-   sheet's ink: `index` and `statement` print in ink like any light chapter, and
-   the one palette lift in this file stays the ink band's. */
-type Pose = { x: number; y: number; scale: number; spin: number; opacity: number }
-
-const POSES: Record<string, Pose> = {
-  cover: { x: 0.76, y: 0.42, scale: 1.0, spin: 0.1, opacity: 0.85 },
-  work: { x: 0.22, y: 0.3, scale: 0.72, spin: -0.08, opacity: 0.55 },
-  index: { x: 0.72, y: 0.35, scale: 0.55, spin: 0.14, opacity: 0.4 },
-  statement: { x: 0.5, y: 0.62, scale: 1.55, spin: 0.06, opacity: 0.3 },
-  territory: { x: 0.5, y: 0.42, scale: 0.6, spin: 0.05, opacity: 0 },
-  flight: { x: 0.5, y: 0.42, scale: 0.6, spin: 0.05, opacity: 0 },
-  operator: { x: 0.84, y: 0.22, scale: 0.45, spin: 0.12, opacity: 0.35 },
-  contact: { x: 0.14, y: 0.72, scale: 0.35, spin: -0.1, opacity: 0.45 },
+   The 0.08 point is not a chapter: it is the release of the cover hold. The
+   route may not cross the cover's reading column before the cover has been
+   read, so x is held at 0.70 until 0.08 and then crosses to `work` at 0.10.
+   The two zero-opacity waypoints own the schematic chapters; their tangents
+   are pinned flat so the spline is exactly zero between them. */
+type RoutePoint = {
+  at: number
+  x: number
+  y: number
+  scale: number
+  spin: number
+  opacity: number
 }
 
-/* The stations, in one program. A `ShaderMaterial` is how thirteen marks of
-   different sizes and colours stay a single draw call: `Points` has no
-   per-vertex size, and two `Points` objects would spend the budget. The size is
-   `aSize * uDpr` and nothing else, which is exactly `sizeAttenuation: false`
-   written out: a mark is a printed symbol and must not grow with the sphere. */
+const ROUTE: readonly RoutePoint[] = [
+  { at: 0.0, x: 0.76, y: 0.42, scale: 1.0, spin: 0.1, opacity: 0.85 }, // cover
+  { at: 0.08, x: 0.7, y: 0.33, scale: 0.78, spin: 0.03, opacity: 0.62 }, // hold
+  { at: 0.1, x: 0.2, y: 0.28, scale: 0.74, spin: -0.08, opacity: 0.55 }, // work
+  { at: 0.24, x: 0.74, y: 0.34, scale: 0.56, spin: 0.14, opacity: 0.4 }, // index
+  { at: 0.38, x: 0.5, y: 0.6, scale: 1.5, spin: 0.06, opacity: 0.4 }, // statement
+  { at: 0.52, x: 0.62, y: 0.4, scale: 0.8, spin: 0.05, opacity: 0 }, // territory
+  { at: 0.68, x: 0.5, y: 0.42, scale: 0.6, spin: 0.05, opacity: 0 }, // flight
+  { at: 0.82, x: 0.84, y: 0.22, scale: 0.46, spin: 0.12, opacity: 0.35 }, // operator
+  { at: 0.94, x: 0.14, y: 0.72, scale: 0.36, spin: -0.1, opacity: 0.45 }, // contact
+  { at: 1.0, x: 0.12, y: 0.76, scale: 0.32, spin: -0.1, opacity: 0.3 }, // contact
+]
+
+/** The cover's reading column and the hold that keeps the instrument off it. */
+const HOLD_X = 0.7
+const HOLD_UNTIL = 0.08
+const COLUMN_LEFT = 0.28
+const COLUMN_RIGHT = 0.72
+
+/** Over the type the object is still allowed to pass, but faintly. */
+const COLUMN_FADE = 0.75
+
+/** The two waypoints that own the schematic chapters, by route index. */
+const ZERO_FROM = ROUTE[5].at
+const ZERO_TO = ROUTE[6].at
+
+const AT = ROUTE.map((point) => point.at)
+const ROUTE_X = ROUTE.map((point) => point.x)
+const ROUTE_Y = ROUTE.map((point) => point.y)
+const ROUTE_SCALE = ROUTE.map((point) => point.scale)
+const ROUTE_SPIN = ROUTE.map((point) => point.spin)
+const ROUTE_OPACITY = ROUTE.map((point) => point.opacity)
+
+/** One tangent per node, in value-per-`at`. Ends are clamped flat, and an
+    opacity node at zero keeps a zero tangent so the spline cannot bow below
+    the axis between the two schematic waypoints. */
+const tangents = (values: readonly number[], flatZero = false): number[] =>
+  values.map((value, index) => {
+    if (index === 0 || index === values.length - 1) return 0
+    if (flatZero && value <= 0) return 0
+    return (values[index + 1] - values[index - 1]) / (AT[index + 1] - AT[index - 1])
+  })
+
+const TANGENT_X = tangents(ROUTE_X)
+const TANGENT_Y = tangents(ROUTE_Y)
+const TANGENT_SCALE = tangents(ROUTE_SCALE)
+const TANGENT_SPIN = tangents(ROUTE_SPIN)
+const TANGENT_OPACITY = tangents(ROUTE_OPACITY, true)
+
+const clamp = (value: number, min: number, max: number) =>
+  value < min ? min : value > max ? max : value
+
+/** The scratch the route is sampled into. One object for the process; the
+    sampler writes it and returns it, so the frame path allocates nothing. */
+const routePose = { x: 0, y: 0, scale: 1, spin: 0, opacity: 0 }
+
+const sampleRoute = (at: number) => {
+  const progress = clamp(at, 0, 1)
+
+  let index = 0
+  while (index < AT.length - 2 && progress > AT[index + 1]) index += 1
+
+  const span = AT[index + 1] - AT[index]
+  const t = span > 0 ? (progress - AT[index]) / span : 0
+  const t2 = t * t
+  const t3 = t2 * t
+  const h00 = 2 * t3 - 3 * t2 + 1
+  const h10 = t3 - 2 * t2 + t
+  const h01 = -2 * t3 + 3 * t2
+  const h11 = t3 - t2
+
+  routePose.x =
+    h00 * ROUTE_X[index] +
+    h10 * span * TANGENT_X[index] +
+    h01 * ROUTE_X[index + 1] +
+    h11 * span * TANGENT_X[index + 1]
+  routePose.y =
+    h00 * ROUTE_Y[index] +
+    h10 * span * TANGENT_Y[index] +
+    h01 * ROUTE_Y[index + 1] +
+    h11 * span * TANGENT_Y[index + 1]
+  routePose.scale =
+    h00 * ROUTE_SCALE[index] +
+    h10 * span * TANGENT_SCALE[index] +
+    h01 * ROUTE_SCALE[index + 1] +
+    h11 * span * TANGENT_SCALE[index + 1]
+  routePose.spin =
+    h00 * ROUTE_SPIN[index] +
+    h10 * span * TANGENT_SPIN[index] +
+    h01 * ROUTE_SPIN[index + 1] +
+    h11 * span * TANGENT_SPIN[index + 1]
+  routePose.opacity =
+    h00 * ROUTE_OPACITY[index] +
+    h10 * span * TANGENT_OPACITY[index] +
+    h01 * ROUTE_OPACITY[index + 1] +
+    h11 * span * TANGENT_OPACITY[index + 1]
+
+  // The cover's column is a hard constraint, not a spline accident.
+  if (progress < HOLD_UNTIL && routePose.x < HOLD_X) routePose.x = HOLD_X
+  // The schematic chapters own the plate: zero is a fact, not an approach.
+  if (progress >= ZERO_FROM && progress <= ZERO_TO) routePose.opacity = 0
+  routePose.opacity = clamp(routePose.opacity, 0, 1)
+
+  return routePose
+}
+
+/** 1 is open, 0.12 is closed: a 110 ms sine on the eye's height. The argument
+    is the blink's age in seconds, so a negative age (the staggered eye) is
+    still open. */
+const blinkSquash = (age: number) => {
+  if (age < 0 || age > BLINK_LENGTH) return 1
+  return 1 - BLINK_CLOSE * Math.sin((Math.PI * age) / BLINK_LENGTH)
+}
+
+/* The stations, in one program. A `ShaderMaterial` is how twelve marks of
+   different sizes stay a single draw call: `Points` has no per-vertex size, and
+   two `Points` objects would spend the budget. The size is `aSize * uDpr` and
+   nothing else, which is exactly `sizeAttenuation: false` written out: a mark
+   is a printed symbol and must not grow with the sphere. */
 const STATION_VERT = /* glsl */ `
   attribute float aSize;
   attribute float aAlpha;
-  attribute float aMark;
 
   uniform float uDpr;
   uniform float uAlpha;
   uniform vec3 uInk;
-  uniform vec3 uMark;
 
   varying vec3 vCol;
   varying float vAlpha;
@@ -288,7 +442,7 @@ const STATION_VERT = /* glsl */ `
   void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = aSize * uDpr;
-    vCol = mix(uInk, uMark, aMark);
+    vCol = uInk;
     vAlpha = aAlpha * uAlpha;
   }
 `
@@ -300,6 +454,55 @@ const STATION_FRAG = /* glsl */ `
   void main() {
     // A round mark: the square sprite is cut back to a disc, not masked.
     vec2 centred = gl_PointCoord - 0.5;
+    if (dot(centred, centred) > 0.25) discard;
+    gl_FragColor = vec4(vCol, vAlpha);
+  }
+`
+
+/* The face: two eye sprites and the crimson nose in one `Points`, so the whole
+   set costs one draw call. A sprite is always screen-aligned, which is what a
+   printed eye wants; the squash happens in the fragment, so a blink can be
+   per-eye without a second geometry or a second draw. */
+const FACE_VERT = /* glsl */ `
+  attribute float aSize;
+  attribute float aFixed;
+  attribute float aEye;
+  attribute float aAlpha;
+
+  uniform float uLocalPx;
+  uniform float uDpr;
+  uniform float uAlpha;
+  uniform vec2 uBlink;
+  uniform vec3 uInk;
+  uniform vec3 uMark;
+
+  varying vec3 vCol;
+  varying float vAlpha;
+  varying float vBlink;
+  varying float vFixed;
+
+  void main() {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    // Eyes are stated in the sphere's local units; the nose is a printed mark
+    // and keeps its CSS size at every station.
+    gl_PointSize = mix(aSize * uLocalPx, aSize, aFixed) * uDpr;
+    vCol = mix(uInk, uMark, aFixed);
+    vAlpha = aAlpha * uAlpha;
+    vBlink = aEye < 0.5 ? uBlink.x : uBlink.y;
+    vFixed = aFixed;
+  }
+`
+
+const FACE_FRAG = /* glsl */ `
+  varying vec3 vCol;
+  varying float vAlpha;
+  varying float vBlink;
+  varying float vFixed;
+
+  void main() {
+    vec2 centred = gl_PointCoord - 0.5;
+    // A blink squashes the disc, not the sprite: the eye becomes a line.
+    centred.y /= max(mix(vBlink, 1.0, vFixed), 0.12);
     if (dot(centred, centred) > 0.25) discard;
     gl_FragColor = vec4(vCol, vAlpha);
   }
@@ -551,14 +754,13 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
   ring.frustumCulled = false
   spinner.add(ring)
 
-  /* The thirteen marks in one `Points`: twelve stations on a Fibonacci sphere
-     (even coverage without a seam) and the one crimson node, inside the sphere
-     at a fixed latitude so it rides the spin without leaving its parallel. */
+  /* The twelve marks in one `Points`: a Fibonacci sphere, even coverage without
+     a seam. The crimson node that used to sit among them is now the face's
+     nose, so the whole set is printed in one ink. */
   const buildStations = (): BufferGeometry => {
     const points: number[] = []
     const sizes: number[] = []
     const alphas: number[] = []
-    const marks: number[] = []
 
     for (let i = 0; i < STATIONS; i += 1) {
       const y = 1 - (2 * (i + 0.5)) / STATIONS
@@ -567,23 +769,12 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       points.push(Math.cos(phi) * radius, y, Math.sin(phi) * radius)
       sizes.push(STATION_SIZE)
       alphas.push(STATION_ALPHA)
-      marks.push(0)
     }
-
-    points.push(
-      Math.cos(NODE_LATITUDE) * Math.cos(NODE_LONGITUDE) * NODE_RADIUS,
-      Math.sin(NODE_LATITUDE) * NODE_RADIUS,
-      Math.cos(NODE_LATITUDE) * Math.sin(NODE_LONGITUDE) * NODE_RADIUS,
-    )
-    sizes.push(NODE_SIZE)
-    alphas.push(NODE_ALPHA)
-    marks.push(1)
 
     const stationGeometry = new BufferGeometry()
     stationGeometry.setAttribute('position', new Float32BufferAttribute(points, 3))
     stationGeometry.setAttribute('aSize', new Float32BufferAttribute(sizes, 1))
     stationGeometry.setAttribute('aAlpha', new Float32BufferAttribute(alphas, 1))
-    stationGeometry.setAttribute('aMark', new Float32BufferAttribute(marks, 1))
     return stationGeometry
   }
 
@@ -593,7 +784,6 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     uDpr: { value: 1 },
     uAlpha: { value: 0 },
     uInk: { value: new Vector3(INK[0], INK[1], INK[2]) },
-    uMark: { value: new Vector3(MARK[0], MARK[1], MARK[2]) },
   }
   const stationMaterial = new ShaderMaterial({
     uniforms: stationUniforms,
@@ -606,6 +796,111 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
   const stations = new Points(stationGeometry, stationMaterial)
   stations.frustumCulled = false
   spinner.add(stations)
+
+  /* ---- the face ---------------------------------------------------------
+     Two eye discs and the crimson nose in one `Points` (one draw call), and a
+     smile as one `Line` (the second). Everything is built on the front cap at
+     FACE_RADIUS, so the marks follow the curvature instead of sitting on a
+     plane in front of it. The group lives inside `spinner` and is counter-
+     rotated by the sphere's angle every frame: the graticule turns, the face
+     stays looking at the reader.
+
+     The nose is the mark the sphere used to carry: same crimson, same printed
+     size, moved to the middle of the face. It is the only colour on the
+     object. */
+  const face = new Group()
+  spinner.add(face)
+
+  const buildEyes = (): BufferGeometry => {
+    const points: number[] = []
+    const sizes: number[] = []
+    const fixed: number[] = []
+    const alphas: number[] = []
+    const eyeIds: number[] = []
+    const radius2 = FACE_RADIUS * FACE_RADIUS
+
+    for (let i = 0; i < 2; i += 1) {
+      const x = i === 0 ? -FACE_EYE_X : FACE_EYE_X
+      points.push(x, FACE_EYE_Y, Math.sqrt(radius2 - x * x - FACE_EYE_Y * FACE_EYE_Y))
+      // Local diameter: the eye grows with the face, not with the device.
+      sizes.push(FACE_EYE_RADIUS * 2)
+      fixed.push(0)
+      alphas.push(FACE_EYE_ALPHA)
+      // 0 is the reader's left (x negative), 1 the right: the blink stagger
+      // reads left-to-right on the screen.
+      eyeIds.push(i)
+    }
+
+    points.push(0, FACE_NOSE_Y, Math.sqrt(radius2 - FACE_NOSE_Y * FACE_NOSE_Y))
+    // The nose is a printed mark: 3.5 CSS px at every station.
+    sizes.push(FACE_NOSE_SIZE)
+    fixed.push(1)
+    alphas.push(FACE_NOSE_ALPHA)
+    eyeIds.push(0)
+
+    const eyeGeometry = new BufferGeometry()
+    eyeGeometry.setAttribute('position', new Float32BufferAttribute(points, 3))
+    eyeGeometry.setAttribute('aSize', new Float32BufferAttribute(sizes, 1))
+    eyeGeometry.setAttribute('aFixed', new Float32BufferAttribute(fixed, 1))
+    eyeGeometry.setAttribute('aAlpha', new Float32BufferAttribute(alphas, 1))
+    eyeGeometry.setAttribute('aEye', new Float32BufferAttribute(eyeIds, 1))
+    return eyeGeometry
+  }
+
+  const buildMouth = (): BufferGeometry => {
+    const positions = new Float32Array(FACE_MOUTH_POINTS * 3)
+    const radius2 = FACE_RADIUS * FACE_RADIUS
+
+    for (let i = 0; i < FACE_MOUTH_POINTS; i += 1) {
+      const t = i / (FACE_MOUTH_POINTS - 1)
+      const x = -FACE_MOUTH_HALF + 2 * FACE_MOUTH_HALF * t
+      // A shallow sag: the centre sits lower than the corners, which is a
+      // smile without a drawn curve or a second colour.
+      const y = FACE_MOUTH_Y - FACE_MOUTH_SAG * Math.sin(Math.PI * t)
+      positions[i * 3] = x
+      positions[i * 3 + 1] = y
+      positions[i * 3 + 2] = Math.sqrt(radius2 - x * x - y * y)
+    }
+
+    const mouthGeometry = new BufferGeometry()
+    mouthGeometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    return mouthGeometry
+  }
+
+  const faceGeometry = buildEyes()
+  const faceUniforms = {
+    uLocalPx: { value: 1 },
+    uDpr: { value: 1 },
+    uAlpha: { value: 0 },
+    uBlink: { value: new Vector2(1, 1) },
+    uInk: { value: new Vector3(INK[0], INK[1], INK[2]) },
+    uMark: { value: new Vector3(MARK[0], MARK[1], MARK[2]) },
+  }
+  const faceMaterial = new ShaderMaterial({
+    uniforms: faceUniforms,
+    vertexShader: FACE_VERT,
+    fragmentShader: FACE_FRAG,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  })
+  const eyes = new Points(faceGeometry, faceMaterial)
+  eyes.frustumCulled = false
+  eyes.renderOrder = 4
+  face.add(eyes)
+
+  const mouthGeometry = buildMouth()
+  const mouthMaterial = new LineBasicMaterial({
+    color: inkColor,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    opacity: FACE_MOUTH_ALPHA,
+  })
+  const mouth = new Line(mouthGeometry, mouthMaterial)
+  mouth.frustumCulled = false
+  mouth.renderOrder = 5
+  face.add(mouth)
 
   /* ---- viewport --------------------------------------------------------- */
 
@@ -647,6 +942,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     instrumentCamera.bottom = -1
     instrumentCamera.updateProjectionMatrix()
     stationUniforms.uDpr.value = ratio
+    faceUniforms.uDpr.value = ratio
 
     // The compact factor is decided once per resize, never in the frame.
     state.compact = w < COMPACT_WIDTH ? COMPACT_FACTOR : 1
@@ -676,7 +972,6 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     lastScroll: 0,
     resumed: true,
     covered: false,
-    frame: 0,
     parity: 0,
     running: false,
     // The loupe, in UV space. Initialised to the centre so the first open
@@ -684,17 +979,17 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     lensX: 0.5,
     lensY: 0.5,
     lensOn: 0,
-    // The instrument. Its pose starts at the cover's station with the ink off,
-    // so the first frames fade it in where the sheet will actually pin it
+    // The instrument. Its pose starts at the head of the route with the ink
+    // off, so the first frames fade it in where the sheet will actually put it
     // rather than sliding it in from a corner.
-    x: POSES.cover.x,
-    y: POSES.cover.y,
-    scale: POSES.cover.scale,
-    spin: POSES.cover.spin,
-    targetX: POSES.cover.x,
-    targetY: POSES.cover.y,
-    targetScale: POSES.cover.scale,
-    targetSpin: POSES.cover.spin,
+    x: ROUTE[0].x,
+    y: ROUTE[0].y,
+    scale: ROUTE[0].scale,
+    spin: ROUTE[0].spin,
+    targetX: ROUTE[0].x,
+    targetY: ROUTE[0].y,
+    targetScale: ROUTE[0].scale,
+    targetSpin: ROUTE[0].spin,
     instrumentOpacity: 0,
     targetOpacity: 0,
     // The spin angle, integrated from the damped rate. Not zero, so the first
@@ -702,28 +997,24 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     angle: ANGLE_START,
     tiltX: 0,
     tiltZ: 0,
+    // The face's own head-turn, on top of the instrument's tilt: yaw ±6°,
+    // pitch ±4°, damped with the pose.
+    faceYaw: 0,
+    facePitch: 0,
+    // The blink. `nextBlink` is in the loop's clock, not wall time, so a tab
+    // that slept does not return owed a blink.
+    blinkLeft: 1,
+    blinkRight: 1,
+    blinkStart: -1,
+    nextBlink: BLINK_MIN + Math.random() * BLINK_SPAN,
     // Breadth of the applied pose, decided per resize.
     compact: 1,
     poseFrame: 0,
-    // The current chapter's mode: `deep` lifts the ink, `inkId` is what it was
-    // read for, so the computed style is touched only when the chapter changes.
+    // The current surface: `deep` lifts the ink to the chapter's deep token.
     deep: false,
-    inkId: '',
     // The layer is fixed, so it is always on screen; the observer keeps this
     // honest if that ever stops being true.
     inView: true,
-  }
-
-  const clamp = (value: number, min: number, max: number) =>
-    value < min ? min : value > max ? max : value
-
-  /** The ink chapter is opaque; while it owns the viewport, the sheet is not
-      drawn — only the instrument, which prints on the band. */
-  const isCovered = () => {
-    const band = document.getElementById('operator')
-    if (!band) return false
-    const rect = band.getBoundingClientRect()
-    return rect.top <= 1 && rect.bottom >= window.innerHeight - 1
   }
 
   const draw = () => {
@@ -744,15 +1035,23 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     }
 
     /* The instrument's own alpha is the pose's: the whole object fades as one
-       plate, and the line alphas are ratios of it (the ring at half the
-       graticule) rather than independent opacities. Four draw calls at most —
-       the sheet, the graticule, the ring and the thirteen marks — and one when
-       the band owns the viewport. */
+       plate, and every material's alpha is a ratio of it (the ring at half the
+       graticule, the mouth almost whole) rather than an independent opacity.
+       Five instrument draw calls at most — the graticule, the ring, the twelve
+       marks, the eyes and nose, the mouth — plus the sheet, and one when the
+       band owns the viewport. */
     if (state.instrumentOpacity > 0.004) {
       graticuleMaterial.opacity =
         (state.deep ? DEEP_GRATICULE_ALPHA : GRATICULE_ALPHA) * state.instrumentOpacity
       ringMaterial.opacity = (state.deep ? DEEP_RING_ALPHA : RING_ALPHA) * state.instrumentOpacity
       stationUniforms.uAlpha.value = state.instrumentOpacity
+      /* The face is the character, the graticule is the texture: below
+         FACE_ALPHA_FLOOR the lines may fade to a watermark, but the two eyes
+         and the smile stay printed. Above it, the face follows the instrument
+         so it still disappears on the two schematic chapters. */
+      const faceAlpha = Math.max(state.instrumentOpacity, FACE_ALPHA_FLOOR)
+      faceUniforms.uAlpha.value = faceAlpha
+      mouthMaterial.opacity = FACE_MOUTH_ALPHA * faceAlpha
       renderer.render(instrumentScene, instrumentCamera)
     }
   }
@@ -762,34 +1061,34 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     if (canvas.dataset.live !== 'true') canvas.dataset.live = 'true'
   }
 
-  /* ---- the pose: where the instrument stands on each chapter ------------- */
+  /* ---- the route: where the instrument is on the sheet ------------------- */
 
-  /** The sections that ask for the instrument, and the `main` they were found
-      in. A route change replaces `main`, so that is the one signal worth
-      re-querying on — never the frame. */
-  let sectionRoot: Element | null = null
-  let sectionEls: HTMLElement[] = []
+  /** The home sheet's `main`, and the one band that declares deep ink. A route
+      change replaces `main`, so that is the signal worth re-querying on —
+      never the frame. */
+  let mainRoot: Element | null = null
+  let home = false
+  let operatorEl: HTMLElement | null = null
+  let schematicEls: HTMLElement[] = []
 
-  const sectionsStale = () => {
-    if (sectionRoot === null || !sectionRoot.isConnected) return true
-    for (let i = 0; i < sectionEls.length; i += 1) {
-      if (!sectionEls[i].isConnected) return true
-    }
-    return false
+  const rootStale = () => mainRoot === null || !mainRoot.isConnected
+
+  const rebuildRoot = () => {
+    mainRoot = document.querySelector('main')
+    home = mainRoot !== null && mainRoot.querySelector('#cover') !== null
+    operatorEl = home ? document.getElementById('operator') : null
+    // The two chapters whose own scenes own the plate. The route's zero
+    // waypoints are fractions of the whole document; at 1440×900 the two
+    // schematic chapters take more than their share of it, so the gate reads
+    // the chapters themselves rather than trusting the fraction alone.
+    schematicEls = home
+      ? ['territory', 'flight']
+          .map((id) => document.getElementById(id))
+          .filter((el): el is HTMLElement => el !== null)
+      : []
   }
 
-  const rebuildSections = () => {
-    const found = document.querySelectorAll<HTMLElement>('main > section[id]')
-    const kept: HTMLElement[] = []
-    for (let i = 0; i < found.length; i += 1) {
-      const el = found[i]
-      if (Object.hasOwn(POSES, el.id)) kept.push(el)
-    }
-    sectionEls = kept
-    sectionRoot = document.querySelector('main')
-  }
-
-  /** The chapter's ink. Called only when the chapter or its deep flag changes:
+  /** The chapter's ink. Called only when the deep flag flips:
       `getComputedStyle` is the one expensive read in the pose path. */
   const readInk = (el: HTMLElement, deep: boolean) => {
     if (deep) {
@@ -811,64 +1110,75 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     inkColor.setRGB(ink[0], ink[1], ink[2], SRGBColorSpace)
     graticuleMaterial.color.copy(inkColor)
     ringMaterial.color.copy(inkColor)
+    mouthMaterial.color.copy(inkColor)
     // Raw sRGB: a ShaderMaterial writes to the framebuffer unconverted.
     stationUniforms.uInk.value.set(ink[0], ink[1], ink[2])
+    faceUniforms.uInk.value.set(ink[0], ink[1], ink[2])
   }
 
   /**
-   * Read the pose from the page and write the targets. The chapter that spans
-   * the viewport's centre line is the one being read; if none does (a boundary
-   * is exactly on it), the nearest wins. No home chapter at all — another
+   * Read the route from one scalar and write the targets. The document is the
+   * parameter: progress 0 at the top of the home sheet, 1 at the bottom. No
+   * section rect decides the route — the only band tests are the ink chapter
+   * and the two schematic gates — so a resize, a jump and a route change all
+   * land on the same point of the same path. No home sheet at all — another
    * route — is the instrument's absence, not an error.
    */
   const samplePose = () => {
-    if (sectionsStale()) rebuildSections()
+    if (rootStale()) rebuildRoot()
 
-    const centre = window.innerHeight * 0.5
-    let spanning: HTMLElement | null = null
-    let nearest: HTMLElement | null = null
-    let nearestGap = Number.POSITIVE_INFINITY
-
-    for (let i = 0; i < sectionEls.length; i += 1) {
-      const el = sectionEls[i]
-      const rect = el.getBoundingClientRect()
-      if (rect.top <= centre && rect.bottom >= centre) {
-        spanning = el
-        break
-      }
-      const gap = rect.top > centre ? rect.top - centre : centre - rect.bottom
-      if (gap < nearestGap) {
-        nearestGap = gap
-        nearest = el
-      }
-    }
-
-    const chosen = spanning ?? nearest
-
-    if (!chosen) {
+    if (!home) {
       state.targetOpacity = 0
-      if (state.deep || state.inkId !== '') {
+      state.covered = false
+      if (state.deep) {
         state.deep = false
-        state.inkId = ''
         readInk(host, false)
       }
       return
     }
 
-    const pose = POSES[chosen.id]
+    // One scalar for the whole document. The scrollable height is read here,
+    // every eighth frame, and on resize: never per frame, never per section.
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight
+    const at = clamp((window.scrollY || 0) / Math.max(1, scrollable), 0, 1)
+    const pose = sampleRoute(at)
+
     state.targetX = pose.x
     state.targetY = pose.y
     state.targetScale = pose.scale * state.compact
     // Under reduced motion the sphere is still: the rate is settled to zero and
     // the angle never integrates.
     state.targetSpin = reduced ? 0 : pose.spin
-    state.targetOpacity = pose.opacity * state.compact
 
-    const deep = chosen.dataset.deep === 'true'
-    if (chosen.id !== state.inkId || deep !== state.deep) {
-      state.inkId = chosen.id
+    // One rect, one element: the only chapter in the sheet that declares deep
+    // ink. The same read answers "is the sheet covered" and "is the ink deep".
+    const rect = operatorEl ? operatorEl.getBoundingClientRect() : null
+    const centre = window.innerHeight * 0.5
+    const deep = rect !== null && rect.top <= centre && rect.bottom >= centre
+    state.covered = rect !== null && rect.top <= 1 && rect.bottom >= window.innerHeight - 1
+
+    // The schematic chapters own the plate: the instrument is exactly absent
+    // while either one holds the centre line. Two rect reads, on the same
+    // eighth frame, never in `frame()`.
+    let schematic = false
+    for (let i = 0; i < schematicEls.length; i += 1) {
+      const band = schematicEls[i].getBoundingClientRect()
+      if (band.top <= centre && band.bottom >= centre) {
+        schematic = true
+        break
+      }
+    }
+
+    // Over the type the object may pass, but faintly. The multiplier is applied
+    // to the target, so the damped alpha eases instead of stepping at the edge.
+    const overType = pose.x > COLUMN_LEFT && pose.x < COLUMN_RIGHT
+    state.targetOpacity = schematic
+      ? 0
+      : pose.opacity * state.compact * (overType ? COLUMN_FADE : 1)
+
+    if (deep !== state.deep) {
       state.deep = deep
-      readInk(chosen, deep)
+      readInk(deep && operatorEl ? operatorEl : host, deep)
     }
   }
 
@@ -880,12 +1190,29 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     mount.rotation.z = state.tiltZ
     mount.rotation.x = state.tiltX
     // The angle is the integral of the damped rate: the sphere never jumps when
-    // a chapter asks for a different turn.
+    // the route asks for a different turn.
     spinner.rotation.y = state.angle
+
+    /* The face is counter-rotated by the sphere's own turn, then turned a
+       little further toward the pointer. Its scale has a floor: at the contact
+       station the sphere is small enough that a proportional face would be a
+       speck, so the face keeps a readable size while the graticule keeps the
+       pose's. The floor takes the compact factor with it — on a phone the whole
+       instrument is smaller, and a face held at the desktop floor would spill
+       off a 38 px sphere. */
+    const faceNet = Math.max(state.scale, FACE_FLOOR * state.compact)
+    const faceScale = faceNet / Math.max(state.scale, 0.0001)
+    face.scale.setScalar(faceScale)
+    face.rotation.y = -state.angle + state.faceYaw
+    face.rotation.x = state.facePitch
+    // CSS pixels per face-local unit: the eye disc is a local size, the nose a
+    // printed one, and both are converted to device pixels in the shader.
+    faceUniforms.uLocalPx.value = 0.1 * faceNet * height
+    faceUniforms.uBlink.value.set(state.blinkLeft, state.blinkRight)
   }
 
-  /** The reduced-motion path: no damping, no spin, no tilt — the station the
-      page says, applied as a fact rather than as a movement. */
+  /** The reduced-motion path: no damping, no spin, no tilt, no blink — the
+      route point the page asks for, applied as a fact rather than as motion. */
   const settleInstant = () => {
     state.x = state.targetX
     state.y = state.targetY
@@ -894,6 +1221,10 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     state.instrumentOpacity = state.targetOpacity
     state.tiltX = 0
     state.tiltZ = 0
+    state.faceYaw = 0
+    state.facePitch = 0
+    state.blinkLeft = 1
+    state.blinkRight = 1
     applyPose()
   }
 
@@ -990,25 +1321,38 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
         Math.abs(lensTargetX - state.lensX) < 0.0004 &&
         Math.abs(lensTargetY - state.lensY) < 0.0004)
 
-    /* Ten times a second is enough to know whether the ink band owns the
-       viewport; the check itself is a single rect read. */
-    state.frame = (state.frame + 1) % 10
-    if (state.frame === 0) state.covered = isCovered()
-
-    /* The instrument's station, read from the page rather than driven by a
-       timeline. Eight frames is ~130ms: a chapter boundary cannot cross the
-       centre line faster than that, and the rect reads stay off the per-frame
-       path. */
+    /* The route is re-read every eighth frame. Eight frames is ~130ms: the
+       document height and the three band tests live here, never in the
+       per-frame path. */
     state.poseFrame = (state.poseFrame + 1) % POSE_SAMPLE
     if (state.poseFrame === 0) samplePose()
 
-    /* One damping for the whole pose, time-correct: λ = 3/s is 63% of the way
-       in 330ms. The spin is damped as a rate, not as an angle, so a chapter
-       that turns the sphere faster eases into the new speed instead of
-       snapping the world. */
+    /* The blink runs on the loop's clock. Random, not a metronome: 3.5–6 s
+       between blinks, 110 ms closed, the right eye a beat before the left. */
+    if (state.time >= state.nextBlink) {
+      state.blinkStart = state.time
+      state.nextBlink = state.time + BLINK_MIN + Math.random() * BLINK_SPAN
+    }
+    const blinkAge = state.time - state.blinkStart
+    state.blinkRight = blinkSquash(blinkAge)
+    state.blinkLeft = blinkSquash(blinkAge - BLINK_STAGGER)
+
+    /* One damping for the whole pose, time-correct: λ = 2.2/s is 63% of the way
+       in 450ms. The spin is damped as a rate, not as an angle, so a route that
+       turns the sphere faster eases into the new speed instead of snapping the
+       world. */
     const settle = 1 - Math.exp(-POSE_DAMP * dt)
-    state.x += (state.targetX - state.x) * settle
-    state.y += (state.targetY - state.y) * settle
+    const stepX = (state.targetX - state.x) * settle
+    const stepY = (state.targetY - state.y) * settle
+    const step = Math.sqrt(stepX * stepX + stepY * stepY)
+    if (step > POSE_STEP) {
+      const fit = POSE_STEP / step
+      state.x += stepX * fit
+      state.y += stepY * fit
+    } else {
+      state.x += stepX
+      state.y += stepY
+    }
     state.scale += (state.targetScale - state.scale) * settle
     state.spin += (state.targetSpin - state.spin) * settle
     state.instrumentOpacity += (state.targetOpacity - state.instrumentOpacity) * settle
@@ -1024,6 +1368,13 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     state.tiltZ += (tiltZ - state.tiltZ) * settle
     state.tiltX += (tiltX - state.tiltX) * settle
 
+    /* The face's own head-turn: 6° of yaw, 4° of pitch, on top of the
+       instrument's tilt. Same damping, same pointer sample. */
+    const yaw = fine && pointer.inside ? (pointer.x / width - 0.5) * 2 * TILT : 0
+    const pitch = fine && pointer.inside ? -(pointer.y / height - 0.5) * 2 * FACE_PITCH : 0
+    state.faceYaw += (yaw - state.faceYaw) * settle
+    state.facePitch += (pitch - state.facePitch) * settle
+
     applyPose()
 
     /* A pose that has arrived is not a reason to run at full rate — but the
@@ -1035,6 +1386,9 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       Math.abs(state.targetScale - state.scale) < 0.0005 &&
       Math.abs(state.targetSpin - state.spin) < 0.0005 &&
       Math.abs(state.targetOpacity - state.instrumentOpacity) < 0.002
+    // A blink is 110 ms; at 30 Hz it would be three frames. Keep the full rate
+    // while the face is moving so the squash reads as a blink, not a glitch.
+    const faceStill = state.blinkLeft === 1 && state.blinkRight === 1
     const instrumentLive = state.instrumentOpacity > 0.004
 
     /* The drift does not need 60 Hz: at rest every second tick is enough, and
@@ -1054,6 +1408,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       // A moving or easing loupe needs the full rate; a settled one is the
       // sheet's own 30 Hz drift again.
       lensSettled &&
+      faceStill &&
       poseSettled
     // Nothing to draw at all; or nothing that needs 60 Hz. The two tests are
     // separate so a covered viewport that *does* carry the instrument still
@@ -1108,7 +1463,6 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       poseFrame = 0
       samplePose()
       settleInstant()
-      state.covered = isCovered()
       drawOnce()
     })
   }
@@ -1149,6 +1503,10 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       state.targetSpin = 0
       state.tiltX = 0
       state.tiltZ = 0
+      state.faceYaw = 0
+      state.facePitch = 0
+      state.blinkLeft = 1
+      state.blinkRight = 1
       // The plate is at rest, so it must be printed at rest: a throw frozen into
       // `bend`, `coarse` or `pulse` would leave the sheet mid-gesture under a
       // reader who just asked for stillness.
@@ -1158,12 +1516,14 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       state.pulseClock = Number.POSITIVE_INFINITY
       samplePose()
       settleInstant()
-      state.covered = isCovered()
       drawOnce()
       window.addEventListener('scroll', onPoseScroll, { passive: true })
     } else {
       window.removeEventListener('scroll', onPoseScroll)
       state.resumed = true
+      // The blink clock was paused with the loop; start a fresh interval rather
+      // than returning a blink that was never owed.
+      state.nextBlink = state.time + BLINK_MIN + Math.random() * BLINK_SPAN
       samplePose()
       applyPose()
       start()
@@ -1206,6 +1566,10 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
     ringMaterial.dispose()
     stationGeometry.dispose()
     stationMaterial.dispose()
+    faceGeometry.dispose()
+    faceMaterial.dispose()
+    mouthGeometry.dispose()
+    mouthMaterial.dispose()
     renderer.dispose()
 
     if (canvas.parentNode === host) host.removeChild(canvas)
@@ -1233,11 +1597,32 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
       calls: () => number
       pose: () => typeof state
       running: () => boolean
+      progress: () => number
+      route: (at: number) => { x: number; y: number; scale: number; spin: number; opacity: number }
+      blink: () => { left: number; right: number; next: number }
+      settle: () => void
     }
     ;(window as unknown as { __atm?: Probe }).__atm = {
       calls: () => renderer.info.render.calls,
       pose: () => ({ ...state }),
       running: () => state.running,
+      progress: () => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight
+        return clamp((window.scrollY || 0) / Math.max(1, scrollable), 0, 1)
+      },
+      route: (at) => ({ ...sampleRoute(at) }),
+      blink: () => ({
+        left: state.blinkLeft,
+        right: state.blinkRight,
+        next: state.nextBlink - state.time,
+      }),
+      // A dev-only snap: screenshots and the route report need the pose the
+      // maths says, not the pose a software renderer has had time to reach.
+      settle: () => {
+        samplePose()
+        settleInstant()
+        drawOnce()
+      },
     }
   }
 
