@@ -19,6 +19,7 @@ import {
 import { gsap } from 'gsap'
 import { sound } from '../lib/sound'
 import { getPointer } from '../lib/pointer'
+import { effectiveReduced, subscribeMotion } from '../lib/motion'
 import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
 
 /* ============================================================================
@@ -61,8 +62,9 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
    time 2.4 px out of register, and the rim, one inner highlight and the
    measuring reticle bound it. `getPointer()` is a synchronous read from the one
    shared pointer module — no second listener, no second RAF — and the positions
-   are damped here with the same 0.18 constant. Under reduced motion the loop
-   never starts, so the aperture stays at zero.
+   are damped here with the same 0.18 constant. Under reduced motion — the
+   system's or the panel's override — the loop never starts, so the aperture
+   stays at zero.
 
    In V8 the sheet carries a second scene: **the survey instrument**. One
    renderer, one canvas, one `gsap.ticker` callback, and four draw calls at the
@@ -89,12 +91,12 @@ import { ATMOSPHERE_FRAG, ATMOSPHERE_VERT } from './shaders'
    treatment but are light, so the instrument keeps the sheet's ink there — the
    mode flag is `data-deep` alone.
 
-   Under reduced motion the loop never starts: the instrument is posed once, at
-   its station, with no spin and no tilt, and a scroll burst re-reads the pose
+   Under reduced motion — the system's or the panel's override — the loop never
+   starts, and a preference that flips mid-session stops it, closes the lens and
+   settles the instrument where it stands. The instrument is posed once, at its
+   station, with no spin and no tilt, and a scroll burst re-reads the pose
    through a single `requestAnimationFrame`.
    ========================================================================== */
-
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 
 /** Raw sRGB, matching --ink (#131c19) exactly — written straight to the
     framebuffer, so three's colour management never enters the path. */
@@ -347,7 +349,9 @@ export type AtmosphereHandle = {
 }
 
 export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
-  const reduced = window.matchMedia(REDUCED_QUERY).matches
+  // The effective preference, and it is mutable: the panel's override can change
+  // mid-session, and every reader of this flag below must see the new answer.
+  let reduced = effectiveReduced()
   // A finger has no hover and no loupe: the scene is the same, the glass is not.
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
@@ -1126,6 +1130,47 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
   )
   intersection.observe(host)
 
+  /* ---- the reader's motion preference, honouring a mid-session flip --------
+     One subscription for the life of the surface, released by `dispose`. The
+     callback runs on a rare event — the system's query flipping, or the panel's
+     override being set — never inside `frame()`, so nothing is added to the
+     per-frame path. */
+
+  const applyMotionState = () => {
+    const next = effectiveReduced()
+    if (next === reduced) return
+    reduced = next
+    if (reduced) {
+      stop()
+      // The loupe is a live pointer reading and the spin is the loop's own
+      // integral: both stop with the loop, and the plate is reprinted once, still.
+      state.lensOn = 0
+      state.spin = 0
+      state.targetSpin = 0
+      state.tiltX = 0
+      state.tiltZ = 0
+      // The plate is at rest, so it must be printed at rest: a throw frozen into
+      // `bend`, `coarse` or `pulse` would leave the sheet mid-gesture under a
+      // reader who just asked for stillness.
+      state.bend = 0
+      state.coarse = 0
+      state.pulse = 0
+      state.pulseClock = Number.POSITIVE_INFINITY
+      samplePose()
+      settleInstant()
+      state.covered = isCovered()
+      drawOnce()
+      window.addEventListener('scroll', onPoseScroll, { passive: true })
+    } else {
+      window.removeEventListener('scroll', onPoseScroll)
+      state.resumed = true
+      samplePose()
+      applyPose()
+      start()
+    }
+  }
+  const releaseMotion = subscribeMotion(applyMotionState)
+
   /* ---- lifecycle -------------------------------------------------------- */
 
   const observer = new ResizeObserver(scheduleResize)
@@ -1137,6 +1182,7 @@ export function createAtmosphere(host: HTMLElement): AtmosphereHandle | null {
   document.addEventListener('visibilitychange', onVisibility)
 
   const dispose = () => {
+    releaseMotion()
     stop()
     if (pendingResize) cancelAnimationFrame(pendingResize)
     pendingResize = 0

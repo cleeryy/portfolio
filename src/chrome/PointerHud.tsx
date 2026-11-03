@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
+import { effectiveReduced } from '../lib/motion'
 import './chrome.css'
 
 /* ============================================================================
@@ -45,8 +46,7 @@ export default function PointerHud() {
     if (!root || !pill) return
 
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)')
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (!fine.matches || reduced.matches) return
+    if (!fine.matches || effectiveReduced()) return
 
     const setX = gsap.quickSetter(root, 'x', 'px')
     const setY = gsap.quickSetter(root, 'y', 'px')

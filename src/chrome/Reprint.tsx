@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { bayerRanks } from './bayer'
-import { prefersReducedMotion } from '../lib/reveal'
+import { effectiveReduced } from '../lib/motion'
 import { setReprintHandler } from '../lib/reprint'
 import type { ReprintRun } from '../lib/reprint'
 import './reprint.css'
@@ -26,8 +26,11 @@ import './reprint.css'
    - 380 ms    the canvas is cleared and the single rAF stops.
 
    The canvas is created on the first internal navigation, never on a deep link,
-   and never at all under reduced motion. It is one element for the life of the
-   app: later runs reuse the context, the palette and the pattern.
+   and never at all under reduced motion. The decision is taken at the run, not
+   at the mount, so a preference that flips mid-session turns the next plate
+   change into a cut rather than a sweep, and no canvas is ever made for a reader
+   who has asked for stillness. It is one element for the life of the app: later
+   runs reuse the context, the palette and the pattern.
 
    The screen is a `createPattern` tile, not per-pixel rectangles: 8 × 8 cells
    of 3 device px (a 24 × 24 tile), half of them printed, so a frame is a few
@@ -95,9 +98,6 @@ export default function Reprint() {
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
-
-    // Reduced motion gets the instant cut: no handler, no canvas, ever.
-    if (prefersReducedMotion()) return
 
     let canvas: HTMLCanvasElement | null = null
     let ctx: CanvasRenderingContext2D | null = null
@@ -192,6 +192,13 @@ export default function Reprint() {
     }
 
     const run: ReprintRun = (commit) => {
+      // Reduced motion gets the instant cut — decided here, so the override is
+      // honoured without reloading the app.
+      if (effectiveReduced()) {
+        commit()
+        return
+      }
+
       if (!ensure()) {
         // No 2D context: the route must still change.
         commit()

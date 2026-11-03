@@ -366,6 +366,22 @@ html.lenis body {
   }
 }
 
+/* The same four declarations again, for the reader who asked the sheet itself
+   (`lib/motion`, the index panel's Motion control) rather than the machine. They
+   are one rule split in two because a media query cannot join a selector list;
+   the two blocks move together. The flag is present only while the override is
+   on — the system case is already covered above. */
+html[data-motion='reduced'] *,
+html[data-motion='reduced'] *::before,
+html[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* --------------------------------------------------------------------------
    12. The printed field — one coordinate system
    --------------------------------------------------------------------------

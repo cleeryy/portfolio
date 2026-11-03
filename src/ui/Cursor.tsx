@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { effectiveReduced } from '../lib/motion'
 import './ui.css'
 
 /**
@@ -23,8 +24,7 @@ export default function Cursor() {
     if (!root || !frame || !dot) return
 
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)')
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (!fine.matches || reduced.matches) return
+    if (!fine.matches || effectiveReduced()) return
 
     const doc = document.documentElement
     let x = 0

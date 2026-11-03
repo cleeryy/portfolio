@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 // module that generates it for the atmosphere's shader.
 import { BAYER_SIZE, bayerMaskTile } from '../chrome/bayer'
 import { sound } from './sound'
+import { effectiveReduced, subscribeMotion } from './motion'
 
 /* ============================================================================
    veil.ts — the plate change
@@ -32,14 +33,14 @@ import { sound } from './sound'
      viewport that is half paper and half ink, so boundaries into and out of the
      band are left to the band.
    - **Never under reduced motion.** Not a faster sweep: no sweep, no triggers.
+     Both sources are honoured — the system's query and the panel's override —
+     and one that turns on mid-session tears the triggers down at once.
 
    The band is 140vh tall with a 28% plateau, travelling 208% of its own height
    in 620ms: any given pixel is at full ink for ~80ms, well inside the budget,
    and the plateau never covers more than two fifths of the viewport. It is
    `pointer-events: none` and sits under the nav, so nothing is ever blocked.
    ========================================================================== */
-
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 
 /** Sweep length. The brief's window is 450–700ms. */
 const SWEEP = 0.62
@@ -61,9 +62,8 @@ export type Veil = {
 }
 
 export function initVeil(el: HTMLElement, onPulse: (() => void) | null): Veil {
-  const reduced = window.matchMedia(REDUCED_QUERY).matches
   const noop: Veil = { dispose: () => {} }
-  if (reduced) return noop
+  if (effectiveReduced()) return noop
 
   const band = el.querySelector<HTMLElement>('.veil__band')
   if (!band) return noop
@@ -161,13 +161,12 @@ export function initVeil(el: HTMLElement, onPulse: (() => void) | null): Veil {
   /* ---- teardown --------------------------------------------------------- */
 
   let disposed = false
-  const media = window.matchMedia(REDUCED_QUERY)
 
   const dispose = () => {
     if (disposed) return
     disposed = true
 
-    media.removeEventListener('change', onReducedChange)
+    releaseMotion()
     document.removeEventListener('click', onClick, true)
     window.removeEventListener('hashchange', onHashChange)
     for (const trigger of triggers) trigger.kill()
@@ -178,12 +177,13 @@ export function initVeil(el: HTMLElement, onPulse: (() => void) | null): Veil {
     el.style.removeProperty('--veil-tile')
   }
 
-  /* A reader who turns reduced motion on mid-session stops the plate changes
-     immediately — not at the next boundary. */
-  const onReducedChange = () => {
-    if (media.matches) dispose()
-  }
-  media.addEventListener('change', onReducedChange)
+  /* A reader who turns reduced motion on mid-session — the system's query or the
+     panel's override, both emit through `subscribeMotion` — loses the plate
+     changes immediately, not at the next boundary. One subscription owns both
+     sources and is released by `dispose`, which is idempotent. */
+  const releaseMotion = subscribeMotion(() => {
+    if (effectiveReduced()) dispose()
+  })
 
   return { dispose }
 }

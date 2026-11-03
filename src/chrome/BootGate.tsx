@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import type { Bi } from '../lib/i18n'
 import { useLang } from '../lib/i18n'
+import { effectiveReduced } from '../lib/motion'
 import { sound } from '../lib/sound'
 import { handle } from '../content/cover'
 import { announceSheetReady } from './handoff'
@@ -73,7 +74,7 @@ function shouldBoot(): boolean {
   let skip = false
   try {
     skip =
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      effectiveReduced() ||
       window.sessionStorage.getItem(SESSION_KEY) === '1' ||
       window.location.hash.length > 1
   } catch {

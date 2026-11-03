@@ -1,5 +1,6 @@
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { effectiveReduced } from './motion'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -89,7 +90,6 @@ gsap.registerPlugin(ScrollTrigger)
      value immediately.
    ========================================================================== */
 
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 const noop = () => {}
 
 /**
@@ -209,8 +209,10 @@ export const MOTION = {
   },
 } as const
 
+/** The one predicate, from `lib/motion`: the system's query or the sheet's own
+    override. Every caller asks once, when its rig is created. */
 export function prefersReducedMotion(): boolean {
-  return window.matchMedia(REDUCED_QUERY).matches
+  return effectiveReduced()
 }
 
 /**

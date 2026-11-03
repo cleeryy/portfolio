@@ -1,6 +1,7 @@
 import Lenis from 'lenis'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { effectiveReduced } from './motion'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -17,7 +18,9 @@ export function initSmoothScroll(): Lenis | null {
   if (lenis) return lenis
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-  if (reduced.matches) {
+  // The engine is built once, so it asks once — and it asks the sheet's own
+  // predicate, not the machine's: a stored override must open on native scroll.
+  if (effectiveReduced()) {
     // Native scrolling: still let ScrollTrigger know about scroll position.
     const onScroll = () => ScrollTrigger.update()
     window.addEventListener('scroll', onScroll, { passive: true })
