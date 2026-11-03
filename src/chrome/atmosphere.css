@@ -57,6 +57,33 @@ main > footer {
   background-color: transparent;
 }
 
+/* A chapter that carries an instrument — `data-deep` — puts its ink *behind*
+   the canvas instead of over it: the band's fill moves to one pseudo element at
+   z −1, so the instrument prints on the dark surface, while the chapter's own
+   content (including `.op`'s top rule) stays above the canvas. Nothing is
+   lifted above the type; only the ink drops below the sheet.
+
+   The body must not repaint the sheet for that to be visible: its fill is the
+   same `--ground` as `html`'s (the colour the canvas already carries), and an
+   in-flow body background paints above every negative-z layer. The ground is
+   therefore the html canvas's, here and nowhere else. Two elements deep, so the
+   rule does not depend on which stylesheet happens to be parsed last. */
+html body {
+  background-color: transparent;
+}
+
+main > section[data-deep='true'] {
+  background-color: transparent;
+}
+
+main > section[data-deep='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--deep);
+}
+
 /* ---------------------------------------------------------------------------
    2. The plate change
    ------------------------------------------------------------------------- */

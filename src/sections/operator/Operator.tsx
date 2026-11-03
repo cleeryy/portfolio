@@ -41,7 +41,13 @@ export default function Operator() {
   }, [])
 
   return (
-    <section className="op on-deep" id="operator" aria-labelledby="operator-title" ref={rootRef}>
+    <section
+      className="op on-deep"
+      id="operator"
+      aria-labelledby="operator-title"
+      ref={rootRef}
+      data-deep="true"
+    >
       {/* The chapter's one crimson mark, and the rig's drawn registration tick:
           one element, so the accent cannot be drawn twice. */}
       <span className="rig-tick op__mark" data-rig-tick aria-hidden="true" />
