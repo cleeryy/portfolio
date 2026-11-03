@@ -17,8 +17,22 @@ export const navItems: { id: string; label: Bi; href: string; kind: 'route' | 'a
   { id: 'contact', label: { en: 'Contact', fr: 'Contact' }, href: '/#contact', kind: 'anchor' },
 ]
 
-/** Home section ids, in reading order. The instrument chrome counts these. */
-export const homeSections = ['cover', 'work', 'territory', 'flight', 'operator', 'contact']
+/**
+ * Home section ids, in reading order. Three instruments read this table: the
+ * chrome counts the plates (`03/08`), the nav resolves which destination is
+ * current, and the atmosphere's pose table lists the same chapters — so a
+ * chapter inserted here is a chapter the whole sheet knows about.
+ */
+export const homeSections = [
+  'cover',
+  'work',
+  'index',
+  'statement',
+  'territory',
+  'flight',
+  'operator',
+  'contact',
+]
 
 export type RouteKey = 'cover' | 'work' | 'notes' | 'practice' | 'about' | 'notFound'
 

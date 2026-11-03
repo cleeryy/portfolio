@@ -221,7 +221,7 @@ export function prefersReducedMotion(): boolean {
  * because a trigger was created after its start line had been passed — and a
  * reload halfway down the sheet prints everything instead of masking it.
  */
-function startsBelowFold(el: Element, ratio = 0.92): boolean {
+export function startsBelowFold(el: Element, ratio = 0.92): boolean {
   return el.getBoundingClientRect().top > window.innerHeight * ratio
 }
 
