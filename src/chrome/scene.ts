@@ -69,7 +69,7 @@ const MARK: [number, number, number] = [0xbf / 255, 0x1f / 255, 0x34 / 255]
 
 /** Radius of the loupe, in UV. The brief's 0.085: about 76 px on a 900 px
     viewport, small enough to read as a magnifier and not as a vignette. */
-const LENS_RADIUS = 0.085
+const LENS_RADIUS = 0.042
 
 /** The same 0.18 per-frame damping the pointer module uses, as a time constant
     so the glide survives a dropped frame: 1 − exp(−dt · 11.9) ≈ 0.18 at 60 Hz. */
