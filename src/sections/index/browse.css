@@ -46,9 +46,14 @@
   /* The width-axis position a pointed-at name takes. Mirrors
      `MOTION.width.hover` in lib/reveal.ts: the sheet has one hover width. */
   --bx-hover: 106%;
+  /* The chapter's gutter: a printed margin, so a fixed width and never a
+     percentage. `--bx-band` is the section's own top padding, restated because
+     the gutter label has to start on the rail's line. */
+  --bx-gutter: 44px;
+  --bx-band: clamp(4rem, 9vw, 7rem);
 
   position: relative;
-  padding-block: clamp(4rem, 9vw, 7rem) clamp(3.5rem, 7vw, 5.5rem);
+  padding-block: var(--bx-band) clamp(3.5rem, 7vw, 5.5rem);
   padding-inline: var(--gutter);
   border-block-start: var(--hair) solid var(--contour);
   /* The fixed bar must not cover the chapter when `/#index` is followed. */
@@ -88,16 +93,63 @@
   padding-block-start: 0.55rem;
 }
 
-/* The margin label, set down the rail: `vertical-rl` is how a printed sheet
-   names a margin. Tracking is opened a step — vertical mono at its own 0.02em
-   reads as a stack of letters rather than a word. */
-.bx .bx__margin {
+/* ---------------------------------------------------------------------------
+   The gutter
+   ---------------------------------------------------------------------------
+   A printed margin: the chapter's own field of `--chart`, full height, 44px
+   wide, with the margin label reversed out of it and one `--rule` hairline on
+   its right edge. The band's recess is only ~4% darker than the sheet, so this
+   is what says "chapter" at a glance without changing a token or inventing a
+   seventh surface.
+
+   It is absolute (not fixed, not sticky): a fixed mark would stay on screen
+   through the pinned `#work` above, while an absolute one belongs to this
+   section's box and scrolls with the page, under the fixed chrome (z 60) at
+   z 0.
+   --------------------------------------------------------------------------- */
+
+.bx__gutter {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: var(--bx-gutter);
+  display: flex;
+  justify-content: center;
+  padding-block-start: calc(var(--bx-band) + 0.55rem);
+  background-color: var(--chart);
+  border-inline-end: var(--hair) solid var(--rule);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* The label runs down the gutter and the plate number follows it: one column of
+   reading, top to bottom, the way a printed sheet names a margin. */
+.bx .bx__gutter-label {
   margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.6rem;
   writing-mode: vertical-rl;
   line-height: 1;
+  font-size: var(--step--1);
   letter-spacing: 0.14em;
   white-space: nowrap;
-  color: var(--ink-3);
+  color: var(--deep);
+}
+
+.bx__gutter-num {
+  font-size: var(--step--2);
+  letter-spacing: 0.06em;
+}
+
+/* The gutter takes its width out of the chapter's measure: the section's own
+   content box starts 44px further right, so the centred field moves with it
+   instead of running under the mark. */
+@media (min-width: 901px) {
+  .bx {
+    padding-inline-start: calc(var(--gutter) + var(--bx-gutter));
+  }
 }
 
 .bx__ref {
@@ -172,7 +224,9 @@
   padding-block: 0.85rem;
   color: var(--ink);
   text-decoration: none;
-  border-block-end: var(--hair) solid var(--contour);
+  /* The row's rule is paper, not a link underline: `--rule` at full strength,
+     so twenty rows read as a ruled table. */
+  border-block-end: var(--hair) solid var(--rule);
   transition: border-block-end-color var(--t-fast) var(--ease-out);
 }
 
@@ -317,8 +371,36 @@
 
 @media (max-width: 900px) {
   .bx {
-    padding-block-start: clamp(3rem, 9vw, 4.5rem);
+    padding-block-start: calc(clamp(3rem, 9vw, 4.5rem) + 6px);
     scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  /* The margin becomes a rule: 100% wide, 6px of `--chart` across the top of
+     the chapter, one `--rule` hairline under it. The label is laid horizontally
+     in it — its own fill carries the strip under the type, so the word sits in
+     the band rather than across its edge. */
+  .bx__gutter {
+    inset-block-end: auto;
+    inset-inline: 0;
+    inline-size: auto;
+    block-size: 6px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-block-start: 0;
+    border-inline-end: 0;
+    border-block-end: var(--hair) solid var(--rule);
+  }
+
+  .bx .bx__gutter-label {
+    align-items: baseline;
+    gap: 0.5em;
+    margin-inline-start: var(--gutter);
+    padding-block: 0.34em 0.42em;
+    padding-inline-end: 0.55em;
+    writing-mode: horizontal-tb;
+    letter-spacing: var(--tracking-mono);
+    background-color: var(--chart);
+    white-space: normal;
   }
 
   .bx__inner {
@@ -338,12 +420,6 @@
     justify-content: space-between;
     gap: var(--s-4);
     padding-block-start: 0;
-  }
-
-  .bx .bx__margin {
-    writing-mode: horizontal-tb;
-    letter-spacing: var(--tracking-mono);
-    white-space: normal;
   }
 
   .bx__lead {
