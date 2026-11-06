@@ -32,6 +32,17 @@
   /* `border-top`, not a child element: the rig draws this border where it is,
      and a failed script leaves it printed. */
   position: relative;
+  /* The watermark is wider than the sheet on purpose: `clip` crops it to the
+     chapter's edge without inventing a scrollbar. Clipping at the padding box
+     would cut the rig's own `-1px` rule and half the crimson tick, so the
+     margin buys back the top hairline. */
+
+  /* No `isolation` here, deliberately: isolating the section would trap its
+     `data-deep` fill at z −1 inside it and lift that ink above the atmosphere
+     canvas, hiding the instrument under a flat band. The ghost is ordered
+     against the field by z-index instead. */
+  overflow: clip;
+  overflow-clip-margin: var(--hair);
   padding-block: clamp(3.5rem, 8vh, 6rem);
   padding-inline: var(--gutter);
   border-top: var(--hair) solid var(--deep-ink-2);
@@ -51,6 +62,36 @@
 }
 
 /* ---------------------------------------------------------------------------
+   The watermark — the chapter's noun, printed at sheet scale
+   ---------------------------------------------------------------------------
+   A chapter's name set once, huge, behind its reading: the crop is the sheet's
+   edge, the way a book prints a part-title across the trim. `--text` under
+   `.on-deep` is the deep ink, so the word stays an ink and not a foreign white;
+   5% is deliberate — it should be felt at the edge of vision and read as a
+   watermark, never as a second title. No motion: the title reveal is the
+   chapter's entrance, and a moving word this large would pull at the ledger.
+   --------------------------------------------------------------------------- */
+
+.op__ghost {
+  position: absolute;
+  z-index: 0;
+  inset-block-start: clamp(2rem, 6vh, 5rem);
+  inset-inline-start: var(--gutter);
+  font-family: var(--font-display);
+  font-size: var(--step-6);
+  font-weight: var(--w-semi);
+  font-stretch: var(--width-plate);
+  line-height: 0.8;
+  letter-spacing: var(--tracking-plate);
+  color: var(--text);
+  opacity: 0.05;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------------------------------------------------------------------------
    The field — rail · reading · ledger
    ---------------------------------------------------------------------------
    The rail spans all three rows and stretches to the field's height, so its
@@ -59,6 +100,10 @@
    --------------------------------------------------------------------------- */
 
 .op__inner {
+  /* Above the watermark: the ghost is decoration and must never sit over the
+     ledger or take a click. */
+  position: relative;
+  z-index: 1;
   display: grid;
   width: 100%;
   max-width: 72rem;
@@ -251,6 +296,14 @@
   .op {
     padding-block-start: clamp(3.5rem, 9vw, 6rem);
     scroll-margin-block-start: var(--nav-h-compact);
+  }
+
+  /* On a phone the word scales with the viewport, so the sheet's edge crops the
+     last letters: one huge letterform reads as a printed edge, not a broken
+     line. */
+  .op__ghost {
+    font-size: clamp(4rem, 24vw, 10rem);
+    inset-block-start: clamp(1.5rem, 4vw, 2.5rem);
   }
 
   .op__inner {

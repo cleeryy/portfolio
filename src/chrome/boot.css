@@ -3,7 +3,10 @@
    ----------------------------------------------------------------------------
    Same palette as the page underneath, no shadow, no gradient, no spinner. It
    is the sheet itself: land tint, graticule, the handle, and a survey scale
-   that fills as the real signals resolve. Then the whole plate lifts away.
+   that fills as the real signals resolve. Then the sheet is opened rather than
+   lifted: a hole is masked out of it, from the point where the survey
+   instrument is parked on arrival, until the last corner is gone and the page
+   underneath is the only thing left.
 
    z-index: it sits under the grain and the cursor (which are the sheet's
    texture and pointer) and over the nav, so the bar is not visible while the
@@ -19,19 +22,38 @@
   place-items: center;
   background-color: var(--ground);
   overflow: clip;
-  will-change: transform;
   user-select: none;
   -webkit-user-select: none;
+
+  /* The reveal is a hole in this plate, not a smaller plate. A clip-path would
+     grow the sheet; a mask is what removes it and lets the composed page show
+     through. The centre is the instrument's first route pose (x .76, y .42 in
+     scene.ts), so the page appears through the ring that is going to live on
+     it, and `--boot-iris` is the hole's radius in px: 0 is opaque, and the
+     timeline only ever raises it. The 1px ramp is the antialiased edge — a hard
+     gradient stop would crawl with aliasing on every frame of the opening. */
+  --boot-iris: 0px;
+  -webkit-mask-image: radial-gradient(
+    circle at 76% 42%,
+    transparent 0 var(--boot-iris),
+    #000 calc(var(--boot-iris) + 1px)
+  );
+  mask-image: radial-gradient(
+    circle at 76% 42%,
+    transparent 0 var(--boot-iris),
+    #000 calc(var(--boot-iris) + 1px)
+  );
 }
 
-/* From the first millimetre of the wipe the page answers to the pointer: the
-   plate is decoration, never a gate on interaction. */
+/* From the first millimetre of the reveal the page answers to the pointer: the
+   plate is decoration, never a gate on interaction. This is set before the hole
+   is wider than a pixel, so nothing under it ever has to be clicked twice. */
 .boot[data-lifting='true'] {
   pointer-events: none;
 }
 
 /* The same 24 / 120px ruled grid as the hero, and the same lower fade, so the
-   lift reads as one sheet replacing another rather than two different screens. */
+   reveal reads as one sheet becoming another rather than two different screens. */
 .boot__graticule {
   position: absolute;
   inset: 0;

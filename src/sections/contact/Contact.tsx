@@ -10,6 +10,7 @@ import {
   sourceLabel,
   sourceUrl,
 } from '../../content/contact'
+import { handle } from '../../content/cover'
 import SplitText from '../../ui/SplitText'
 import RolloverLink from '../../ui/Rollover'
 import './contact.css'
@@ -51,9 +52,18 @@ function MailAddress() {
  * (hairline underline, crimson on hover and focus), never in a plate: a plate
  * would make a link look like a control, and this is a letter.
  *
+ * The ledger is followed by the docket: the estimate slip a workshop hands over
+ * with the drawing, itemising what the sheet counts. It is derived copy (see
+ * `sheetManifest`), printed as a receipt — dashed edge, dotted leaders, one
+ * solid total — and it adds no second accent: the chapter's crimson stays on
+ * the ledger's registration square.
+ *
  * This component renders two things: the `#contact` section and the page's
  * colophon (`<footer>`), so `<Contact />` belongs last inside `<main>`. The
  * footer's `#top` link is a plain anchor — going back up never depends on JS.
+ * The colophon closes on the sheet's own name, set at plate scale and cropped
+ * by the footer's bottom edge: a wordmark printed behind the credit, not a logo
+ * placed next to it.
  */
 export default function Contact() {
   const { pick } = useLang()
@@ -149,10 +159,65 @@ export default function Contact() {
               </div>
             </dl>
           </div>
+
+          {/* The docket. It sits in the reading column, right-aligned and
+              narrower than the prose, because it is a slip laid over the page —
+              not a second column of the page. The rail only names it. */}
+          <div className="ct__docket-wrap">
+            <p className="ct__docket-kicker mono">{copy.docket.rail}</p>
+
+            {/* Printed from the first paint: the hidden state is written by
+                GSAP, so a failed script leaves the docket on the sheet. */}
+            <aside
+              className="ct__docket"
+              aria-labelledby="docket-title"
+              data-reveal-print=""
+            >
+              <header className="ct__docket-head mono">
+                <span>{copy.docket.kicker}</span>
+                <span className="ct__docket-ref">{copy.docket.ref}</span>
+              </header>
+
+              <h3 className="ct__docket-title" id="docket-title">
+                {copy.docket.title}
+              </h3>
+
+              {/* A ledger of six readings, each with a dotted leader between key
+                  and value — the way a printed manifest sets a price column. */}
+              <dl className="ct__docket-rows">
+                {copy.docket.rows.map((row) => (
+                  <div className="ct__docket-row" key={row.key}>
+                    <dt className="ct__docket-key mono">{row.key}</dt>
+                    <dd className="ct__docket-value mono">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              {/* The one filled surface on the sheet's closing page: the total.
+                  Ink, not crimson — the sum is a statement, not a mark. */}
+              <p className="ct__docket-total">
+                <span>{copy.docket.totalLabel}</span>
+                <span>{copy.docket.totalValue}</span>
+              </p>
+
+              <div className="ct__docket-foot">
+                <span className="ct__docket-stamp mono">{copy.docket.stamp}</span>
+                <span className="ct__docket-code" aria-hidden="true" />
+              </div>
+
+              <p className="ct__docket-note mono">{copy.docket.foot}</p>
+            </aside>
+          </div>
         </div>
       </section>
 
       <footer className="clp">
+        {/* The sheet's name, cropped by the footer's bottom edge. Decorative:
+            the handle is already the document title and the nav's brand. */}
+        <span className="clp__ghost" aria-hidden="true">
+          {handle}
+        </span>
+
         <div className="clp__inner">
           <p className="clp__credit">
             <span className="clp__year">© {year}</span>

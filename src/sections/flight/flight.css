@@ -1,7 +1,7 @@
 /* ============================================================================
    flight.css — the passage
    ----------------------------------------------------------------------------
-   A full-bleed plate that is scrubbed by a tall track. Three layers, and each
+   A full-bleed plate that is scrubbed by a tall track. Four layers, and each
    one has exactly one job:
 
    - `.flt__plate` — the ink the chapter will be printed on. Opacity 0 on the
@@ -10,6 +10,11 @@
      the two chapters has no colour to see.
    - the canvas (or the still) — the field. `pointer-events: none`: nothing in
      the drawing is a control, and the page must scroll through it.
+   - `.flt__seam` — a torn edge of ink at the viewport's top, printed through
+     the same Bayer screen as the veil. It exists only while the passage pins:
+     the hand-off dissolves it by its midpoint. This is the site's one light→ink
+     break, so the sheet is torn rather than swept — a band that stayed for the
+     track would be a border, which DESIGN.md §1 refuses.
    - `.flt__cartouche` — the copy, laid directly on the sheet.
 
    **No box.** DESIGN.md §1 refuses cards, chips and panels, and a filled title
@@ -70,6 +75,41 @@
 .flt__canvas {
   inline-size: 100%;
   block-size: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   The torn edge at the pin
+   ---------------------------------------------------------------------------
+   The break from sheet to ink is the site's one light→ink passage, so it is
+   torn, not swept: a band of ink at the viewport's top edge, screened through
+   the same 8 × 8 Bayer tile as the veil, that the hand-off dissolves by its
+   midpoint. Above the field, below the cartouche — a tear in the sheet, not a
+   frame around it.
+   --------------------------------------------------------------------------- */
+
+.flt__seam {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 2;
+  block-size: 6rem;
+  pointer-events: none;
+  opacity: 0;
+  background-color: var(--deep);
+  -webkit-mask-image: var(--seam-mask), linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+  mask-image: var(--seam-mask), linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+  -webkit-mask-size: var(--seam-tile) var(--seam-tile), 100% 100%;
+  mask-size: var(--seam-tile) var(--seam-tile), 100% 100%;
+  -webkit-mask-repeat: repeat, no-repeat;
+  mask-repeat: repeat, no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+@supports not (mask-composite: intersect) {
+  .flt__seam {
+    background-image: linear-gradient(to bottom, var(--deep), transparent);
+  }
 }
 
 /* ---------------------------------------------------------------------------

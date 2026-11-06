@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import type { RefObject } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useLang } from '../../lib/i18n'
+import { BAYER_SIZE, bayerMaskTile } from '../../chrome/bayer'
 import { flightCopy, type FlightCopy } from '../../content/flight'
 import FlightScene, { type ClearBox } from './FlightScene'
 import FlightStill from './FlightStill'
@@ -33,7 +34,29 @@ gsap.registerPlugin(ScrollTrigger)
    no fill, no border, no radius, no shadow. Legibility is not bought from a
    panel: the field's own shader is told where the type lives and clears itself
    there (`uClear`), so what passes behind the words is the sheet, not a label.
+
+   **The seam is a torn edge, not a border.** This is the one light→ink break on
+   the site, which is why the veil is told to skip it: the pin opens with a band
+   of ink at the viewport's top edge that dissolves as the plate takes over. It
+   is printed through the same Bayer screen as every other plate change, and it
+   is gone by the hand-off's midpoint — a band that stayed for the three
+   viewports of the track would be a frame, not a tear.
    ========================================================================== */
+
+/**
+ * The torn edge's screen: the same 8 × 8 matrix and 3px cell the veil prints
+ * with, so the passage's break reads as the same press as every other boundary.
+ * Built once at module load — the tile is a data URL and must never be rebuilt
+ * inside a scrub.
+ */
+const SEAM_MASK = bayerMaskTile(3)
+const SEAM_TILE = `${BAYER_SIZE * 3}px`
+
+/** The band is a screen on the sheet, not a plate of ink: the veil prints at
+ *  0.38, and the tear is allowed to be a little stronger because it is only
+ *  visible while the passage pins. At 1 it reads as a header; at 0.55 it reads
+ *  as the paper's edge. */
+const SEAM_MAX = 0.55
 
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
 
@@ -128,6 +151,7 @@ export default function Flight() {
 
   const trackRef = useRef<HTMLDivElement | null>(null)
   const plateRef = useRef<HTMLDivElement | null>(null)
+  const seamRef = useRef<HTMLSpanElement | null>(null)
   const cartoucheRef = useRef<HTMLDivElement | null>(null)
   const depthRef = useRef<HTMLSpanElement | null>(null)
   const inkRef = useRef<HTMLSpanElement | null>(null)
@@ -154,7 +178,7 @@ export default function Flight() {
 
   /** A lost context freezes the plate where it is, at one of its two honest states. */
   const frozen = useRef(false)
-  const last = useRef({ depth: -1, ink: -1, plate: -1, inkPhase: '' })
+  const last = useRef({ depth: -1, ink: -1, plate: -1, seam: -1, inkPhase: '' })
 
   const paint = useCallback((value: number) => {
     const h = handoff(value)
@@ -184,13 +208,26 @@ export default function Flight() {
       }
     }
 
+    // The seam is full at the pin (`enter.p = 1`, `h = 0`) and torn away by the
+    // hand-off's midpoint. Quantised like the plate: a 6rem band is a style
+    // write worth keeping off most frames of a slow scrub.
+    const seam = Math.min(enter.p, Math.max(0, 1 - h * 2)) * SEAM_MAX
+    const seamStep = Math.round(seam * 64) / 64
+    if (seamRef.current && seamStep !== seen.seam) {
+      seen.seam = seamStep
+      seamRef.current.style.opacity = String(seamStep)
+    }
+
     // The type reverses out at the luminance crossover. See `INK_FLIP`.
     const inkPhase = h >= INK_FLIP ? 'plate' : 'sheet'
     if (inkPhase !== seen.inkPhase) {
       seen.inkPhase = inkPhase
       if (cartoucheRef.current) cartoucheRef.current.dataset.ink = inkPhase
     }
-  }, [])
+    // `enter` is a stable proxy object (`useState`), so the callback identity
+    // does not change; naming it satisfies the lint rule without re-creating
+    // the function on every scroll, and the reading is still the live `p`.
+  }, [enter])
 
   const onReady = useCallback(() => setMode('live'), [])
 
@@ -354,6 +391,10 @@ export default function Flight() {
         },
       })
       ramp.p = entry.progress
+      // The first paint above ran before the approach trigger existed, so on a
+      // deep link (where `enter.p` is already 1) it saw a seam of zero. Print
+      // the true state on the same frame rather than one scroll update later.
+      paint(proxy.p)
     }, track)
 
     return () => {
@@ -386,6 +427,12 @@ export default function Flight() {
       ) : (
         <div className="flt__track" ref={trackRef}>
           <div className="flt__viewport">
+            <span
+              className="flt__seam"
+              ref={seamRef}
+              aria-hidden="true"
+              style={{ '--seam-mask': SEAM_MASK, '--seam-tile': SEAM_TILE } as CSSProperties}
+            />
             <div className="flt__plate" ref={plateRef} aria-hidden="true" />
             {mode === 'still' ? (
               <FlightStill />

@@ -52,6 +52,11 @@ export default function Operator() {
           one element, so the accent cannot be drawn twice. */}
       <span className="rig-tick op__mark" data-rig-tick aria-hidden="true" />
 
+      {/* The chapter's noun, printed once at watermark scale behind the reading.
+          Static: the rig's title reveal carries the chapter, and a moving word
+          this large would compete with the ledger. */}
+      <span className="op__ghost" aria-hidden="true">operator</span>
+
       <div className="op__inner">
         <div className="op__rail">
           <p className="op__margin mono">{copy.margin}</p>

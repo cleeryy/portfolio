@@ -25,7 +25,9 @@ gsap.registerPlugin(ScrollTrigger)
       section's real offset. It is a measurement, not decoration: the number is
       `getBoundingClientRect()` of the section, printed after the instrument has
       finished counting. A measurement is printed once — it does not re-count.
-      Whole-block prose (`[data-reveal-block]`) rises with it.
+      Whole-block prose (`[data-reveal-block]`) rises with it, and the closing
+      docket (`[data-reveal-print]`) is wiped down out of a clip: a slip fed out
+      of a machine, not a paragraph fading in.
 
    THE TABLE — every reveal on the sheet reads these values and nothing else:
 
@@ -60,6 +62,7 @@ gsap.registerPlugin(ScrollTrigger)
    | entry | refAt        | 0.06 s                  | 60 ms after the rule starts           |
    | entry | refRise      | 8 px                    | how far the reference label rises     |
    | entry | titleAt      | 0.12 s                  | the heading's mask, 120 ms after      |
+   | entry | print        | 0.62 s                  | the docket, wiped out of its clip     |
    | plate | enter        | top 30%                 | where the plate's rig starts          |
    | plate | measure      | 0.35 → 0.90 of the pin  | the hairline measure draws            |
    | plate | handover     | 0.93 → 1.00 of the pin  | the clip step that lifts the plate   |
@@ -194,6 +197,10 @@ export const MOTION = {
     refRise: 8,
     /** The heading's mask starts here: mask first, width after. */
     titleAt: 0.12,
+    /** The closing docket, wiped down out of a clip. Shorter than a block rise:
+     *  the slip crosses a short distance, and at 0.9 s the same ease reads as
+     *  slow motion. */
+    print: 0.62,
   },
 
   /* The chapter plate between #about and #contact. */
@@ -507,6 +514,7 @@ export type SectionRigOptions = {
  * - `[data-rig-tick]`   the short rule segment drawn along the section's top rule
  * - `[data-rig-coord]`  the mono coordinate that counts up, inside the reference
  * - `[data-reveal-block]` paragraphs that rise as whole blocks
+ * - `[data-reveal-print]` the closing docket, wiped down out of a clip
  *
  * The top rule is the section's own `border-top`. A border cannot be drawn, so
  * the rig stands the border's colour down, injects a 1px `.rig-rule` in exactly
@@ -520,6 +528,7 @@ export function initSectionRig(root: HTMLElement, options: SectionRigOptions = {
   const coord = root.querySelector<HTMLElement>('[data-rig-coord]')
   const ref = coord?.closest<HTMLElement>('p') ?? null
   const blocks = gsap.utils.toArray<HTMLElement>('[data-reveal-block]', root)
+  const prints = gsap.utils.toArray<HTMLElement>('[data-reveal-print]', root)
 
   /* The section's distance from the top of the sheet, in CSS pixels. Measured
      lazily: a pin created above this section changes every offset below it, and
@@ -627,6 +636,39 @@ export function initSectionRig(root: HTMLElement, options: SectionRigOptions = {
         block,
         'top 90%',
       )
+    }
+
+    /* The docket is fed out, not faded in. Opacity is what a card does; a slip
+       of paper is revealed by what it is not yet covering, so the clip travels
+       from the head to the foot while the block rises the same 14px a
+       paragraph does. Its own start line — `top 88%`, not the block's 90% —
+       keeps it under the ledger until the reader has both in frame, and the
+       0.62 s of `MOTION.entry.print` is the pace of a short print, not the
+       pace of a page. */
+    for (const slip of prints) {
+      if (!startsBelowFold(slip)) continue
+
+      const printTween = gsap.fromTo(
+        slip,
+        { clipPath: 'inset(0 0 100% 0)', y: MOTION.blockRise },
+        {
+          clipPath: 'inset(0 0 0% 0)',
+          y: 0,
+          duration: MOTION.entry.print,
+          ease: MOTION.ease,
+          paused: true,
+        },
+      )
+
+      attach(printTween, slip, 'top 88%')
+
+      // A deep link can land with the slip already in frame. `attach` snaps
+      // an off-screen target on refresh, but deliberately leaves an *active*
+      // trigger alone — and a trigger created already active does not fire
+      // `onEnter` for a paused tween. So the slip would stay shut on a phone
+      // landing at `#contact`, where the page cannot scroll any further. Print
+      // it here; the trigger still owns the reverse path.
+      if (slip.getBoundingClientRect().top < window.innerHeight * 0.88) printTween.progress(1)
     }
 
     if (coord) {

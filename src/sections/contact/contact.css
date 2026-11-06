@@ -8,9 +8,18 @@
    type, and all three carry the sheet's link language (a hairline underline
    that turns to the survey mark).
 
+   After the ledger, the docket: the sheet's own manifest, printed as the
+   estimate slip a workshop hands over with the drawing. It is a receipt — a
+   dashed edge, dotted leaders, one solid total, a stamp and a printed code —
+   and it is laid off the reading column's right edge so it reads as a slip
+   dropped on the sheet rather than as a fourth ledger row. The chapter keeps
+   one crimson mark, on the ledger's registration square; the docket is ink.
+
    The footer is the colophon of a printed sheet: the credit line, a scale bar,
-   a way back to the top, and the section reference. No logo wall, no social
-   icons, no "built with" badge.
+   a way back to the top, and the section reference — with the sheet's own name
+   set at plate scale behind them and cropped by the footer's bottom edge. The
+   name is decoration at 5.5% ink: behind the links in the stack, never over
+   them, and it cannot widen the page because the footer clips.
    ========================================================================== */
 
 .ct {
@@ -185,16 +194,212 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Docket — the sheet's own manifest
+   ---------------------------------------------------------------------------
+   A receipt, not a card: square corners, no shadow, no radius, a dashed trim
+   and one strong rule at the head. It is `--ground-raised` because a slip of
+   paper laid on the sheet is a half-step lighter than the sheet, and nothing
+   else in the chapter is. The rail carries the annotation; the slip is right
+   aligned in the reading column and narrower than the prose, so the white space
+   to its left is the page's margin, not a gap to fill.
+   --------------------------------------------------------------------------- */
+
+.ct__docket-wrap {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  column-gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  align-items: start;
+  margin-block-start: clamp(3rem, 6vw, 4.75rem);
+}
+
+/* The same annotation the ledger keys use, in the same rail. It is real text,
+   not decoration: it names the block for anyone who lands on the slip's head
+   without reading the margin. */
+.ct__docket-kicker {
+  padding-block-start: 1.55rem;
+  line-height: 1.3;
+  color: var(--text-quiet);
+}
+
+.ct__docket {
+  justify-self: end;
+  inline-size: min(34rem, 100%);
+  padding: var(--s-5) var(--s-5) var(--s-4);
+  background-color: var(--ground-raised);
+  /* One dashed trim, plus a solid ink rule at the head: a slip is torn on three
+     edges and printed on the fourth. */
+  border: var(--hair) dashed var(--contour);
+  border-block-start: var(--hair-strong) solid var(--ink);
+  color: var(--ink);
+}
+
+.ct__docket-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-4);
+  padding-block-end: var(--s-3);
+  border-block-end: var(--hair) solid var(--contour);
+}
+
+/* The masthead is ink; the number is quiet. Prefixed with the section so the
+   colour cannot depend on the order the two stylesheets happen to load in. */
+.ct .ct__docket-head {
+  color: var(--ink);
+}
+
+.ct__docket-ref {
+  margin-inline-start: auto;
+  color: var(--text-quiet);
+}
+
+/* The one display line on the slip. Everything else is a measurement. */
+.ct__docket-title {
+  margin-block-start: var(--s-3);
+  font-size: var(--step-2);
+  font-weight: var(--w-semi);
+  line-height: 1.08;
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.ct__docket-rows {
+  margin-block-start: var(--s-4);
+}
+
+.ct__docket-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  min-inline-size: 0;
+  padding-block: 0.3rem;
+}
+
+/* Key and leader share one flex line, so the dots always start where the label
+   stops — whatever the language does to the word's length. */
+.ct__docket-key {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: 0.45rem;
+  min-inline-size: 0;
+  color: var(--text-quiet);
+}
+
+/* The leader is printed, not typed: one 1px dash on a 4px pitch, lifted just
+   above the baseline where an index sets its dots. No second line box, no
+   repeating character, no extra node. */
+.ct__docket-key::after {
+  content: '';
+  flex: 1 1 1.5rem;
+  min-inline-size: 1rem;
+  block-size: 1px;
+  transform: translateY(-0.3em);
+  background-image: linear-gradient(90deg, var(--contour) 0 1px, transparent 1px);
+  background-size: 4px 1px;
+  background-repeat: repeat-x;
+}
+
+/* The key takes the row's spare width, so the value is pushed to the right
+   edge; it stays in ink because the readings are the part a reader came for. */
+.ct__docket .ct__docket-value {
+  flex: none;
+  color: var(--ink);
+  text-align: end;
+}
+
+/* The one filled surface in the chapter. It bleeds to the slip's trim on both
+   sides — a printed total runs the width of the paper, not of the padding. */
+.ct__docket-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-block-start: var(--s-4);
+  margin-inline: calc(var(--s-5) * -1);
+  padding: 0.5rem var(--s-5);
+  background-color: var(--ink);
+  color: var(--ground);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-mono);
+  line-height: 1.4;
+}
+
+.ct__docket-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-block-start: var(--s-4);
+  padding-block-start: var(--s-3);
+  border-block-start: var(--hair) solid var(--contour);
+}
+
+/* A stamp, straight on: an outline and a tracked word, no rotation. A tilt
+   would be a costume; a docket filed by a machine is set square. */
+.ct__docket .ct__docket-stamp {
+  flex: none;
+  padding: 0.2rem 0.5rem 0.16rem;
+  border: var(--hair-strong) solid var(--ink);
+  color: var(--ink);
+  line-height: 1.1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* The code strip, built from one repeating gradient: no image, no request, and
+   it prints at any width without resampling. Irregular bar widths, because a
+   strip of even bars reads as a pattern rather than as a mark. */
+.ct__docket-code {
+  flex: 0 1 7.5rem;
+  min-inline-size: 4.5rem;
+  block-size: 1.55rem;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--ink) 0 1.5px,
+    transparent 1.5px 3.5px,
+    var(--ink) 3.5px 4.5px,
+    transparent 4.5px 7.5px,
+    var(--ink) 7.5px 9px,
+    transparent 9px 11px,
+    var(--ink) 11px 14px,
+    transparent 14px 16px
+  );
+}
+
+/* The fine print: what the total actually means, in the quiet ink, with the
+   bottom of the slip left clean. */
+.ct__docket-note {
+  margin-block-start: var(--s-3);
+  line-height: 1.5;
+  color: var(--text-quiet);
+}
+
+/* ---------------------------------------------------------------------------
    Colophon
    --------------------------------------------------------------------------- */
 
 .clp {
+  /* The footer is a print sheet's last trim: the name is set inside it and cut
+     by its bottom edge, so the block is positioned and clips its own overflow.
+     `hidden` is the fallback where `clip` is unsupported: either way the name
+     adds no scroll extent to the page. */
+  position: relative;
+  overflow: hidden;
+  overflow: clip;
   padding-inline: var(--gutter);
-  padding-block-end: clamp(1.25rem, 2.5vw, 2rem);
+  padding-block-end: clamp(3rem, 9vw, 8rem);
   background-color: var(--ground);
 }
 
 .clp__inner {
+  /* Above the ghost. The wordmark is decoration and must never sit over the
+     credit, the scale or the way back up — at 5.5% it would only tint them. */
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -208,6 +413,31 @@
   margin-inline: auto;
   padding-block-start: var(--s-3);
   border-top: var(--hair) solid var(--ink);
+}
+
+/* The sheet's name, printed once at plate scale and cropped by the footer's
+   bottom edge. `inset-block-end: -0.2em` is what makes the crop a crop: the
+   baseline sits below the trim, so the word loses its feet rather than resting
+   on a line. It is absolute, so it adds no height and no scroll extent; the
+   footer's `clip` is the guarantee. Decorative in the strongest sense — hidden
+   from assistive tech, unselectable, and inert to the pointer. */
+.clp__ghost {
+  position: absolute;
+  inset-block-end: -0.2em;
+  inset-inline-start: var(--gutter);
+  z-index: 0;
+  font-family: var(--font-display);
+  /* The plate axis, like the cover's handle: this is the same word at the same
+     lettering, only larger than the sheet. */
+  font-stretch: var(--width-plate);
+  font-size: clamp(6rem, 25vw, 23rem);
+  line-height: 0.72;
+  letter-spacing: var(--tracking-plate);
+  color: var(--ink);
+  opacity: 0.055;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
 }
 
 .clp__credit {
@@ -331,6 +561,40 @@
     grid-template-columns: minmax(0, 1fr);
     row-gap: 0.15rem;
     padding-block: var(--s-4);
+  }
+
+  /* The docket loses the rail and takes the sheet's full width: on a phone a
+     34rem slip pinned to the right would be a column with a margin to its left
+     that buys nothing. Its own padding steps down so the leaders keep their
+     length at 320px. */
+  .ct__docket-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-3);
+    margin-block-start: clamp(2.5rem, 8vw, 3.5rem);
+  }
+
+  /* The rail label would sit one line above the slip's own masthead on a
+     phone, reading as a stutter. The spread already names the block. */
+  .ct__docket-kicker {
+    display: none;
+  }
+
+  .ct__docket {
+    justify-self: stretch;
+    inline-size: 100%;
+    padding-inline: var(--s-4);
+  }
+
+  .ct__docket-total {
+    margin-inline: calc(var(--s-4) * -1);
+    padding-inline: var(--s-4);
+  }
+
+  /* A smaller plate on the small sheet: 28vw keeps the word wider than the
+     viewport, so it is cropped on the right as well as at the foot — still a
+     wordmark, never a label sitting in the corner. */
+  .clp__ghost {
+    font-size: clamp(5rem, 28vw, 12rem);
   }
 }
 

@@ -23,6 +23,12 @@
    load-bearing — the wall of links under the plate carries every fact it prints,
    so a script that never runs, or a preference that refuses motion, leaves the
    sheet complete.
+
+   The foot is a stub. A dashed perforation and a barcode are what make a piece
+   of paper read as a receipt rather than a card: they are the print language,
+   not ornament. Nothing tears off and nothing scans — the stub simply carries
+   the same reference and the same address the rest of the sheet prints, so the
+   plate ends on a ruled foot instead of blank ground.
    ========================================================================== */
 
 .pp {
@@ -120,4 +126,71 @@
   margin-block-start: var(--s-1);
   color: var(--ink-3);
   overflow-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------------------
+   The foot — a tear-off stub
+   ---------------------------------------------------------------------------
+   The dashed rule is the perforation: one hairline, half ink and half air, so
+   it reads as something meant to be separated and not as a second border. The
+   barcode is a repeating gradient of ink bars rather than an image or an SVG:
+   it costs no request, prints at any width, and stays as disposable as the rest
+   of the plate. */
+
+.pp__stub {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  margin-block-start: var(--s-4);
+  padding-block-start: var(--s-3);
+  border-block-start: var(--hair) dashed var(--contour);
+}
+
+.pp .pp__stub-ref,
+.pp .pp__stub-url {
+  color: var(--ink-3);
+}
+
+/* The perforation runs to the address, so the rule is the gap that is left. */
+.pp__stub-rule {
+  flex: 1;
+  align-self: center;
+  block-size: 1px;
+  background-image: linear-gradient(90deg, var(--contour) 50%, transparent 50%);
+  background-size: 4px 1px;
+}
+
+.pp__barcode {
+  display: block;
+  margin-block-start: var(--s-3);
+  block-size: 14px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--ink) 0 1px,
+    transparent 1px 3px,
+    var(--ink) 3px 4px,
+    transparent 4px 7px
+  );
+  opacity: 0.5;
+}
+
+/* A landscape phone is shorter than the plate. The seal steps down and the stub
+   stands down entirely: the plate has to fit inside the frame before it has to
+   be a ticket, and the reveal opens from the foot, so a shorter plate still
+   pulls open from the same edge. */
+@media (max-height: 44rem) {
+  .pp__plate {
+    padding: var(--s-3);
+  }
+
+  .pp__seal {
+    inline-size: 120px;
+    block-size: 120px;
+    margin-block: var(--s-3);
+  }
+
+  .pp__stub,
+  .pp__barcode {
+    display: none;
+  }
 }

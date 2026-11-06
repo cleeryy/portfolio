@@ -13,8 +13,10 @@ import './boot.css'
    ----------------------------------------------------------------------------
    A full-viewport plate on the ground: the graticule draws in left to right
    (240ms), the handle rises from behind its mask, a scale is ruled, and a
-   progress hairline grows along it. Then the plate lifts as a transform wipe,
-   bottom edge first, revealing the page already composed underneath.
+   progress hairline grows along it. Then the plate opens as an iris from the
+   instrument's first route pose — the point the survey ring is parked on when
+   the page settles — so the page is not uncovered, it is seen through the ring
+   that will live on it.
 
    What the two signals are — and nothing else:
 
@@ -33,8 +35,15 @@ import './boot.css'
 
    Timing: release starts at `RELEASE_MIN` at the earliest (so the plate does not
    flash) and at `RELEASE_CEILING` at the latest, whatever has not resolved. The
-   wipe is `WIPE` long, so the plate is gone — and interaction with the page
-   underneath is unobstructed — well before 1300ms.
+   iris is `IRIS` long, so the plate is gone — and interaction with the page
+   underneath is unobstructed — by ~3.1 s.
+
+   The iris needs a mask, and an engine that cannot paint one would otherwise
+   keep the plate forever. That path falls back to the transform wipe this
+   component used to ship: `WIPE`, bottom edge first. It is shorter than the
+   iris and says a slightly different thing, but it is the same sentence — the
+   sheet leaves — and a failure to support `mask-image` is not a reason to show
+   the title card until the tab closes.
 
    It is never rendered when it cannot be honest about itself:
    - `prefers-reduced-motion` → no plate at all, content immediate;
@@ -47,9 +56,21 @@ const SESSION_KEY = 'portfolio:sheet'
 
 /** Earliest lift, so the plate has time to be read instead of flashing. */
 const RELEASE_MIN = 1.9
-/** Latest lift. With the wipe below, the plate is gone by ~3.0 s. */
+/** Latest lift. With the iris below, the plate is gone by ~3.1 s. */
 const RELEASE_CEILING = 2.35
+/** How long the hole takes to pass the furthest corner of the viewport. */
+const IRIS = 0.72
+/** The fallback for engines that cannot mask: the old bottom-edge wipe. */
 const WIPE = 0.62
+
+/**
+ * The instrument's first route pose, as a fraction of the viewport — pose
+ * `cover` at scroll 0 in scene.ts. boot.css paints the same centre into the
+ * radial gradient, because the hole has to open exactly where the ring sits,
+ * and a mask has no way to read a constant from here. Change both together.
+ */
+const IRIS_ORIGIN_X = 0.76
+const IRIS_ORIGIN_Y = 0.42
 
 const TOTAL_SIGNALS = 2
 
@@ -112,6 +133,14 @@ export default function BootGate() {
     let cancelled = false
     let released = false
     let timer: gsap.core.Tween | null = null
+
+    // Decided once, before anything paints: does this engine paint a radial
+    // gradient as a mask? Both prefixes are asked because Safari has shipped
+    // only the -webkit- spelling for most of its life.
+    const canIris =
+      typeof CSS !== 'undefined' &&
+      (CSS.supports('mask-image', 'radial-gradient(#000, #000)') ||
+        CSS.supports('-webkit-mask-image', 'radial-gradient(#000, #000)'))
 
     const done: Record<SignalKey, boolean> = { app: false, fonts: false }
     let left = TOTAL_SIGNALS
@@ -181,7 +210,7 @@ export default function BootGate() {
       if (cancelled || released) return
       released = true
 
-      // Interaction belongs to the page from the first millimetre of the wipe.
+      // Interaction belongs to the page from the first millimetre of the reveal.
       plateEl.dataset.lifting = 'true'
       setStatus('ready')
       announceSheetReady({ path: 'boot', elapsed: Math.round(performance.now() - t0) })
@@ -190,11 +219,41 @@ export default function BootGate() {
       // opens a context outside a gesture, a stored "on" stays silent here too.
       sound.boot()
 
+      // The hole has to clear the furthest corner, not the nearest: measured
+      // from the pose, a radius that only reaches the opposite edge leaves a
+      // wedge of plate in one corner on every non-square viewport.
+      const cx = window.innerWidth * IRIS_ORIGIN_X
+      const cy = window.innerHeight * IRIS_ORIGIN_Y
+      const radius = Math.hypot(
+        Math.max(cx, window.innerWidth - cx),
+        Math.max(cy, window.innerHeight - cy),
+      )
+
       ctx.add(() => {
-        gsap
-          .timeline({ onComplete: finish })
-          .to(figure, { yPercent: -7, opacity: 0, duration: 0.22, ease: 'power2.in' }, 0)
-          .to(plateEl, { yPercent: -100, duration: WIPE, ease: 'power3.inOut' }, 0.02)
+        const reveal = gsap.timeline({ onComplete: finish })
+
+        // The reading leaves first, so the ring is not opening around a caption
+        // that is still describing a sheet the reader can no longer see.
+        reveal.to(figure, { yPercent: -7, opacity: 0, duration: 0.2, ease: 'power2.in' }, 0)
+
+        if (canIris) {
+          // fromTo, not to: the 0px end is written in the same frame the tween
+          // is built, so the plate cannot paint one frame with a stale radius.
+          // A promoted layer keeps the mask repaints off the graticule and the
+          // type, which do not change while the hole opens.
+          gsap.set(plateEl, { willChange: 'mask-image' })
+          reveal.fromTo(
+            plateEl,
+            { '--boot-iris': '0px' },
+            { '--boot-iris': `${radius}px`, duration: IRIS, ease: 'power2.inOut' },
+            0,
+          )
+        } else {
+          // No mask: the plate has to move. Promote it for the translate it is
+          // about to do, and for nothing else.
+          gsap.set(plateEl, { willChange: 'transform' })
+          reveal.to(plateEl, { yPercent: -100, duration: WIPE, ease: 'power3.inOut' }, 0)
+        }
       })
     }
 
@@ -217,7 +276,7 @@ export default function BootGate() {
     scheduleAt(RELEASE_CEILING)
 
     /* The plate is worth looking at, not worth waiting for: a click or a key
-       pulls it at once. The wipe still runs, so the page is never cut in. */
+       pulls it at once. The reveal still runs, so the page is never cut in. */
     const skip = () => lift()
     window.addEventListener('pointerdown', skip, { once: true, passive: true })
     window.addEventListener('keydown', skip, { once: true })

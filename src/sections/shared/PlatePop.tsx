@@ -336,6 +336,12 @@ export default function PlatePop({ subject, note, mode = 'pointer', anchorRef }:
               }`}
             </p>
             <p className="pp__stack mono">{project.stack.join(' + ')}</p>
+            <div className="pp__stub">
+              <span className="pp__stub-ref mono">{`PLATE ${pad2(printed.index)}`}</span>
+              <span className="pp__stub-rule" aria-hidden="true" />
+              <span className="pp__stub-url mono">cleeryy.cloud</span>
+            </div>
+            <span className="pp__barcode" aria-hidden="true" />
           </>
         ) : null}
       </div>
