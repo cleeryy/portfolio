@@ -91,7 +91,7 @@ translated into that language or left alone.
 
 - `pnpm typecheck` — clean.
 - `pnpm lint` — clean; five pre-existing `react/only-export-components` warnings.
-- `pnpm build` — clean; the existing three >500kB chunk warning remains.
+- `pnpm build` — clean; the existing >500kB chunk warning remains.
 - Rendered checks: boot plate and mask at 0px / 400px / 1200px, desktop and
   390px contact docket, footer bookend, operator watermark, index plate ticket,
   flight seam at the pin and mid-passage, and the reduced-motion contact page.
